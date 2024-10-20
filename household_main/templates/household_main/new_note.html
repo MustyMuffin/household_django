@@ -1,0 +1,12 @@
+{% extends "household_main/base.html" %}
+
+{% block content %}
+  <p>Add a new note:</p>
+
+  <form action="{% url 'household_main:new_note' %}" method='post'>
+    {% csrf_token %}
+    {{ form.as_div }}
+    <button name="submit">Add note</button>
+  </form>
+
+{% endblock content %}

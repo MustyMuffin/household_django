@@ -9,9 +9,10 @@ class Note(models.Model):
         """Return a string representation of the model."""
         return self.text
 
+
 class Entry(models.Model):
     """A note to taken by a user."""
-    notes = models.ForeignKey(Note, on_delete=models.CASCADE)
+    note = models.ForeignKey(Note, on_delete=models.CASCADE)
     text = models.TextField()
     date_added = models.DateTimeField(auto_now_add=True)
 
