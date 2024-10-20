@@ -1,7 +1,7 @@
 from django.db import models
 
-class Topic(models.Model):
-    """A topic the user is learning about."""
+class Note(models.Model):
+    """A note the user wants to remember."""
     text = models.CharField(max_length=200)
     date_added = models.DateTimeField(auto_now_add=True)
 
@@ -10,8 +10,8 @@ class Topic(models.Model):
         return self.text
 
 class Entry(models.Model):
-    """Something specific learned about a topic."""
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
+    """A note to taken by a user."""
+    notes = models.ForeignKey(Note, on_delete=models.CASCADE)
     text = models.TextField()
     date_added = models.DateTimeField(auto_now_add=True)
 
