@@ -1,12 +1,14 @@
 {% extends "household_main/base.html" %}
 
 {% block content %}
-  <p>Add a new note:</p>
+  
+  <p><a href="{% url 'household_main:note' note.id %}">{{ note }}</a></p>
 
-  <form action="{% url 'household_main:new_note' %}" method='post'>
+   <p>Add a new entry:</p>
+  <form action="{% url 'household_main:new_entry'  note.id %}" method='post'>
     {% csrf_token %}
     {{ form.as_div }}
-    <button name="submit">Add note</button>
+    <button name="submit">Add entry</button>
   </form>
 
 {% endblock content %}
