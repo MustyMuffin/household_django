@@ -1,4 +1,6 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
 
 from .models import Note, Entry
 from .forms import NoteForm, EntryForm
@@ -8,19 +10,26 @@ def index(request):
     """The home page for Household."""
     return render(request, 'household_main/index.html')
 
+@login_required
 def notes(request):
     """Show all Notes."""
-    notes = Note.objects.order_by('date_added')
+    notes = Note.objects.filter(owner=request.user).order_by('date_added')
     context = {'notes': notes}
     return render(request, 'household_main/notes.html', context)
 
+@login_required
 def note(request, note_id):
     """Show a single note and all its entries."""
     note = Note.objects.get(id=note_id)
+    # Make sure the note belongs to the current user.
+    if note.owner != request.user:
+        raise Http404
+
     entries = note.entry_set.order_by('-date_added')
     context = {'note': note, 'entries': entries}
     return render(request, 'household_main/note.html', context)
 
+@login_required
 def new_note(request):
     """Add a new note."""
     if request.method != 'POST':
@@ -30,13 +39,16 @@ def new_note(request):
         # POST data submitted; process data.
         form = NoteForm(data=request.POST)
         if form.is_valid():
-            form.save()
+            new_note = form.save(commit=False)
+            new_note.owner = request.user
+            new_note.save()
             return redirect('household_main:notes')
  
     # Display a blank or invalid form.
     context = {'form': form}
     return render(request, 'household_main/new_note.html', context)
 
+@login_required
 def new_entry(request, note_id):
     """Add a new entry for a particular note."""
     note = Note.objects.get(id=note_id)
@@ -57,6 +69,7 @@ def new_entry(request, note_id):
     context = {'note': note, 'form': form}
     return render(request, 'household_main/new_entry.html', context)
 
+@login_required
 def edit_entry(request, entry_id):
     """Edit an existing entry."""
     entry = Entry.objects.get(id=entry_id)
