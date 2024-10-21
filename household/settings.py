@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     # My apps.
     'household_main',
     'accounts',
+    'chores',
 
     # Third party apps.
     'django_bootstrap5',
