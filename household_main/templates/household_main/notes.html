@@ -1,16 +1,18 @@
 {% extends 'household_main/base.html' %}
 
-{% block content %}
+{% block page_header %}
+  <h1>Notes</h1>
+{% endblock page_header %}
 
-  <p>Notes</p>
-  <ul>
+{% block content %}
+  <ul class="list-group border-bottom pb-2 mb-4">
     {% for note in notes %}
-      <li>
+      <li class="list-group-item border-0">
         <a href="{% url 'household_main:note' note.id %}">
           {{ note.text }}</a>
       </li>
     {% empty %}
-      <li>No notes have been added yet.</li>
+      <li class="list-group-item border-0">No notes have been added yet.</li>
     {% endfor %}
   </ul>
 
