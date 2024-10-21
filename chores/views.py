@@ -5,14 +5,12 @@ from django.http import Http404
 from .models import Chores, ChoreEntry
 from .forms import ChoreForm, ChoreEntryForm
 
-@login_required
 def chores(request):
     """Show all Chores."""
-    # chores = Chores.objects.filter(owner=request.user).order_by('date_added')
+    chores = Chores.objects.order_by('price')
     context = {'chores': chores}
     return render(request, 'chores/chores.html', context)
 
-@login_required
 def chore(request, chore_id):
     """Show a single chore and all its entries."""
     chore = Chores.objects.get(id=chore_id)
@@ -35,9 +33,8 @@ def new_chore(request):
         form = ChoreForm(data=request.POST)
         if form.is_valid():
             new_chore = form.save(commit=False)
-            new_chore.owner = request.user
             new_chore.save()
-            return redirect('chores:chores')
+            return redirect('/chores')
 
     # Display a blank or invalid form.
     context = {'form': form}

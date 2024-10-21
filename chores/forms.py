@@ -6,8 +6,8 @@ from .models import Chores, ChoreEntry
 class ChoreForm(forms.ModelForm):
     class Meta:
         model = Chores
-        fields = ['text']
-        labels = {'text': ''}
+        fields = ['text', 'price']
+        labels = {'text': '', 'price': ''}
 
 class ChoreEntryForm(forms.ModelForm):
     class Meta:
