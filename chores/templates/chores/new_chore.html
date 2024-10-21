@@ -1,0 +1,12 @@
+{% extends "household_main/base.html" %}
+
+{% block content %}
+  <p>Add a new chore:</p>
+
+  <form action="{% url 'chores:new_chore' %}" method='post'>
+    {% csrf_token %}
+    {{ form.as_div }}
+    <button name="submit">Add chore</button>
+  </form>
+
+{% endblock content %}

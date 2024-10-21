@@ -1,46 +1,27 @@
 from django.db import models
-from django.utils import timezone
+from django.contrib.auth.models import User
 
-class Dishes(models.Model):
-    """Doing the dishes"""
-    dishes_laborer = models.CharField(max_length=20)
-    dishes_cost = models.IntegerField()
 
-class Trash(models.Model):
-    """Taking out the trash"""
-    trash_laborer = models.CharField(max_length=20)
-    trash_cost = models.IntegerField()
+class Chores(models.Model):
+    """Table mapping user selected chores to variables"""
+    text = models.CharField(max_length=200)
+    date_added = models.DateTimeField(auto_now_add=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
-class Bathroom_one(models.Model):
-    """Clean Bathroom 1"""
-    bathroom_one_laborer = models.CharField(max_length=20)
-    bathroom_one_cost = models.IntegerField()
+    def __str__(self):
+        """Return a string representation of the model."""
+        return self.text
 
-class Bathroom_two(models.Model):
-    """Clean Bathroom 2"""
-    bathroom_two_laborer = models.CharField(max_length=20)
-    bathroom_two_cost = models.IntegerField()
 
-class Playroom(models.Model):
-    """Clean Playroom"""
-    playroom_laborer = models.CharField(max_length=20)
-    playroom_cost = models.IntegerField()
-
-class Vacuum(models.Model):
-    """Vacuum different rooms of the hous"""
-    vacuum_laborer = models.CharField(max_length=20)
-    vacuum_cost = models.IntegerField()
-
-class Dust(models.Model):
-    """Dust in different rooms of the house"""
-    dust_laborer = models.CharField(max_length=20)
-    dust_cost = models.IntegerField()
-
-class ChoreLogging(models.Model):
+class ChoreEntry(models.Model):
     """For logging the labor"""
-    chore_done = models.CharField(max_length=20)
-    time_done = models.DateTimeField
+    chore_entry = models.ForeignKey(Chores, on_delete=models.CASCADE)
+    text = models.TextField()
+    date_added = models.DateTimeField(auto_now_add=True)
 
-class DateTimeField(models.Model):
-    """For storing the datetime for logging the chores"""
-    current_datetime = timezone.now()
+    class Meta:
+        verbose_name_plural = 'chore_entries'
+
+    def __str__(self):
+        """Return a simple string representing the entry."""
+        return f"{self.text[:50]}..."
