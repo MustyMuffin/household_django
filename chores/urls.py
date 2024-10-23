@@ -15,7 +15,7 @@ urlpatterns = [
     # # Page for adding a new chore.
     path('new_chore/', views.new_chore, name='new_chore'),
     # Page for adding a new entry.
-    path('new_chore_entry/<int:chore_id>/', views.new_chore_entry, name='new_chore_entry'),
+    # path('new_chore_entry/<int:chore_id>/', views.new_chore_entry, name='new_chore_entry'),
     # Page for editing an entry.
-    path('edit_chore_entry/<int:chore_entry_id>/', views.edit_chore_entry, name='edit_chore_entry'),
+    # path('edit_chore_entry/<int:chore_entry_id>/', views.edit_chore_entry, name='edit_chore_entry'),
 ]
