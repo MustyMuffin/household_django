@@ -2,11 +2,11 @@
 
 {% block content %}
 
-  <p><a href="{% url 'household_main:chore' chore.id %}">{{ topic }}</a></p>
+  <p><a href="{% url 'chores:chore' chore.id %}">{{ chore }}</a></p>
 
   <p>Edit entry:</p>
 
-  <form action="{% url 'household_main:edit_chore_entry' chore_entry.id %}" method='post'>
+  <form action="{% url 'chores:edit_chore_entry' chore.id %}" method='post'>
     {% csrf_token %}
     {{ form.as_div }}
     <button name="submit">Save changes</button>

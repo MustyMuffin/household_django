@@ -1,9 +1,7 @@
 from django import forms
-# from django.utils import timezone
-# from django.contrib.auth.models import User
 
 from .models import Chores, ChoreEntry
-# from . import views
+# from . import import views
 
 
 class ChoreForm(forms.ModelForm):
@@ -15,5 +13,10 @@ class ChoreForm(forms.ModelForm):
 class ChoreEntryForm(forms.ModelForm):
     class Meta:
         model = ChoreEntry
-        fields = ['text']
-        labels = {'text': ''}
+        fields = ['user',]
+        
+    def __init__(self, *args, **kwargs):
+        super(ChoreEntryForm, self).__init__(*args, **kwargs)
+        if 'user' in kwargs:
+            user = kwargs.pop('user')
+            self.fields['user'].initial = user

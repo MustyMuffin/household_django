@@ -1,9 +1,10 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Chores(models.Model):
     """Table mapping user selected chores to variables"""
-    text = models.CharField(max_length=200)
+    text = models.CharField(max_length=20)
     date_added = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -13,9 +14,9 @@ class Chores(models.Model):
 
 class ChoreEntry(models.Model):
     """For logging the labor"""
-    text = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    chore = models.ForeignKey(Chores, on_delete=models.CASCADE)
     date_added = models.DateTimeField(auto_now_add=True)
-    chore_entry = models.ForeignKey(Chores, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name_plural = 'chore_entries'
