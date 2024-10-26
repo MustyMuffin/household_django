@@ -18,24 +18,6 @@ def chore(request, chore_id):
     context = {'chore': chore, 'chore_entries': chore_entries}
     return render(request, 'chores/chore.html', context)
 
-# @login_required
-# def new_chore(request):
-#     """Add a new chore."""
-#     if request.method != 'POST':
-#         # No data submitted; create a blank form.
-#         form = ChoreForm()
-#     else:
-#         # POST data submitted; process data.
-#         form = ChoreForm(data=request.POST)
-#         if form.is_valid():
-#             new_chore = form.save(commit=False)
-#             new_chore.save()
-#             return redirect('/chores')
-
-#     # Display a blank or invalid form.
-#     context = {'form': form}
-#     return render(request, 'chores/new_chore.html', context)
-
 @login_required    
 def new_chore_entry(request, chore_id):
     """Add a new entry for a chore."""
@@ -43,10 +25,10 @@ def new_chore_entry(request, chore_id):
     
     if request.method != 'POST':
         # No data submitted; create a blank form.
-        form = ChoreEntryForm()
+        form = ChoreEntryForm(username=request.user, data=request.POST)
     else:
         # POST data submitted; process data.
-        form = ChoreEntryForm(data=request.POST)
+        form = ChoreEntryForm(username=request.user, data=request.POST)
         if form.is_valid():
             new_chore_entry = form.save(commit=False)
             new_chore_entry.chore = chore

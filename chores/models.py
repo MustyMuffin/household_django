@@ -20,3 +20,4 @@ class ChoreEntry(models.Model):
 
     class Meta:
         verbose_name_plural = 'chore_entries'
+        permissions = (("can_log_chore", "Can Log Chore"),)
