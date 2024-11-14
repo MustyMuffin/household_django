@@ -15,11 +15,9 @@
       <!-- Card header with timestamp and edit link -->
       <h4 class="card-header">
         {{ chore_entry.date_added|date:'M d, Y H:i' }}
-        <small><a href="{% url 'chores:edit_chore_entry' chore_entry.id %}">
-          edit entry</a></small>
       </h4>
       <!-- Card body with entry text -->
-      <div class="card-body">{{ chore_entry.text|linebreaks }}</div>
+      <div class="card-body">{{ chore_entry.user|linebreaks }}</div>
     </div>
   {% empty %}
     <p>You've never done this chore before. Ask a grown-up to teach you how to do it!</p>
