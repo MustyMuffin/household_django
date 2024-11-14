@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class Chores(models.Model):
-    """Table mapping user selected chores to variables"""
+    """Table mapping admin selected chores to variables"""
     text = models.CharField(max_length=20)
     date_added = models.DateTimeField(auto_now_add=True)
 
@@ -20,3 +20,4 @@ class ChoreEntry(models.Model):
 
     class Meta:
         verbose_name_plural = 'chore_entries'
+        # permissions = (("can_log_chore", "Can Log Chore"),)

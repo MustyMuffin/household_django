@@ -1,7 +1,8 @@
 from django import forms
+from django.contrib.auth.models import User
 
 from .models import Chores, ChoreEntry
-# from . import import views
+# from . import views
 
 
 class ChoreForm(forms.ModelForm):
@@ -13,10 +14,15 @@ class ChoreForm(forms.ModelForm):
 class ChoreEntryForm(forms.ModelForm):
     class Meta:
         model = ChoreEntry
-        fields = ['user',]
+        fields = ['user']
         
-    def __init__(self, *args, **kwargs):
+    def __init__(self, username, *args, **kwargs):
         super(ChoreEntryForm, self).__init__(*args, **kwargs)
+        self.fields['user'].queryset = User.objects.filter(username=username)
         if 'user' in kwargs:
-            user = kwargs.pop('user')
-            self.fields['user'].initial = user
+            username = kwargs.pop('user')
+            self.fields['user'].initial = "username"
+
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+        # self.fields['user'].queryset = ChoreEntryForm.objects.filter(user=kwargs['request'].user)
