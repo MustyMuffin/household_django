@@ -8,6 +8,15 @@ wheels/
 
 # Virtual environments
 .venv
+
+#Databases and migrations
 *.sqlite3
 db.sqlite3
+*/migrations/*
+
+#Automation Scripts
 *ps1
+
+#Whatever the fuck this is
+.idea/*
+

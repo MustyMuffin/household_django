@@ -1,13 +1,13 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from .models import Chores, ChoreEntry
+from .models import Chore, ChoreEntry
 # from . import views
 
 
 class ChoreForm(forms.ModelForm):
     class Meta:
-        model = Chores
+        model = Chore
         fields = ['text']
         labels = {'text': ''}
 

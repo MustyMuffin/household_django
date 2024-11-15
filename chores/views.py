@@ -2,19 +2,18 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 # from django.http import Http404
 
-from .models import Chores, ChoreEntry
+from .models import Chore, ChoreEntry
 from .forms import ChoreEntryForm
 
 def chores(request):
     """Show all Chores."""
-    chores = Chores.objects.order_by('text')
+    chores = Chore.objects.order_by('text')
     context = {'chores': chores}
     return render(request, 'chores/chores.html', context)
 
 def chore(request, chore_id):
     """Show a single chore and all its entries."""
-    chore = Chores.objects.get(id=chore_id)
-    # chore_entries = ChoreEntry.objects.order_by('-date_added')
+    chore = Chore.objects.get(id=chore_id)
     chore_entries = chore.choreentry_set.order_by('-date_added')
     context = {'chore': chore, 'chore_entries': chore_entries}
     return render(request, 'chores/chore.html', context)
@@ -22,7 +21,7 @@ def chore(request, chore_id):
 @login_required    
 def new_chore_entry(request, chore_id):
     """Add a new entry for a chore."""
-    chore = Chores.objects.get(id=chore_id)
+    chore = Chore.objects.get(id=chore_id)
     
     if request.method != 'POST':
         # No data submitted; create a blank form.

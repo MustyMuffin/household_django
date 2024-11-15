@@ -1,7 +1,7 @@
 from django.contrib import admin
 
-from .models import Chores
+from .models import Chore
 from .models import ChoreEntry
 
-admin.site.register(Chores)
+admin.site.register(Chore)
 admin.site.register(ChoreEntry)
