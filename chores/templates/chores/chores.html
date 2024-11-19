@@ -11,6 +11,7 @@
       <li class="list-group-item border-0">
         <a href="{% url 'chores:chore' chore.id %}">
           {{ chore.text }}</a>
+          <div class="card-body">{{ chore.wage|linebreaks }}</div>
       </li>
     {% empty %}
       <li class="list-group-item border-0">No chores have been added yet.</li>
