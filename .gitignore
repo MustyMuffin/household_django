@@ -20,3 +20,4 @@ db.sqlite3
 #Whatever the fuck this is
 .idea/*
 
+chores/migrations/0011_alter_choreentry_options.py
