@@ -9,7 +9,7 @@
   <ul class="list-group border-bottom pb-2 mb-4">
     {% for book in books %}
       <li class="list-group-item border-0">
-        <a href="{% url 'books:book' book.id %}">
+        <a href="{% url 'book_club:book' book.id %}">
           {{ book.text }}</a>
           <div class="card-body">{{ book.pages|linebreaks }}</div>
       </li>
