@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'household_main',
     'accounts',
     'chores',
+    'book_club',
 
     # Third party apps.
     'django_bootstrap5',
@@ -114,7 +115,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Phoenix'
 
 USE_I18N = True
 

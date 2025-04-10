@@ -1,5 +1,3 @@
-"""Defines URL patterns for chores."""
-
 from django.urls import path, include
 
 from . import views

@@ -1,0 +1,21 @@
+{% extends 'household_main/base.html' %}
+
+{% block page_header %}
+  <h1>Books</h1>
+{% endblock page_header %}
+
+{% block content %}
+
+  <ul class="list-group border-bottom pb-2 mb-4">
+    {% for book in books %}
+      <li class="list-group-item border-0">
+        <a href="{% url 'books:book' book.id %}">
+          {{ book.text }}</a>
+          <div class="card-body">{{ book.pages|linebreaks }}</div>
+      </li>
+    {% empty %}
+      <li class="list-group-item border-0">No books have been added yet.</li>
+    {% endfor %}
+  </ul>
+
+{% endblock content %}
