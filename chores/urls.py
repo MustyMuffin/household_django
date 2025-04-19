@@ -14,6 +14,10 @@ urlpatterns = [
     # path('new_chore/', views.new_chore, name='new_chore'),
     # Page for adding a new entry.
     path('new_chore_entry/<int:chore_id>/', views.new_chore_entry, name='new_chore_entry'),
+    # Path for seeing payout
+    path('payout/', views.payout, name='payout'),
+    # Path for resetting a user payout
+    path('reset/<int:user_id>/', views.reset_earned_wage, name='reset_earned_wage'),
     # Page for editing an entry.
     # path('edit_chore_entry/<int:chore_entry_id>/', views.edit_chore_entry, name='edit_chore_entry'),
 ]

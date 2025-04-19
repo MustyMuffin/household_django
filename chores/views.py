@@ -1,8 +1,9 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 # from django.http import Http404
 
-from .models import Chore, EarnedWage
+from .models import Chore, EarnedWage, ChoreEntry
 from .forms import ChoreEntryForm
 
 def chores(request):
@@ -46,6 +47,29 @@ def new_chore_entry(request, chore_id):
     # Display a blank or invalid form.
     context = {'chore': chore, 'form': form}
     return render(request, 'chores/new_chore_entry.html', context)
+
+def payout(request):
+    # Current user info
+    earner = EarnedWage.objects.get(user=request.user)
+    wage_earned = earner.earnedSincePayout
+
+    # All users' earnings
+    all_earners = EarnedWage.objects.select_related('user').all()
+
+    context = {
+        'wage_earned': wage_earned,
+        'earner': earner,
+        'all_earners': all_earners,
+    }
+    return render(request, 'chores/payout.html', context)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def reset_earned_wage(request, user_id):
+    earned = get_object_or_404(EarnedWage, user_id=user_id)
+    earned.earnedSincePayout = 0
+    earned.save()
+    return redirect('chores:payout')
 
 # def view_wage(request, chore_id):
 

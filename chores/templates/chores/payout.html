@@ -1,0 +1,48 @@
+{% extends 'household_main/base.html' %}
+
+{% load static %}
+
+{% block content %}
+  <h2>Payout Summary</h2>
+
+  <h3>Your Earnings</h3>
+  <p><strong>You’ve earned since last payout:</strong> ${{ wage_earned }}</p>
+
+  <hr>
+
+  <h3>All Users' Earnings</h3>
+  <table border="1" cellpadding="8">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Earned Since Last Payout</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in all_earners %}
+        <tr>
+          <td>{{ entry.user.username }}</td>
+          <td>${{ entry.earnedSincePayout }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="2">No earnings found.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+    {% for entry in all_earners %}
+  <tr>
+    <td>{{ entry.user.username }}</td>
+    <td>${{ entry.earnedSincePayout }}</td>
+    <td>
+      <form action="{% url 'chores:reset_earned_wage' entry.user.id %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" onclick="return confirm('Are you sure you want to reset this user\'s earnings?')">Reset</button>
+      </form>
+    </td>
+  </tr>
+{% endfor %}
+
+{% endblock %}
