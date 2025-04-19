@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -25,8 +27,8 @@ class ChoreEntry(models.Model):
 class EarnedWage(models.Model):
     """For tracking the wages earned"""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    earnedLifetime = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
-    earnedSincePayout = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    earnedLifetime = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
+    earnedSincePayout = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'))
 
     class Meta:
         verbose_name_plural = 'earned_wages'

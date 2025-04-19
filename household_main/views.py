@@ -1,14 +1,34 @@
+from decimal import Decimal
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.http import Http404
 
+from chores.models import EarnedWage
 from .models import Note, Entry
 from .forms import NoteForm, EntryForm
 
+from chores.models import EarnedWage
+from django.contrib.auth.decorators import login_required
 
+@login_required
 def index(request):
-    """The home page for Household."""
-    return render(request, 'household_main/index.html')
+    try:
+        earned = EarnedWage.objects.get(user=request.user)  # Grabs the current user's earnings record
+        wage_earned = earned.earnedSincePayout
+        lifetime_earned = earned.earnedLifetime
+    except EarnedWage.DoesNotExist:
+        # Handle the case where the user does not have an earned wage record yet
+        wage_earned = lifetime_earned = 0.00
+
+    context = {
+        'wage_earned': wage_earned,
+        'lifetime_earned': lifetime_earned,
+    }
+
+    return render(request, 'household_main/index.html', context)
+
 
 @login_required
 def notes(request):

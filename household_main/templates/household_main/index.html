@@ -1,28 +1,28 @@
 {% extends 'household_main/base.html' %}
 
-  {% block page_header %}
+{% load debug_tags %}
+{% block page_header %}
+  {% if user.is_authenticated %}
+    <div class="p-3 mb-4 bg-light border rounded-3">
+      <div class="container-fluid py-4">
+        <h1 class="display-3">Household</h1>
 
-    {% if user.is_authenticated %}
-      <div class="p-3 mb-4 bg-light border rounded-3">
-        <div class="container-fluid py-4">
-          <h1 class="display-3">Household</h1>
-
-          <p class="lead">Track and gamify household labor.</p>
-
-        </div>
+        <h3>Your Earnings</h3>
+          <p><strong>You’ve earned since last payout:</strong> ${{ wage_earned|default:"0.00"|floatformat:2 }}</p>
+          <p><strong>Total earned (lifetime):</strong> ${{ lifetime_earned|default:"0.00"|floatformat:2 }}</p>
+          <hr>
+      </div>
     </div>
-
-    {% else %}
+  {% else %}
 
     <div class="p-3 mb-4 bg-light border rounded-3">
       <div class="container-fluid py-4">
         <h1 class="display-3">Track household things</h1>
-      
         <p class="lead">Automate your house labor</p>
-
         <a class="btn btn-primary btn-lg mt-1"
-            href="{% url 'accounts:register' %}">Register &raquo;</a>
+           href="{% url 'accounts:register' %}">Register &raquo;</a>
       </div>
     </div>
+
   {% endif %}
-  {% endblock page_header %}
+{% endblock page_header %}
