@@ -28,13 +28,14 @@ def new_chore_entry(request, chore_id):
     
     if request.method != 'POST':
         # No data submitted; create a blank form.
-        form = ChoreEntryForm(username=request.user, data=request.POST)
+        form = ChoreEntryForm(data=request.POST)
     else:
         # POST data submitted; process data.
-        form = ChoreEntryForm(username=request.user, data=request.POST)
+        form = ChoreEntryForm(data=request.POST)
         if form.is_valid():
             new_chore_entry = form.save(commit=False)
             new_chore_entry.chore = chore
+            new_chore_entry.user = request.user
             new_chore_entry.save()
 
             earned_wage, created = EarnedWage.objects.get_or_create(user=request.user)
