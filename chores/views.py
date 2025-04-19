@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
+from decimal import Decimal
 # from django.http import Http404
 
 from .models import Chore, EarnedWage, ChoreEntry
@@ -39,8 +40,8 @@ def new_chore_entry(request, chore_id):
             new_chore_entry.save()
 
             earned_wage, created = EarnedWage.objects.get_or_create(user=request.user)
-            earned_wage.earnedLifetime += chore.wage
-            earned_wage.earnedSincePayout += chore.wage
+            earned_wage.earnedLifetime += Decimal(chore.wage)
+            earned_wage.earnedSincePayout += Decimal(chore.wage)
             earned_wage.save()
 
             return redirect('chores:chore', chore_id=chore_id)
