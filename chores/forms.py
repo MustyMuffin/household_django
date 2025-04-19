@@ -1,7 +1,9 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from .models import Chore, ChoreEntry
+from .models import Chore, ChoreEntry, EarnedWage
+
+
 # from . import views
 
 
@@ -22,6 +24,24 @@ class ChoreEntryForm(forms.ModelForm):
         if 'user' in kwargs:
             username = kwargs.pop('user')
             self.fields['user'].initial = "username"
+
+    # class Meta:
+    #     model = EarnedWage
+    #     fields = ['wage']
+    #
+    # def __init__(self, wage, *args, **kwargs):
+    #     super(ChoreEntryForm, self).__init__(*args, **kwargs)
+    #     self.fields['wage'].initial = wage
+
+# class EarnedWageForm(forms.ModelForm):
+#     class Meta:
+#         model = EarnedWage
+#         fields = ['wage']
+
+
+    # class Meta:
+    #     model = ChoreEntry
+    #     fields = ['wage']
 
     # def __init__(self, *args, **kwargs):
     #     super().__init__(*args, **kwargs)

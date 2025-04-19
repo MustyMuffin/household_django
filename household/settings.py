@@ -37,6 +37,10 @@ INSTALLED_APPS = [
     'chores',
     'book_club',
 
+    #Added for signals
+    # 'chores.apps.ChoresConfig',
+
+
     # Third party apps.
     'django_bootstrap5',
 

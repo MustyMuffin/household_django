@@ -20,9 +20,10 @@ class ChoreEntry(models.Model):
 
     class Meta:
         verbose_name_plural = 'chore_entries'
-        # permissions = (("can_log_chore", "Can Log Chore"),)
-
-# class EarnedWage(models.Model):
-#     """For tracking the wages earned"""
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     earned =
+        # permissions = (("can_log_chore", "Can Log Chore"))
+#
+class EarnedWage(models.Model):
+    """For tracking the wages earned"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    earnedLifetime = models.DecimalField(max_digits=5, decimal_places=2)
+    earnedSincePayout = models.DecimalField(max_digits=5, decimal_places=2)

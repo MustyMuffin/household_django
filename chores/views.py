@@ -2,26 +2,28 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 # from django.http import Http404
 
-from .models import Chore, ChoreEntry
+from .models import Chore, EarnedWage
 from .forms import ChoreEntryForm
 
 def chores(request):
     """Show all Chores."""
-    chores = Chore.objects.order_by('text')
-    context = {'chores': chores}
+    chore_names = Chore.objects.order_by('text')
+    context = {'chores': chore_names}
     return render(request, 'chores/chores.html', context)
 
 def chore(request, chore_id):
     """Show a single chore and all its entries."""
-    chore = Chore.objects.get(id=chore_id)
-    chore_entries = chore.choreentry_set.order_by('-date_added')
-    context = {'chore': chore, 'chore_entries': chore_entries}
+    chore_name = Chore.objects.get(id=chore_id)
+    chore_entries = chore_name.choreentry_set.order_by('-date_added')
+    context = {'chore': chore_name, 'chore_entries': chore_entries}
     return render(request, 'chores/chore.html', context)
 
-@login_required    
+@login_required
 def new_chore_entry(request, chore_id):
     """Add a new entry for a chore."""
     chore = Chore.objects.get(id=chore_id)
+    # payment = chore.wage
+
     
     if request.method != 'POST':
         # No data submitted; create a blank form.
@@ -33,11 +35,19 @@ def new_chore_entry(request, chore_id):
             new_chore_entry = form.save(commit=False)
             new_chore_entry.chore = chore
             new_chore_entry.save()
+
+            earned_wage, created = EarnedWage.objects.get_or_create(user=request.user)
+            earned_wage.earnedLifetime += chore.wage
+            earned_wage.earnedSincePayout += chore.wage
+            earned_wage.save()
+
             return redirect('chores:chore', chore_id=chore_id)
 
     # Display a blank or invalid form.
     context = {'chore': chore, 'form': form}
     return render(request, 'chores/new_chore_entry.html', context)
+
+# def view_wage(request, chore_id):
 
 # @login_required
 # def edit_chore_entry(request, chore_entry_id):
