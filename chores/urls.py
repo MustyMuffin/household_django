@@ -7,7 +7,7 @@ urlpatterns = [
     # Include default auth urls.
     path('', include('django.contrib.auth.urls')),
     # Chores overall page.
-    path('chores/', views.chores, name='chores'),
+    path('chores_by_category/', views.chores_by_category, name='chores_by_category'),
     # Detail page for a single chore.
     path('chores/<int:chore_id>/', views.chore, name='chore'),
     # # # Page for adding a new chore.

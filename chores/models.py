@@ -3,12 +3,21 @@ from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import User
 
+class ChoreCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        verbose_name_plural = 'categories'
+
+    def __str__(self):
+        return self.name
 
 class Chore(models.Model):
     """Table mapping admin selected chores to variables"""
     text = models.CharField(max_length=20)
     wage = models.DecimalField(max_digits=5, decimal_places=2)
     date_added = models.DateTimeField(auto_now_add=True)
+    chore_category = models.ForeignKey(ChoreCategory, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         """Return a string representation of the model."""

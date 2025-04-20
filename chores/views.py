@@ -1,11 +1,27 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
+from collections import defaultdict
 from decimal import Decimal
 # from django.http import Http404
 
-from .models import Chore, EarnedWage, ChoreEntry
+from .models import Chore, EarnedWage, ChoreEntry, ChoreCategory
 from .forms import ChoreEntryForm
+
+def chores_by_category(request):
+    # Group chores by their category
+    chores_by_category = defaultdict(list)
+
+    all_chores = Chore.objects.all()
+
+    for item in all_chores:
+        category_name = item.chore_category.name if item.chore_category else "Uncategorized"
+        chores_by_category[category_name].append(item)
+
+    print("Categories in view context:", chores_by_category.keys())
+
+    context = {'chores_by_category': dict(chores_by_category)}
+    return render(request, 'chores/chores_by_category.html', context)
 
 def chores(request):
     """Show all Chores."""
@@ -25,8 +41,6 @@ def new_chore_entry(request, chore_id):
     """Add a new entry for a chore."""
     chore = Chore.objects.get(id=chore_id)
     # payment = chore.wage
-
-    
     if request.method != 'POST':
         # No data submitted; create a blank form.
         form = ChoreEntryForm(data=request.POST)
