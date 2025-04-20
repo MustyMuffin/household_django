@@ -20,4 +20,6 @@ db.sqlite3
 #Whatever the fuck this is
 .idea/*
 
+
+./household/settings.py
 chores/migrations/0011_alter_choreentry_options.py
