@@ -9,17 +9,35 @@ wheels/
 # Virtual environments
 .venv
 
-#Databases and migrations
+# Automation scripts
+*.ps1
+
+# Django migrations
+*/migrations/
+!*/migrations/__init__.py
+
+# Database & settings
 *.sqlite3
-db.sqlite3
-*/migrations/*
+*.log
+local_settings.py
+.env
 
-#Automation Scripts
-*ps1
+# IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
 
-#Whatever the fuck this is
-.idea/*
+# Static/media files
+staticfiles/
+media/
 
+# Test artifacts
+coverage/
+htmlcov/
+*.cover
+*.pyc
 
-./household/settings.py
-chores/migrations/0011_alter_choreentry_options.py
+# OS files
+.DS_Store
+Thumbs.db
