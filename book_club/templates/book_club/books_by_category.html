@@ -1,0 +1,33 @@
+{% extends 'household_main/base.html' %}
+
+{% block page_header %}
+  <h1>Books</h1>
+{% endblock page_header %}
+
+{% block content %}
+  <div class="accordion" id="bookCategories">
+    {% for category, books in books_by_category.items %}
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse-{{ forloop.counter }}">
+            {{ category }}
+          </button>
+        </h2>
+        <div id="collapse-{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading-{{ forloop.counter }}" data-bs-parent="#booksCategories">
+          <div class="accordion-body">
+            <ul class="list-group list-group-flush">
+              {% for book in books %}
+                <li class="list-group-item">
+                  <a href="{% url 'book_club:book' book.id %}">{{ book.text }}</a>
+                  <span class="text-muted float-end">{{ book.words }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <p>No books found :(.</p>
+    {% endfor %}
+  </div>
+{% endblock content %}

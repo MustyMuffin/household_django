@@ -1,10 +1,26 @@
+from collections import defaultdict
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 # from django.http import Http404
 
-from .models import Book, BookEntry, WordsRead, BooksRead
+from .models import BookCategory, Book, BookEntry, WordsRead, BooksRead
 from .forms import BookEntryForm, BookForm
 
+def books_by_category(request):
+    # Group books by their category
+    books_by_category = defaultdict(list)
+
+    all_books = Book.objects.all()
+
+    for item in all_books:
+        category_name = item.book_category.name if item.book_category else "Uncategorized"
+        books_by_category[category_name].append(item)
+
+    print("Categories in view context:", books_by_category.keys())
+
+    context = {'books_by_category': dict(books_by_category)}
+    return render(request, 'book_club/books_by_category.html', context)
 
 def books(request):
     """Show all Books."""

@@ -88,5 +88,6 @@ This Django project is a household productivity and tracking tool, designed to m
 
 📬 *Feel free to fork, contribute, or suggest features!*
 
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)
+License
 
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.See the full license in the LICENSE.md file or visit creativecommons.org/licenses/by-nc/4.0.
