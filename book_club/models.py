@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 class Book(models.Model):
     """A book the user is logging."""
     text = models.CharField(max_length=20)
-    pages = models.DecimalField(max_digits=6, decimal_places=0)
+    words = models.IntegerField(default=0)
     date_added = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -20,3 +20,21 @@ class BookEntry(models.Model):
 
     class Meta:
         verbose_name_plural = 'book_entries'
+
+class WordsRead(models.Model):
+    """For tracking the pages read"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    wordsLifetime = models.IntegerField()
+    last_updated = models.DateTimeField(auto_now=True)
+
+class BooksRead(models.Model):
+    """For tracking books read"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    book_name = models.CharField(max_length=20, default="BoomWhacker")
+    date_added = models.DateTimeField(auto_now_add=True)
+
+# class BookProgressTracker(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     book = models.ForeignKey(Book, on_delete=models.CASCADE)
+#     pagesLifetime = models.IntegerField(default=0)

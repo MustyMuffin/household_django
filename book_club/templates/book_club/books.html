@@ -11,7 +11,7 @@
       <li class="list-group-item border-0">
         <a href="{% url 'book_club:book' book.id %}">
           {{ book.text }}</a>
-          <div class="card-body">{{ book.pages|linebreaks }}</div>
+          <div class="card-body">{{ book.words|linebreaks }}</div>
       </li>
     {% empty %}
       <li class="list-group-item border-0">No books have been added yet.</li>

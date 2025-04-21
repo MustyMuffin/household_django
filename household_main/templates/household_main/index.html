@@ -12,8 +12,17 @@
           <p><strong>Total earned (lifetime):</strong> ${{ lifetime_earned|default:"0.00"|floatformat:2 }}</p>
           <hr>
 
-          <h3> Books Read</h3>
-          <p>Coming Soon</p>
+        <h3>Books Read</h3>
+        {% if books_read_list %}
+          <ul>
+            {% for book in books_read_list %}
+              <li>{{ book.book_name }} — {{ book.date_added|date:"M d, Y" }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No books read yet.</p>
+        {% endif %}
+        <p><strong>Total Words Read:</strong> {{ total_words_read|default:"0" }}</p>
       </div>
     </div>
   {% else %}
