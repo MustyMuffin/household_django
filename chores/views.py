@@ -87,25 +87,21 @@ def reset_earned_wage(request, user_id):
     earned.save()
     return redirect('chores:payout')
 
-# def view_wage(request, chore_id):
-
 # @login_required
+# @user_passes_test(lambda u: u.is_superuser)
 # def edit_chore_entry(request, chore_entry_id):
 #     """Edit an existing entry."""
 #     chore_entry = ChoreEntry.objects.get(id=chore_entry_id)
-    # chore = chore_entry.chore
-    # if chore.owner != request.user:
-    #     raise Http404
-
-    # if request.method != 'POST':
-    #     # Initial request; pre-fill form with the current entry.
-    #     form = ChoreEntryForm(instance=chore_entry)
-    # else:
-    #     # POST data submitted; process data.
-    #     form = ChoreEntryForm(instance=chore_entry, data=request.POST)
-    #     if form.is_valid():
-    #         form.save()
-    #         return redirect('chores:chore', chore_id=chore.id)
-
+#
+#     if request.method != 'POST':
+#         # Initial request; pre-fill form with the current entry.
+#         form = ChoreEntryForm(instance=chore_entry)
+#     else:
+#         # POST data submitted; process data.
+#         form = ChoreEntryForm(instance=chore_entry, data=request.POST)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('chores:chore', chore_id=chore.id)
+#
 #     context = {'chore_entry': chore_entry, 'chore': chore, 'form': form}
-#     return render(request, 'chores/edit_chore_entry.html', context)
+#     return render(request, '/chores/edit_chore_entry/<int:chore_entry_id>.html', context)

@@ -1,5 +1,5 @@
 from decimal import Decimal
-
+from django.db.models import Sum
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -10,29 +10,35 @@ from chores.models import EarnedWage
 from .models import Note, Entry
 from .forms import NoteForm, EntryForm
 
-from chores.models import EarnedWage
-from django.contrib.auth.decorators import login_required
-
 @login_required
 def index(request):
-    books_read_list = BooksRead.objects.filter(user=request.user)
-    words_read_entry = WordsRead.objects.filter(user=request.user).first()
+    user = request.user
+
+    # Get books read and words read data for the current user
+    books_read_list = BooksRead.objects.filter(user=user).order_by('-date_added')
+    words_read_entry = WordsRead.objects.filter(user=user).first()
     total_words_read = words_read_entry.wordsLifetime if words_read_entry else 0
-    leaderboard = WordsRead.objects.select_related('user').order_by('-wordsLifetime')
+
+    # Leaderboards
+    books_leaderboard = WordsRead.objects.select_related('user').order_by('-wordsLifetime')
+    earnings_leaderboard = EarnedWage.objects.select_related('user').order_by('-earnedLifetime')
+
+    # Get the current user's earnings
     try:
-        earned = EarnedWage.objects.get(user=request.user)  # Grabs the current user's earnings record
+        earned = EarnedWage.objects.get(user=user)
         wage_earned = earned.earnedSincePayout
         lifetime_earned = earned.earnedLifetime
     except EarnedWage.DoesNotExist:
-        # Handle the case where the user does not have an earned wage record yet
-        wage_earned = lifetime_earned = 0.00
+        wage_earned = 0.00
+        lifetime_earned = 0.00
 
     context = {
         'books_read_list': books_read_list,
         'total_words_read': total_words_read,
         'wage_earned': wage_earned,
         'lifetime_earned': lifetime_earned,
-        'leaderboard': leaderboard,
+        'books_leaderboard': books_leaderboard,
+        'earnings_leaderboard': earnings_leaderboard,
     }
 
     return render(request, 'household_main/index.html', context)
