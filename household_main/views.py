@@ -18,6 +18,7 @@ def index(request):
     books_read_list = BooksRead.objects.filter(user=request.user)
     words_read_entry = WordsRead.objects.filter(user=request.user).first()
     total_words_read = words_read_entry.wordsLifetime if words_read_entry else 0
+    leaderboard = WordsRead.objects.select_related('user').order_by('-wordsLifetime')
     try:
         earned = EarnedWage.objects.get(user=request.user)  # Grabs the current user's earnings record
         wage_earned = earned.earnedSincePayout
@@ -31,6 +32,7 @@ def index(request):
         'total_words_read': total_words_read,
         'wage_earned': wage_earned,
         'lifetime_earned': lifetime_earned,
+        'leaderboard': leaderboard,
     }
 
     return render(request, 'household_main/index.html', context)

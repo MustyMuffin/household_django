@@ -43,13 +43,12 @@ def new_book_entry(request, book_id):
             )
 
             # Update cumulative page count in PagesRead
-            words_read, created = WordsRead.objects.get_or_create(
+            words_read_entry, created = WordsRead.objects.get_or_create(
                 user=request.user,
-                defaults={'book': book, 'wordsLifetime': 0}
+                defaults={'wordsLifetime': 0}
             )
-            words_read.wordsLifetime += book.words
-            # pages_read.book = book  # optional: keep track of last book updated
-            words_read.save()
+            words_read_entry.wordsLifetime += book.words
+            words_read_entry.save()
 
             return redirect('book_club:book', book_id=book_id)
 

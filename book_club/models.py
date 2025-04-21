@@ -13,7 +13,7 @@ class Book(models.Model):
         return self.text
 
 class BookEntry(models.Model):
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     text = models.CharField(max_length=200)
     date_added = models.DateTimeField(auto_now_add=True)
@@ -22,9 +22,8 @@ class BookEntry(models.Model):
         verbose_name_plural = 'book_entries'
 
 class WordsRead(models.Model):
-    """For tracking the pages read"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    """Lifetime words read per user, across all books."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     wordsLifetime = models.IntegerField()
     last_updated = models.DateTimeField(auto_now=True)
 
