@@ -1,5 +1,6 @@
 {% extends 'household_main/base.html' %}
 
+{% load humanize %}
 {% block page_header %}
   <h1>Books</h1>
 {% endblock page_header %}
@@ -19,7 +20,7 @@
               {% for book in books %}
                 <li class="list-group-item">
                   <a href="{% url 'book_club:book' book.id %}">{{ book.text }}</a>
-                  <span class="text-muted float-end">{{ book.words }}</span>
+                  <span class="text-muted float-end">{{ book.words|intcomma }}</span>
                 </li>
               {% endfor %}
             </ul>

@@ -9,10 +9,16 @@ from book_club.models import BooksRead, WordsRead
 from chores.models import EarnedWage
 from .models import Note, Entry
 from .forms import NoteForm, EntryForm
+from accounts.models import UserStats
 
 @login_required
 def index(request):
     user = request.user
+    stats = UserStats.objects.filter(user=request.user).first()
+    user_level = stats.level if stats else 1
+    xp = stats.xp if stats else 0
+    next_level_xp = stats.next_level_xp() if stats else 100
+    progress_percent = stats.progress_percent() if stats else 0
 
     # Get books read and words read data for the current user
     books_read_list = BooksRead.objects.filter(user=user).order_by('-date_added')
@@ -39,10 +45,16 @@ def index(request):
         'lifetime_earned': lifetime_earned,
         'books_leaderboard': books_leaderboard,
         'earnings_leaderboard': earnings_leaderboard,
+        'user_level': user_level,
+        'xp': xp,
+        'next_level_xp': next_level_xp,
+        'progress_percent': progress_percent,
     }
 
     return render(request, 'household_main/index.html', context)
 
+# def xp_calculator_view(request):
+#     return render(request, 'household_main/xp_calculator.html')
 
 @login_required
 def notes(request):

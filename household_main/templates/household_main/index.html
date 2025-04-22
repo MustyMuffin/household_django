@@ -9,29 +9,49 @@
       <div class="container-fluid py-4">
         <h1 class="display-3">Household</h1>
 
+        <div class="mb-4">
+            <h3>Your Level</h3>
+            <p><strong>Level:</strong> {{ user_level }}</p>
+            <p><strong>XP:</strong> {{ xp }} / {{ next_level_xp }}</p>
+            <div class="progress" style="height: 25px;">
+            <div class="progress-bar bg-info progress-bar-striped progress-bar-animated"
+            role="progressbar"
+            style="width: {{ progress_percent }}%;">
+            {{ progress_percent }}%
+            </div>
+            </div>
+        </div>
+
         <h3>Your Earnings</h3>
         <p><strong>You’ve earned since last payout:</strong> ${{ wage_earned|default:"0.00"|floatformat:2 }}</p>
         <p><strong>Total earned (lifetime):</strong> ${{ lifetime_earned|default:"0.00"|floatformat:2 }}</p>
         <hr>
 
-        <h3>Books Read</h3>
-        {% if books_read_list %}
-          <ul>
-            {% for book in books_read_list %}
-              <li>{{ book.book_name }} — {{ book.date_added|date:"M d, Y" }}</li>
+        <!-- Books Read Section -->
+        <div class="mb-4">
+            <button class="btn btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#booksReadSection" aria-expanded="false" aria-controls="booksReadSection">
+                Expand Books Read
+            </button>
+        <div class="collapse" id="booksReadSection">
+        <div class="card card-body">
+            <h4 class="mb-3">📚 Books You've Read</h4>
+            {% if books_read_list %}
+                <ul class="list-unstyled">
+                {% for book in books_read_list %}
+                <li>{{ book.book_name }} — {{ book.date_added|date:"M d, Y" }}</li>
             {% endfor %}
-          </ul>
-        {% else %}
-          <p>No books read yet.</p>
-        {% endif %}
-        <p><strong>Total Words Read:</strong> {{ total_words_read|default:"0" }}</p>
-      </div>
-    </div>
-<div class="row mb-4">
+            </ul>
+            {% else %}
+                <p>No books read yet.</p>
+            {% endif %}
+                <p><strong>Total Words Read:</strong> {{ total_words_read|default:"0"|intcomma }}</p>
+                </div>
+            </div>
+        </div>
   <!-- Books Read Leaderboard -->
   <div class="col-lg-6 mb-4">
     <button class="btn btn-outline-primary mb-2 w-100" type="button" data-bs-toggle="collapse" data-bs-target="#booksLeaderboard" aria-expanded="false" aria-controls="booksLeaderboard">
-      Toggle Books Read Leaderboard
+      Books Read Leaderboard
     </button>
     <div class="collapse show" id="booksLeaderboard">
       <div class="card card-body">
@@ -61,7 +81,7 @@
   <!-- Earnings Leaderboard -->
   <div class="col-lg-6 mb-4">
     <button class="btn btn-outline-success mb-2 w-100" type="button" data-bs-toggle="collapse" data-bs-target="#earningsLeaderboard" aria-expanded="false" aria-controls="earningsLeaderboard">
-      Toggle Earnings Leaderboard
+      Earnings Leaderboard
     </button>
     <div class="collapse show" id="earningsLeaderboard">
       <div class="card card-body">
@@ -88,58 +108,6 @@
     </div>
   </div>
 </div>
-
-{#<!-- Lifetime Earnings Leaderboard -->#}
-{#<div class="accordion mb-4" id="earningsLeaderboard">#}
-{#  <div class="accordion-item">#}
-{#    <h2 class="accordion-header" id="headingWages">#}
-{#      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseWages" aria-expanded="true" aria-controls="collapseWages">#}
-{#        💰 Earnings Leaderboard#}
-{#      </button>#}
-{#    </h2>#}
-{#    <div id="collapseWages" class="accordion-collapse collapse show" aria-labelledby="headingWages" data-bs-parent="#earningsLeaderboard">#}
-{#      <div class="accordion-body">#}
-{#        {% for entry in earnings_leaderboard %}#}
-{#          <div class="card mb-2 shadow-sm">#}
-{#            <div class="card-body d-flex justify-content-between">#}
-{#              <strong>{{ forloop.counter }}. {{ entry.user.username }}</strong>#}
-{#              <span>${{ entry.earnedLifetime|floatformat:2 }}</span>#}
-{#            </div>#}
-{#          </div>#}
-{#        {% empty %}#}
-{#          <p>No earnings yet.</p>#}
-{#        {% endfor %}#}
-{#      </div>#}
-{#    </div>#}
-{#  </div>#}
-{#</div>#}
-{##}
-{##}
-{#    <!-- Books Read Leaderboard -->#}
-{#<div class="mb-4">#}
-{#  <button class="btn btn-outline-primary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#booksLeaderboard" aria-expanded="false" aria-controls="booksLeaderboard">#}
-{#    Toggle Books Read Leaderboard#}
-{#  </button>#}
-{#  <div class="collapse" id="booksLeaderboard">#}
-{#    <div class="card card-body">#}
-{#      <h4>📚 Books Read Leaderboard</h4>#}
-{#      {% if books_leaderboard %}#}
-{#        {% for entry in books_leaderboard %}#}
-{#          <div class="card mb-2 shadow-sm">#}
-{#            <div class="card-body d-flex justify-content-between align-items-center">#}
-{#              <div>#}
-{#                <strong>{{ forloop.counter }}. {{ entry.user.username }}</strong>#}
-{#              </div>#}
-{#              <span class="badge bg-primary">{{ entry.wordsLifetime|intcomma }} words</span>#}
-{#            </div>#}
-{#          </div>#}
-{#        {% endfor %}#}
-{#      {% else %}#}
-{#        <p>No entries yet.</p>#}
-{#      {% endif %}#}
-{#    </div>#}
-{#  </div>#}
-{#</div>#}
 
   {% else %}
     <div class="p-3 mb-4 bg-light border rounded-3">

@@ -1,0 +1,37 @@
+{% extends 'household_main/base.html' %}
+
+{% block content %}
+
+  <title>XP Calculator</title>
+  <script>
+    function calculateXP() {
+      const words = parseInt(document.getElementById("words").value) || 0;
+      const wage = parseFloat(document.getElementById("wage").value) || 0;
+      const wordScale = parseFloat(document.getElementById("wordScale").value) || 0.01;
+      const wageScale = parseFloat(document.getElementById("wageScale").value) || 5;
+
+      const bookXP = Math.floor(words * wordScale);
+      const choreXP = Math.floor(wage * wageScale);
+      const totalXP = bookXP + choreXP;
+
+      document.getElementById("result").innerHTML =
+        `<strong>Book XP:</strong> ${bookXP} XP<br>
+         <strong>Chore XP:</strong> ${choreXP} XP<br>
+         <strong>Total:</strong> ${totalXP} XP`;
+    }
+  </script>
+
+<body style="font-family: sans-serif; max-width: 600px; margin: 2rem auto;">
+  <h1>XP Calculator</h1>
+  <label>Book Word Count: <input type="number" id="words" placeholder="e.g. 5000"></label><br><br>
+  <label>Chore Wage ($): <input type="number" id="wage" placeholder="e.g. 3.50" step="0.01"></label><br><br>
+
+  <label>Book XP scale (XP per word): <input type="number" id="wordScale" value="0.01" step="0.001"></label><br><br>
+  <label>Chore XP scale (XP per dollar): <input type="number" id="wageScale" value="5" step="0.5"></label><br><br>
+
+  <button onclick="calculateXP()">Calculate XP</button>
+  <hr>
+  <div id="result"></div>
+</body>
+
+{% endblock content %}

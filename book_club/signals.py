@@ -1,22 +1,22 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import ChoreEntry
+from .models import BookEntry
 from accounts.models import UserStats, XPLog
 
 
-@receiver(post_save, sender=ChoreEntry)
-def award_chore_xp(sender, instance, created, **kwargs):
+@receiver(post_save, sender=BookEntry)
+def award_book_xp(sender, instance, created, **kwargs):
     if created:
         profile, _ = UserStats.objects.get_or_create(user=instance.user)
-        wage = float(instance.wage)
-        xp_amount = int(wage * 5)  # Adjust scale as needed (e.g. $1 = 5 XP)
+        word_count = instance.book.words
+        xp_amount = int(word_count * 0.01)  # Scale factor (adjust as needed) Example: A 5,000-word book = 50 XP at a 0.01 scale factor.
         profile.xp += xp_amount
         profile.save()
 
         XPLog.objects.create(
             user=instance.user,
             amount=xp_amount,
-            reason=f"Completed chore: {instance.chore.text}"
+            reason=f"Completed book: {instance.book.text}"
         )
 
         profile.update_level()

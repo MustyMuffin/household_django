@@ -15,7 +15,9 @@ urlpatterns = [
     # Page for adding a new note.
     path('new_note/', views.new_note, name='new_note'),
     # Page for adding a new entry.
-     path('new_entry/<int:note_id>/', views.new_entry, name='new_entry'),
+    path('new_entry/<int:note_id>/', views.new_entry, name='new_entry'),
     # Page for editing an entry.
     path('edit_entry/<int:entry_id>/', views.edit_entry, name='edit_entry'),
+    #Tool for calculating XP
+    # path('xp_calculator/', views.xp_calculator_view, name='xp_calculator'),
 ]
