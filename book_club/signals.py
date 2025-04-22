@@ -9,7 +9,7 @@ def award_book_xp(sender, instance, created, **kwargs):
     if created:
         profile, _ = UserStats.objects.get_or_create(user=instance.user)
         word_count = instance.book.words
-        xp_amount = int(word_count * 0.01)  # Scale factor (adjust as needed) Example: A 5,000-word book = 50 XP at a 0.01 scale factor.
+        xp_amount = int(word_count * 0.002)  # A 100,000-word book = 200 XP at a 0.002 scale factor.
         profile.xp += xp_amount
         profile.save()
 

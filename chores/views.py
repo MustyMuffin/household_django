@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from collections import defaultdict
 from decimal import Decimal
+
+from accounts.models import XPLog
 # from django.http import Http404
 
 from .models import Chore, EarnedWage, ChoreEntry, ChoreCategory
@@ -57,6 +60,13 @@ def new_chore_entry(request, chore_id):
             earned_wage.earnedLifetime += Decimal(chore.wage)
             earned_wage.earnedSincePayout += Decimal(chore.wage)
             earned_wage.save()
+
+            xp_awarded = XPLog.objects.filter(user=request.user).order_by('-date_awarded').first()
+
+            if xp_awarded:
+                messages.success(request, f"You earned {xp_awarded.amount} XP for completing a chore!")
+
+            return redirect('chores:chores_by_category')
 
             return redirect('chores:chore', chore_id=chore_id)
 

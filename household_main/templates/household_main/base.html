@@ -45,6 +45,16 @@
               Books</a></li>
         </ul> <!-- End of links on left side of navbar -->
 
+        {% if messages %}
+        <div class="container mt-2">
+        {% for message in messages %}
+        <div class="alert alert-success" role="alert">
+        {{ message }}
+        </div>
+        {% endfor %}
+        </div>
+        {% endif %}
+
         <!-- Account-related links -->
         <ul class="navbar-nav ms-auto mb-2 mb-md-0">
 

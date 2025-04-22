@@ -1,6 +1,6 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import ChoreEntry
+from .models import ChoreEntry, Chore
 from accounts.models import UserStats, XPLog
 
 
@@ -9,7 +9,7 @@ def award_chore_xp(sender, instance, created, **kwargs):
     if created:
         profile, _ = UserStats.objects.get_or_create(user=instance.user)
         wage = float(instance.wage)
-        xp_amount = int(wage * 5)  # Adjust scale as needed (e.g. $1 = 5 XP)
+        xp_amount = int(wage * 10)  # Adjust scale as needed
         profile.xp += xp_amount
         profile.save()
 

@@ -1,7 +1,9 @@
 from collections import defaultdict
-
+from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+
+from accounts.models import XPLog
 # from django.http import Http404
 
 from .models import BookCategory, Book, BookEntry, WordsRead, BooksRead
@@ -65,6 +67,13 @@ def new_book_entry(request, book_id):
             )
             words_read_entry.wordsLifetime += book.words
             words_read_entry.save()
+
+            # Get last XP log entry for this user (just created in signal)
+            xp_awarded = XPLog.objects.filter(user=request.user).order_by('-date_awarded').first()
+            if xp_awarded:
+                messages.success(request, f"You earned {xp_awarded.amount} XP for logging a book!")
+
+            return redirect('book_club:books_by_category')
 
             return redirect('book_club:book', book_id=book_id)
 
