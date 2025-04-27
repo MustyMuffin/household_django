@@ -2,9 +2,7 @@ from collections import defaultdict
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-
-from accounts.models import XPLog
-# from django.http import Http404
+from accounts.models import UserStats, XPLog
 
 from .models import BookCategory, Book, BookEntry, WordsRead, BooksRead
 from .forms import BookEntryForm, BookForm
@@ -39,45 +37,41 @@ def book(request, book_id):
 
 @login_required
 def new_book_entry(request, book_id):
-    """Add a new entry for a book read and track pages read."""
+    """Add a new entry for a book."""
     book = Book.objects.get(id=book_id)
 
     if request.method != 'POST':
-        # No data submitted; create a blank form.
         form = BookEntryForm()
     else:
-        # POST data submitted; process data.
-        form = BookEntryForm(data=request.POST)
+        form = BookEntryForm(request.POST)
         if form.is_valid():
             new_book_entry = form.save(commit=False)
             new_book_entry.book = book
             new_book_entry.user = request.user
             new_book_entry.save()
 
-            # Always create a new BooksRead entry
-            BooksRead.objects.create(
-                user=request.user,
-                book_name=book.text
-            )
+            # Update PagesRead/WordsRead if needed (your project already does this)
 
-            # Update cumulative page count in PagesRead
-            words_read_entry, created = WordsRead.objects.get_or_create(
-                user=request.user,
-                defaults={'wordsLifetime': 0}
-            )
-            words_read_entry.wordsLifetime += book.words
-            words_read_entry.save()
+            # Update XP
+            userstats, created = UserStats.objects.get_or_create(user=request.user)
+            previous_level = userstats.level
 
-            # Get last XP log entry for this user (just created in signal)
-            xp_awarded = XPLog.objects.filter(user=request.user).order_by('-date_awarded').first()
-            if xp_awarded:
-                messages.success(request, f"You earned {xp_awarded.amount} XP for logging a book!")
+            # Calculate XP earned (example: 1 XP per 10 words)
+            xp_earned = int(book.words * 10)  # If you renamed to `words`, adjust this line!
+
+            userstats.xp += xp_earned
+            userstats.update_level()
+
+            # Log XP
+            XPLog.objects.create(user=request.user, amount=xp_earned, reason=f"Logged book: {book.text}")
+
+            messages.success(request, f"✅ You earned {xp_earned} XP for logging a book!")
+
+            if userstats.level > previous_level:
+                messages.success(request, f"🎉 Congratulations! You leveled up to Level {userstats.level}!")
 
             return redirect('book_club:books_by_category')
 
-            return redirect('book_club:book', book_id=book_id)
-
-    # Display a blank or invalid form.
     context = {'book': book, 'form': form}
     return render(request, 'book_club/new_book_entry.html', context)
 

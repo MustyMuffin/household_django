@@ -3,96 +3,73 @@
 {% load debug_tags %}
 
 {% block page_header %}
-  {% if user.is_authenticated %}
-    <div class="p-3 mb-4 bg-light border rounded-3">
-      <div class="container-fluid py-4">
-        <h1 class="display-3">Household</h1>
+{% if user.is_authenticated %}
+<div class="p-3 mb-4 bg-light border rounded-3">
+  <div class="container-fluid py-4">
+    <h1 class="display-3">Household</h1>
 
-        <!-- Level Section -->
-                <div class="mb-4">
-                  <h3>Your Level</h3>
-                  <p><strong>Level:</strong> {{ user_level }}</p>
-                  <p><strong>XP:</strong> {{ xp }} / {{ next_level_xp }}</p>
+    <!-- XP Progress Section -->
+        <div class="mb-4">
+          <h3>Your Level Progress</h3>
+          <p><strong>Level:</strong> {{ user_level }}</p>
+          <p><strong>XP:</strong> {{ xp|intcomma }} / {{ next_level_xp|intcomma }}</p>
 
-                  <div class="progress" style="height: 30px;">
-                    <div class="progress-bar bg-success" role="progressbar"
-                         style="width: {{ progress_percent }}%;"
-                         aria-valuenow="{{ progress_percent }}"
-                         aria-valuemin="0" aria-valuemax="100">
-                      {{ progress_percent }}%
-                    </div>
-                  </div>
-                  <small>XP needed for next level: {{ next_level_xp|intcomma }}</small>
-                </div>
-
-                <hr>
-
-                <!-- Earnings Section -->
-                <div class="mb-4">
-                  <h3>Your Earnings</h3>
-                  <p><strong>You’ve earned since last payout:</strong> ${{ wage_earned|default:"0.00"|floatformat:2 }}</p>
-                  <p><strong>Total earned (lifetime):</strong> ${{ lifetime_earned|default:"0.00"|floatformat:2 }}</p>
-                </div>
-
-                <hr>
-
-                <!-- Books Read Section -->
-                <div class="mb-4">
-                  <button class="btn btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse"
-                          data-bs-target="#booksReadSection" aria-expanded="false" aria-controls="booksReadSection">
-                    Expand Books Read
-                  </button>
-
-                  <div class="collapse" id="booksReadSection">
-                    <div class="card card-body">
-                      <h4 class="mb-3">📚 Books You've Read</h4>
-
-                      {% if books_read_list %}
-                        <ul class="list-unstyled">
-                          {% for book in books_read_list %}
-                            <li>{{ book.book_name }} — {{ book.date_added|date:"M d, Y" }}</li>
-                          {% endfor %}
-                        </ul>
-                      {% else %}
-                        <p>No books read yet.</p>
-                      {% endif %}
-
-                      <p><strong>Total Words Read:</strong> {{ total_words_read|default:"0"|intcomma }}</p>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
+          <div class="progress" style="height: 30px;">
+            <div class="progress-bar bg-info" role="progressbar"
+                 style="width: {{ progress_percent }}%;"
+                 aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+              {{ progress_percent|floatformat:0 }}%
             </div>
-  <!-- Books Read Leaderboard -->
-  <div class="col-lg-6 mb-4">
-    <button class="btn btn-outline-primary mb-2 w-100" type="button" data-bs-toggle="collapse" data-bs-target="#booksLeaderboard" aria-expanded="false" aria-controls="booksLeaderboard">
-      Books Read Leaderboard
-    </button>
-    <div class="collapse show" id="booksLeaderboard">
-      <div class="card card-body">
-        <h4 class="mb-3">📚 Books Read Leaderboard</h4>
-        {% if books_leaderboard %}
-          {% for entry in books_leaderboard %}
-            <div class="card mb-2 shadow-sm
-              {% if forloop.counter == 1 %}border-warning bg-warning-subtle
-              {% elif forloop.counter == 2 %}border-secondary bg-secondary-subtle
-              {% elif forloop.counter == 3 %}border-warning bg-light
-              {% endif %}">
-              <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                  <strong>{{ forloop.counter }}. {{ entry.user.username }}</strong>
-                </div>
-                <span class="badge bg-primary">{{ entry.wordsLifetime|intcomma }} words</span>
-              </div>
-            </div>
-          {% endfor %}
-        {% else %}
-          <p>No entries yet.</p>
-        {% endif %}
+          </div>
+
+          <div class="mt-2">
+            <span class="badge bg-warning text-dark p-2">
+              ✨ XP Needed: {{ xp_to_next|intcomma }}
+            </span>
+          </div>
+        </div>
+
+
+    <!-- Earnings Section -->
+    <div class="mb-4">
+      <h3>Your Earnings</h3>
+      <p><strong>You’ve earned since last payout:</strong> ${{ wage_earned|default:"0.00"|floatformat:2 }}</p>
+      <p><strong>Total earned (lifetime):</strong> ${{ lifetime_earned|default:"0.00"|floatformat:2 }}</p>
+    </div>
+
+    <hr>
+
+    <!-- Books Read Section -->
+    <div class="mb-4">
+      <button class="btn btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse"
+              data-bs-target="#booksReadSection" aria-expanded="false" aria-controls="booksReadSection">
+        Expand Books Read
+      </button>
+
+      <div class="collapse" id="booksReadSection">
+        <div class="card card-body">
+          <h4 class="mb-3">📚 Books You've Read</h4>
+
+          {% if books_read_list %}
+            <ul class="list-unstyled">
+              {% for book in books_read_list %}
+                <li>{{ book.book_name }} — {{ book.date_added|date:"M d, Y" }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p>No books read yet.</p>
+          {% endif %}
+
+          <p><strong>Total Words Read:</strong> {{ total_words_read|default:"0"|intcomma }}</p>
+        </div>
       </div>
     </div>
-  </div>
+
+  </div> <!-- /.container-fluid -->
+</div> <!-- /.main card -->
+
+<!-- Leaderboards Section -->
+<div class="row">
 
   <!-- Earnings Leaderboard -->
   <div class="col-lg-6 mb-4">
@@ -123,15 +100,47 @@
       </div>
     </div>
   </div>
-</div>
 
-  {% else %}
-    <div class="p-3 mb-4 bg-light border rounded-3">
-      <div class="container-fluid py-4">
-        <h1 class="display-3">Track household things</h1>
-        <p class="lead">Automate your house labor</p>
-        <a class="btn btn-primary btn-lg mt-1" href="{% url 'accounts:register' %}">Register &raquo;</a>
+  <!-- Books Read Leaderboard -->
+  <div class="col-lg-6 mb-4">
+    <button class="btn btn-outline-primary mb-2 w-100" type="button" data-bs-toggle="collapse" data-bs-target="#booksLeaderboard" aria-expanded="false" aria-controls="booksLeaderboard">
+      Books Read Leaderboard
+    </button>
+    <div class="collapse show" id="booksLeaderboard">
+      <div class="card card-body">
+        <h4 class="mb-3">📚 Books Read Leaderboard</h4>
+        {% if books_leaderboard %}
+          {% for entry in books_leaderboard %}
+            <div class="card mb-2 shadow-sm
+              {% if forloop.counter == 1 %}border-warning bg-warning-subtle
+              {% elif forloop.counter == 2 %}border-secondary bg-secondary-subtle
+              {% elif forloop.counter == 3 %}border-warning bg-light
+              {% endif %}">
+              <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                  <strong>{{ forloop.counter }}. {{ entry.user.username }}</strong>
+                </div>
+                <span class="badge bg-primary">{{ entry.wordsLifetime|intcomma }} words</span>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p>No entries yet.</p>
+        {% endif %}
       </div>
     </div>
-  {% endif %}
+  </div>
+
+</div> <!-- /.row -->
+
+{% else %}
+<!-- Public view for unauthenticated users -->
+<div class="p-3 mb-4 bg-light border rounded-3">
+  <div class="container-fluid py-4">
+    <h1 class="display-3">Track household things</h1>
+    <p class="lead">Automate your house labor</p>
+    <a class="btn btn-primary btn-lg mt-1" href="{% url 'accounts:register' %}">Register &raquo;</a>
+  </div>
+</div>
+{% endif %}
 {% endblock page_header %}

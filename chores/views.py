@@ -4,10 +4,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from collections import defaultdict
 from decimal import Decimal
-
+from accounts.models import UserStats
 from accounts.models import XPLog
 # from django.http import Http404
-
+from accounts.xp_utils import XPManager
 from .models import Chore, EarnedWage, ChoreEntry, ChoreCategory
 from .forms import ChoreEntryForm
 
@@ -43,36 +43,47 @@ def chore(request, chore_id):
 def new_chore_entry(request, chore_id):
     """Add a new entry for a chore."""
     chore = Chore.objects.get(id=chore_id)
-    # payment = chore.wage
+
     if request.method != 'POST':
-        # No data submitted; create a blank form.
-        form = ChoreEntryForm(data=request.POST)
+        form = ChoreEntryForm()
     else:
-        # POST data submitted; process data.
-        form = ChoreEntryForm(data=request.POST)
+        form = ChoreEntryForm(request.POST)
         if form.is_valid():
             new_chore_entry = form.save(commit=False)
             new_chore_entry.chore = chore
             new_chore_entry.user = request.user
+            new_chore_entry.wage = chore.wage  # if needed
             new_chore_entry.save()
 
+            # Update earnings
             earned_wage, created = EarnedWage.objects.get_or_create(user=request.user)
             earned_wage.earnedLifetime += Decimal(chore.wage)
             earned_wage.earnedSincePayout += Decimal(chore.wage)
             earned_wage.save()
 
-            xp_awarded = XPLog.objects.filter(user=request.user).order_by('-date_awarded').first()
+            # Update XP
+            userstats, created = UserStats.objects.get_or_create(user=request.user)
+            previous_level = userstats.level
 
-            if xp_awarded:
-                messages.success(request, f"You earned {xp_awarded.amount} XP for completing a chore!")
+            # Calculate XP earned (example: 10 XP per wage $1)
+            xp_earned = int(Decimal(chore.wage) * 10)
+
+            userstats.xp += xp_earned
+            userstats.update_level()
+
+            # Log XP
+            XPLog.objects.create(user=request.user, amount=xp_earned, reason=f"Completed chore: {chore.text}")
+
+            messages.success(request, f"✅ You earned {xp_earned} XP for completing a chore!")
+
+            if userstats.level > previous_level:
+                messages.success(request, f"🎉 Congratulations! You leveled up to Level {userstats.level}!")
 
             return redirect('chores:chores_by_category')
 
-            return redirect('chores:chore', chore_id=chore_id)
-
-    # Display a blank or invalid form.
     context = {'chore': chore, 'form': form}
     return render(request, 'chores/new_chore_entry.html', context)
+
 
 def payout(request):
     # Current user info

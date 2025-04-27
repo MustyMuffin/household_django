@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,95 +8,165 @@
   {% load django_bootstrap5 %}
   {% bootstrap_css %}
   {% bootstrap_javascript %}
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 
 </head>
+
 <body>
-  <nav class="navbar navbar-expand-md navbar-light bg-light mb-4 border">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="{% url 'household_main:index' %}">
-          Home</a>
+<nav class="navbar navbar-expand-md navbar-light bg-light mb-4 border">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="{% url 'household_main:index' %}">Home</a>
 
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-        data-bs-target="#navbarCollapse" aria-controls="navbarCollapse"
-        aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarCollapse" aria-controls="navbarCollapse"
+            aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-      <div class="collapse navbar-collapse" id="navbarCollapse">
-        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+    <div class="collapse navbar-collapse" id="navbarCollapse">
+
+      <!-- Left-side navigation links -->
+      <ul class="navbar-nav me-auto mb-2 mb-md-0">
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'household_main:notes' %}">Notes</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'chores:chores_by_category' %}">Chores</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'book_club:books_by_category' %}">Books</a>
+        </li>
+      </ul>
+
+      <!-- Right-side user/account links -->
+      <ul class="navbar-nav ms-auto mb-2 mb-md-0">
+        {% if user.is_authenticated %}
+          <li class="nav-item d-flex align-items-center me-3">
+            <div class="text-end me-2">
+              <div><strong>{{ user.username }}</strong></div>
+              <div class="small">
+                Lv {{ user_level }} ({{ progress_percent|floatformat:0 }}%)
+              </div>
+              <div class="progress" style="height: 5px; width: 100px;">
+                <div class="progress-bar bg-success" role="progressbar"
+                     style="width: {{ progress_percent }}%;"
+                     aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+                </div>
+              </div>
+            </div>
+          </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'household_main:notes' %}">
-              Notes</a></li>
-        </ul>
-      </div>
-
-      <div class="collapse navbar-collapse" id="navbarCollapse">
-        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+            <a class="nav-link" href="{% url 'accounts:user_profile' username=request.user.username %}">
+              View My Profile
+            </a>
+          </li>
           <li class="nav-item">
-             <a class="nav-link" href="{% url 'chores:chores_by_category' %}">
-              Chores</a></li>
-        </ul>
-      </div>
-
-      <div class="collapse navbar-collapse" id="navbarCollapse">
-        <ul class="navbar-nav me-auto mb-2 mb-md-0">
+            <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
+              {% csrf_token %}
+              <button name="submit" class="btn btn-outline-secondary btn-sm ms-2">
+                Log out
+              </button>
+            </form>
+          </li>
+        {% else %}
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'book_club:books_by_category' %}">
-              Books</a></li>
-        </ul> <!-- End of links on left side of navbar -->
+            <a class="nav-link" href="{% url 'accounts:register' %}">Register</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'accounts:login' %}">Log in</a>
+          </li>
+        {% endif %}
+      </ul>
+
+    </div> <!-- /.collapse -->
+  </div> <!-- /.container-fluid -->
+</nav>
+
+        <!-- Display Django Messages -->
+        <div class="container">
+          {% if messages %}
+            {% for message in messages %}
+              <div class="alert alert-success" role="alert">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        </div>
+
+        <!-- Main page content -->
+        <main class="container">
+          <div class="pb-2 mb-2 border-bottom">
+            {% block page_header %}{% endblock %}
+          </div>
+
+          <div>
+            {% block content %}{% endblock %}
+          </div>
+        </main>
+        {% if user.is_authenticated and request.path == '/' %}
+        <div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+          <div id="xpToast" class="toast align-items-center text-bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+            <div class="d-flex">
+              <div class="toast-body">
+                🚀 Hello {{ user.username }}! Level {{ user_level }} ({{ progress_percent|floatformat:0 }}% to next level)
+              </div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
+            var toastEl = document.getElementById('xpToast');
+            if (toastEl) {
+              var toast = new bootstrap.Toast(toastEl);
+              toast.show();
+            }
+          });
+        </script>
+        {% endif %}
 
         {% if messages %}
-        <div class="container mt-2">
-        {% for message in messages %}
-        <div class="alert alert-success" role="alert">
-        {{ message }}
+        <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+          {% for message in messages %}
+            <div class="toast align-items-center text-bg-success border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="8000">
+              <div class="d-flex">
+                <div class="toast-body">
+                  {{ message }}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+              </div>
+            </div>
+          {% endfor %}
         </div>
-        {% endfor %}
-        </div>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+          var toastList = toastElList.map(function (toastEl) {
+            return new bootstrap.Toast(toastEl)
+          });
+
+          toastList.forEach(function(toast, index) {
+            toast.show();
+
+            // 🎉 Fire confetti if the toast contains "Congratulations"
+            const toastBody = toastElList[index].querySelector('.toast-body');
+            if (toastBody && toastBody.textContent.includes('Congratulations')) {
+              setTimeout(() => {
+                confetti({
+                  particleCount: 150,
+                  spread: 70,
+                  origin: { y: 0.6 }
+                });
+              }, 500);
+            }
+          });
+        });
+        </script>
         {% endif %}
 
-        <!-- Account-related links -->
-        <ul class="navbar-nav ms-auto mb-2 mb-md-0">
 
-          {% if user.is_authenticated %}
-              <li class="nav-item">
-                  <a class="nav-link" href="{% url 'accounts:user_profile' username=request.user.username %}">
-                      View My Profile</a></li>
-            <li class="nav-item">
-              <span class="navbar-text me-2">Hello, {{ user.username }}.
-                </span></li>
-          {% else %}
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'accounts:register' %}">
-                  Register</a></li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'accounts:login' %}">
-                  Log in</a></li>
-          {% endif %}
-        </ul> <!-- End of account-related links -->
-
-        {% if user.is_authenticated %}
-          <form action="{% url 'accounts:logout' %}" method='post'>
-            {% csrf_token %}
-            <button name='submit' class='btn btn-outline-secondary btn-sm'>
-              Log out</button>
-          </form>
-        {% endif %}
-
-      </div> <!-- Closes collapsible parts of navbar -->
-
-    </div> <!-- Closes navbar container -->
-  </nav> <!-- End of navbar -->
-
-  <main class="container">
-    <div class="pb-2 mb-2 border-bottom">
-      {% block page_header %}{% endblock page_header %}
-    </div>
-
-    <div>
-      {% block content %}{% endblock content %}
-    </div>
-  </main>
 
 </body>
 </html>

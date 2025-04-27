@@ -1,8 +1,10 @@
+from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import Http404
 
+from accounts.xp_utils import XPManager
 from book_club.models import BooksRead, WordsRead
 from chores.models import EarnedWage
 from .models import Note, Entry
@@ -12,22 +14,20 @@ from accounts.models import UserStats
 @login_required
 def index(request):
     user = request.user
-    stats = UserStats.objects.filter(user=request.user).first()
-    user_level = stats.level if stats else 1
-    xp = stats.xp if stats else 0
-
-    # Get books read and words read data for the current user
+    stats = UserStats.objects.filter(user=user).first()
     books_read_list = BooksRead.objects.filter(user=user).order_by('-date_added')
     words_read_entry = WordsRead.objects.filter(user=user).first()
     total_words_read = words_read_entry.wordsLifetime if words_read_entry else 0
-    next_level_xp = stats.next_level_xp() if stats else 100
-    progress_percent = stats.progress_percent() if stats else 0
 
-    # Leaderboards
     books_leaderboard = WordsRead.objects.select_related('user').order_by('-wordsLifetime')
     earnings_leaderboard = EarnedWage.objects.select_related('user').order_by('-earnedLifetime')
 
-    # Get the current user's earnings
+    previous_level = stats.level
+    stats.update_level()
+    if stats.level > previous_level:
+        messages.success(request, f"🎉 Congratulations! You leveled up to Level {stats.level}!")
+
+    # Earnings
     try:
         earned = EarnedWage.objects.get(user=user)
         wage_earned = earned.earnedSincePayout
@@ -36,6 +36,26 @@ def index(request):
         wage_earned = 0.00
         lifetime_earned = 0.00
 
+    # XP and Level calculation
+    if stats:
+        xp = stats.xp
+        level = XPManager.level_from_xp(xp)
+        next_level_xp = XPManager.next_level_xp(level)
+        xp_to_next = XPManager.xp_to_next_level(xp, level)
+        progress_percent = XPManager.progress_percent(xp, level)
+
+        print("DEBUG: xp =", xp)
+        print("DEBUG: level =", level)
+        print("DEBUG: next_level_xp =", next_level_xp)
+        print("DEBUG: xp_to_next =", xp_to_next)
+        print("DEBUG: progress_percent =", progress_percent)
+    else:
+        xp = 0
+        level = 1
+        next_level_xp = 0
+        xp_to_next = 0
+        progress_percent = 0
+
     context = {
         'books_read_list': books_read_list,
         'total_words_read': total_words_read,
@@ -43,12 +63,12 @@ def index(request):
         'lifetime_earned': lifetime_earned,
         'books_leaderboard': books_leaderboard,
         'earnings_leaderboard': earnings_leaderboard,
-        'user_level': user_level,
+        'user_level': level,
         'xp': xp,
-        'next_level_xp': next_level_xp,
-        'progress_percent': progress_percent,
+        'next_level_xp': int(next_level_xp),
+        'xp_to_next': int(xp_to_next),
+        'progress_percent': int(progress_percent),
     }
-
     return render(request, 'household_main/index.html', context)
 
 # def xp_calculator_view(request):
