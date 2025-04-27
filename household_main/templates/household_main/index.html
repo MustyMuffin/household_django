@@ -1,5 +1,4 @@
 {% extends 'household_main/base.html' %}
-
 {% load humanize %}
 {% load debug_tags %}
 
@@ -9,45 +8,62 @@
       <div class="container-fluid py-4">
         <h1 class="display-3">Household</h1>
 
-        <div class="mb-4">
-            <h3>Your Level</h3>
-            <p><strong>Level:</strong> {{ user_level }}</p>
-            <p><strong>XP:</strong> {{ xp }} / {{ next_level_xp }}</p>
-            <div class="progress" style="height: 25px;">
-            <div class="progress-bar bg-info progress-bar-striped progress-bar-animated"
-            role="progressbar"
-            style="width: {{ progress_percent }}%;">
-            {{ progress_percent }}%
-            </div>
-            </div>
-        </div>
+        <!-- Level Section -->
+                <div class="mb-4">
+                  <h3>Your Level</h3>
+                  <p><strong>Level:</strong> {{ user_level }}</p>
+                  <p><strong>XP:</strong> {{ xp }} / {{ next_level_xp }}</p>
 
-        <h3>Your Earnings</h3>
-        <p><strong>You’ve earned since last payout:</strong> ${{ wage_earned|default:"0.00"|floatformat:2 }}</p>
-        <p><strong>Total earned (lifetime):</strong> ${{ lifetime_earned|default:"0.00"|floatformat:2 }}</p>
-        <hr>
-
-        <!-- Books Read Section -->
-        <div class="mb-4">
-            <button class="btn btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#booksReadSection" aria-expanded="false" aria-controls="booksReadSection">
-                Expand Books Read
-            </button>
-        <div class="collapse" id="booksReadSection">
-        <div class="card card-body">
-            <h4 class="mb-3">📚 Books You've Read</h4>
-            {% if books_read_list %}
-                <ul class="list-unstyled">
-                {% for book in books_read_list %}
-                <li>{{ book.book_name }} — {{ book.date_added|date:"M d, Y" }}</li>
-            {% endfor %}
-            </ul>
-            {% else %}
-                <p>No books read yet.</p>
-            {% endif %}
-                <p><strong>Total Words Read:</strong> {{ total_words_read|default:"0"|intcomma }}</p>
+                  <div class="progress" style="height: 30px;">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width: {{ progress_percent }}%;"
+                         aria-valuenow="{{ progress_percent }}"
+                         aria-valuemin="0" aria-valuemax="100">
+                      {{ progress_percent }}%
+                    </div>
+                  </div>
+                  <small>XP needed for next level: {{ next_level_xp|intcomma }}</small>
                 </div>
+
+                <hr>
+
+                <!-- Earnings Section -->
+                <div class="mb-4">
+                  <h3>Your Earnings</h3>
+                  <p><strong>You’ve earned since last payout:</strong> ${{ wage_earned|default:"0.00"|floatformat:2 }}</p>
+                  <p><strong>Total earned (lifetime):</strong> ${{ lifetime_earned|default:"0.00"|floatformat:2 }}</p>
+                </div>
+
+                <hr>
+
+                <!-- Books Read Section -->
+                <div class="mb-4">
+                  <button class="btn btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse"
+                          data-bs-target="#booksReadSection" aria-expanded="false" aria-controls="booksReadSection">
+                    Expand Books Read
+                  </button>
+
+                  <div class="collapse" id="booksReadSection">
+                    <div class="card card-body">
+                      <h4 class="mb-3">📚 Books You've Read</h4>
+
+                      {% if books_read_list %}
+                        <ul class="list-unstyled">
+                          {% for book in books_read_list %}
+                            <li>{{ book.book_name }} — {{ book.date_added|date:"M d, Y" }}</li>
+                          {% endfor %}
+                        </ul>
+                      {% else %}
+                        <p>No books read yet.</p>
+                      {% endif %}
+
+                      <p><strong>Total Words Read:</strong> {{ total_words_read|default:"0"|intcomma }}</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
             </div>
-        </div>
   <!-- Books Read Leaderboard -->
   <div class="col-lg-6 mb-4">
     <button class="btn btn-outline-primary mb-2 w-100" type="button" data-bs-toggle="collapse" data-bs-target="#booksLeaderboard" aria-expanded="false" aria-controls="booksLeaderboard">

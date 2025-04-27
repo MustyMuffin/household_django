@@ -1,5 +1,3 @@
-from decimal import Decimal
-from django.db.models import Sum
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -17,13 +15,13 @@ def index(request):
     stats = UserStats.objects.filter(user=request.user).first()
     user_level = stats.level if stats else 1
     xp = stats.xp if stats else 0
-    next_level_xp = stats.next_level_xp() if stats else 100
-    progress_percent = stats.progress_percent() if stats else 0
 
     # Get books read and words read data for the current user
     books_read_list = BooksRead.objects.filter(user=user).order_by('-date_added')
     words_read_entry = WordsRead.objects.filter(user=user).first()
     total_words_read = words_read_entry.wordsLifetime if words_read_entry else 0
+    next_level_xp = stats.next_level_xp() if stats else 100
+    progress_percent = stats.progress_percent() if stats else 0
 
     # Leaderboards
     books_leaderboard = WordsRead.objects.select_related('user').order_by('-wordsLifetime')

@@ -1,0 +1,50 @@
+{% extends 'household_main/base.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container py-4">
+  <h2>Recent Activity</h2>
+
+  {% if grouped_activity %}
+    {% for group in grouped_activity %}
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title">
+            {{ group.items.0.timestamp|naturaltime }}
+          </h5>
+
+          <ul class="list-group list-group-flush mb-3">
+            {% for item in group.items %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  {% if item.type == 'book' %}
+                    📚 
+                  {% elif item.type == 'chore' %}
+                    🛠️ 
+                  {% elif item.type == 'xp' %}
+                    ⭐ 
+                  {% endif %}
+                  <strong>{{ item.user.username }}</strong>: {{ item.info }}
+                </div>
+                {% if item.xp %}
+                  <span class="badge bg-success">{{ item.xp }} XP</span>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+
+          {% if group.total_xp %}
+            <div class="text-end">
+              <span class="badge bg-primary">Total XP Earned: {{ group.total_xp }}</span>
+            </div>
+          {% endif %}
+          
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p>No recent activity yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
