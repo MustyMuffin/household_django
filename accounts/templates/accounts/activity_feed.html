@@ -24,7 +24,10 @@
                   {% elif item.type == 'xp' %}
                     ⭐ 
                   {% endif %}
-                  <strong>{{ item.user.username }}</strong>: {{ item.info }}
+                  <a href="{% url 'accounts:user_profile' username=item.user.username %}" class="text-decoration-none fw-bold">
+                    {{ item.user.username }}
+                  </a>: {{ item.info }}
+                
                 </div>
                 {% if item.xp %}
                   <span class="badge bg-success">{{ item.xp }} XP</span>
