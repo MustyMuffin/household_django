@@ -23,7 +23,6 @@ def index(request):
     books_leaderboard = WordsRead.objects.select_related('user').order_by('-wordsLifetime')
     earnings_leaderboard = EarnedWage.objects.select_related('user').order_by('-earnedLifetime')
 
-    # Earnings
     try:
         earned = EarnedWage.objects.get(user=user)
         wage_earned = earned.earnedSincePayout
@@ -32,10 +31,9 @@ def index(request):
         wage_earned = 0.00
         lifetime_earned = 0.00
 
-    # XP and Level calculation
     if stats:
         xp = stats.xp
-        level = XPManager.level_from_xp(xp)
+        level = stats.level  # <- 🛠 Use the SAVED level!
         next_level_xp = XPManager.next_level_xp(level)
         xp_to_next = XPManager.xp_to_next_level(xp, level)
         progress_percent = XPManager.progress_percent(xp, level)
@@ -60,6 +58,7 @@ def index(request):
         'progress_percent': int(progress_percent),
     }
     return render(request, 'household_main/index.html', context)
+
 
 
 # def xp_calculator_view(request):

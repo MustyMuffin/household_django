@@ -31,7 +31,7 @@ def user_profile(request, username):
         xp = stats.xp
         level = stats.level
         next_level_xp = XPManager.next_level_xp(level)
-        xp_to_next = XPManager.xp_to_next_level(xp, level)
+        xp_to_next_level = XPManager.xp_to_next_level(xp, level)
         progress_percent = XPManager.progress_percent(xp, level)
 
     context = {
@@ -43,7 +43,7 @@ def user_profile(request, username):
         'xp': xp,
         'level': level,
         'next_level_xp': next_level_xp,
-        'xp_to_next': xp_to_next,
+        'xp_to_next_level': xp_to_next_level,
         'progress_percent': progress_percent,
     }
 
