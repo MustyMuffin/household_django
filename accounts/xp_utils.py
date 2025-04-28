@@ -34,7 +34,7 @@ class XPManager:
     def level_from_xp(xp):
         base, exponent = XPManager.get_settings()
 
-        caller = inspect.stack()[1].function  # Grab the calling function's name
+        caller = inspect.stack()[1].function
         # print(f"[DEBUG] Called from {caller} -> level_from_xp({xp}): base={base}, exponent={exponent}")
 
         if xp <= 0:

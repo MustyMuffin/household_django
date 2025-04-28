@@ -26,7 +26,7 @@ class XPSettings(models.Model):
             base_changed = self.base != old_settings.base
             exponent_changed = self.exponent != old_settings.exponent
         else:
-            base_changed = exponent_changed = True  # brand new XPSettings
+            base_changed = exponent_changed = True
 
         super().save(*args, **kwargs)
 

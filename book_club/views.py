@@ -1,13 +1,13 @@
 from collections import defaultdict
-from decimal import Decimal
 
 from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from accounts.models import UserStats, XPLog, XPSettings
+from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import BookCategory, Book, BookEntry, WordsRead, BooksRead
+from accounts.models import UserStats
 from .forms import BookEntryForm, BookForm
+from .models import Book, WordsRead
+
 
 def books_by_category(request):
     # Group books by their category
@@ -37,7 +37,7 @@ def book(request, book_id):
     context = {'book': book, 'book_entries': book_entries}
     return render(request, 'book_club/book.html', context)
 
-from accounts.xp_helpers import award_xp  # import our central XP awarder
+from accounts.xp_helpers import award_xp  # import central XP awarder
 
 @login_required
 def new_book_entry(request, book_id):
@@ -74,7 +74,7 @@ def new_book_entry(request, book_id):
 
             # Update UserStats (total words if you track it here too)
             userstats, _ = UserStats.objects.get_or_create(user=request.user)
-            if hasattr(userstats, 'words_read'):  # If you added a field
+            if hasattr(userstats, 'words_read'):
                 userstats.words_read += book.words
                 userstats.save(update_fields=["words_read"])
 

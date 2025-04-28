@@ -1,5 +1,4 @@
 from datetime import timedelta
-
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
@@ -82,7 +81,7 @@ def activity_feed(request):
         reverse=True
     )
 
-    # Group by timestamp within a small time window
+    # Groups by timestamp within a small time window
     grouped_activity = []
     last_group_time = None
     current_group = []
