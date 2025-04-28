@@ -41,8 +41,3 @@ class BooksRead(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     book_name = models.CharField(max_length=20, default="BoomWhacker")
     date_added = models.DateTimeField(auto_now_add=True)
-
-# class BookProgressTracker(models.Model):
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     book = models.ForeignKey(Book, on_delete=models.CASCADE)
-#     pagesLifetime = models.IntegerField(default=0)

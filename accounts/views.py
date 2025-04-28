@@ -1,4 +1,6 @@
 from datetime import timedelta
+
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
@@ -6,12 +8,11 @@ from django.contrib.auth.models import User
 from accounts.models import UserStats, XPSettings, XPLog
 from book_club.models import BooksRead, BookEntry
 from chores.models import EarnedWage, ChoreEntry
-from accounts.utils import get_user_stats
 from itertools import chain
 from operator import itemgetter
 from accounts.xp_utils import XPManager
 
-
+@login_required
 def user_profile(request, username):
     user = get_object_or_404(User, username=username)
     stats = UserStats.objects.filter(user=user).first()
@@ -19,39 +20,34 @@ def user_profile(request, username):
     earnings = EarnedWage.objects.filter(user=user).first()
     xp_logs = XPLog.objects.filter(user=user).order_by('-date_awarded')
 
+    # Default values
+    xp = 0
+    level = 1
+    next_level_xp = 100
+    xp_to_next = 100
+    progress_percent = 0
+
     if stats:
         xp = stats.xp
-        level = XPManager.level_from_xp(xp)
+        level = stats.level
         next_level_xp = XPManager.next_level_xp(level)
         xp_to_next = XPManager.xp_to_next_level(xp, level)
         progress_percent = XPManager.progress_percent(xp, level)
-
-        print("DEBUG: xp =", xp)
-        print("DEBUG: level =", level)
-        print("DEBUG: next_level_xp =", next_level_xp)
-        print("DEBUG: xp_to_next =", xp_to_next)
-        print("DEBUG: progress_percent =", progress_percent)
-    else:
-        print("DEBUG: No stats found, defaulting to 0")
-        xp = 0
-        level = 1
-        next_level_xp = 0
-        xp_to_next = 0
-        progress_percent = 0
 
     context = {
         'profile_user': user,
         'stats': stats,
         'books': books,
         'earnings': earnings,
-        'xp_settings': XPSettings.objects.first(),  # optional, only if you still need it
-        'next_level_xp': int(next_level_xp),
-        'xp_to_next': int(xp_to_next),
-        'progress_percent': int(progress_percent),
         'xp_logs': xp_logs,
+        'xp': xp,
+        'level': level,
+        'next_level_xp': next_level_xp,
+        'xp_to_next': xp_to_next,
+        'progress_percent': progress_percent,
     }
-    return render(request, 'accounts/user_profile.html', context)
 
+    return render(request, 'accounts/user_profile.html', context)
 
 def activity_feed(request):
     show_all_users = True

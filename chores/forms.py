@@ -15,25 +15,3 @@ class ChoreEntryForm(forms.ModelForm):
     class Meta:
         model = ChoreEntry
         fields = []
-
-    # class Meta:
-    #     model = EarnedWage
-    #     fields = ['wage']
-    #
-    # def __init__(self, wage, *args, **kwargs):
-    #     super(ChoreEntryForm, self).__init__(*args, **kwargs)
-    #     self.fields['wage'].initial = wage
-
-# class EarnedWageForm(forms.ModelForm):
-#     class Meta:
-#         model = EarnedWage
-#         fields = ['wage']
-
-
-    # class Meta:
-    #     model = ChoreEntry
-    #     fields = ['wage']
-
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-        # self.fields['user'].queryset = ChoreEntryForm.objects.filter(user=kwargs['request'].user)

@@ -15,17 +15,13 @@ from accounts.models import UserStats
 def index(request):
     user = request.user
     stats = UserStats.objects.filter(user=user).first()
+
     books_read_list = BooksRead.objects.filter(user=user).order_by('-date_added')
     words_read_entry = WordsRead.objects.filter(user=user).first()
     total_words_read = words_read_entry.wordsLifetime if words_read_entry else 0
 
     books_leaderboard = WordsRead.objects.select_related('user').order_by('-wordsLifetime')
     earnings_leaderboard = EarnedWage.objects.select_related('user').order_by('-earnedLifetime')
-
-    previous_level = stats.level
-    stats.update_level()
-    if stats.level > previous_level:
-        messages.success(request, f"🎉 Congratulations! You leveled up to Level {stats.level}!")
 
     # Earnings
     try:
@@ -43,12 +39,6 @@ def index(request):
         next_level_xp = XPManager.next_level_xp(level)
         xp_to_next = XPManager.xp_to_next_level(xp, level)
         progress_percent = XPManager.progress_percent(xp, level)
-
-        print("DEBUG: xp =", xp)
-        print("DEBUG: level =", level)
-        print("DEBUG: next_level_xp =", next_level_xp)
-        print("DEBUG: xp_to_next =", xp_to_next)
-        print("DEBUG: progress_percent =", progress_percent)
     else:
         xp = 0
         level = 1
@@ -70,6 +60,7 @@ def index(request):
         'progress_percent': int(progress_percent),
     }
     return render(request, 'household_main/index.html', context)
+
 
 # def xp_calculator_view(request):
 #     return render(request, 'household_main/xp_calculator.html')

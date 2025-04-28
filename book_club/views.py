@@ -1,8 +1,10 @@
 from collections import defaultdict
+from decimal import Decimal
+
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from accounts.models import UserStats, XPLog
+from accounts.models import UserStats, XPLog, XPSettings
 
 from .models import BookCategory, Book, BookEntry, WordsRead, BooksRead
 from .forms import BookEntryForm, BookForm
@@ -35,45 +37,52 @@ def book(request, book_id):
     context = {'book': book, 'book_entries': book_entries}
     return render(request, 'book_club/book.html', context)
 
+from accounts.xp_helpers import award_xp  # import our central XP awarder
+
 @login_required
 def new_book_entry(request, book_id):
-    """Add a new entry for a book."""
-    book = Book.objects.get(id=book_id)
+    book = get_object_or_404(Book, id=book_id)
 
     if request.method != 'POST':
         form = BookEntryForm()
     else:
-        form = BookEntryForm(request.POST)
+        form = BookEntryForm(data=request.POST)
         if form.is_valid():
-            new_book_entry = form.save(commit=False)
-            new_book_entry.book = book
-            new_book_entry.user = request.user
-            new_book_entry.save()
+            new_entry = form.save(commit=False)
+            new_entry.book = book
+            new_entry.user = request.user
+            new_entry.save()
 
-            # Update PagesRead/WordsRead if needed (your project already does this)
 
-            # Update XP
-            userstats, created = UserStats.objects.get_or_create(user=request.user)
-            previous_level = userstats.level
+            # Award XP using the xp helper
+            result = award_xp(
+                user=request.user,
+                source_object=book,
+                reason=f"Logged book: {book.text}",
+                source_type="book"
+            )
 
-            # Calculate XP earned (example: 1 XP per 10 words)
-            xp_earned = int(book.words * 10)  # If you renamed to `words`, adjust this line!
+            if result.get('xp_awarded', 0) > 0:
+                messages.success(request, f"✅ You earned {result['xp_awarded']} XP for logging a book!")
 
-            userstats.xp += xp_earned
-            userstats.update_level()
+            if result.get('leveled_up'):
+                messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
 
-            # Log XP
-            XPLog.objects.create(user=request.user, amount=xp_earned, reason=f"Logged book: {book.text}")
+            words_entry, created = WordsRead.objects.get_or_create(user=request.user)
+            words_entry.wordsLifetime += book.words
+            words_entry.save()
 
-            messages.success(request, f"✅ You earned {xp_earned} XP for logging a book!")
-
-            if userstats.level > previous_level:
-                messages.success(request, f"🎉 Congratulations! You leveled up to Level {userstats.level}!")
+            # Update UserStats (total words if you track it here too)
+            userstats, _ = UserStats.objects.get_or_create(user=request.user)
+            if hasattr(userstats, 'words_read'):  # If you added a field
+                userstats.words_read += book.words
+                userstats.save(update_fields=["words_read"])
 
             return redirect('book_club:books_by_category')
 
     context = {'book': book, 'form': form}
     return render(request, 'book_club/new_book_entry.html', context)
+
 
 def new_book(request):
     """Add a new book."""
