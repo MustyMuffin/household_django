@@ -11,24 +11,44 @@
 
       <h4>Level Progress</h4>
 
-<p><strong>Level:</strong> {{ stats.level }}</p>
-<p><strong>Total XP:</strong> {{ stats.xp|intcomma }}</p>
-<p><strong>XP to next level (Level {{ stats.level|add:1 }}):</strong> {{ xp_to_next|intcomma }} XP</p>
+        <p><strong>Level:</strong> {{ stats.level }}</p>
+        <p><strong>Total XP:</strong> {{ stats.xp|intcomma }}</p>
+        <p><strong>XP to next level (Level {{ stats.level|add:1 }}):</strong> {{ xp_to_next|intcomma }} XP</p>
 
-<div class="progress" style="height: 30px;">
-  <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
-    style="width: {{ progress_percent }}%;" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
-    {{ progress_percent }}%
-  </div>
-</div>
-    <h4>Badges Earned</h4>
-{% for user_badge in user_badges %}
-    <div class="badge bg-primary text-wrap p-2 m-2">
-      🏅 {{ user_badge.badge.name }}
+    <div class="progress" style="height: 30px;">
+      <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
+        style="width: {{ progress_percent }}%;" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+        {{ progress_percent }}%
+      </div>
     </div>
-{% empty %}
-    <p>No badges earned yet. Keep going!</p>
-{% endfor %}
+    
+    <h4>Badges Earned</h4>
+    {% for user_badge in user_badge %}
+        <div class="badge bg-primary text-wrap p-2 m-2">
+          🏅 {{ user_badge.badge.name }}
+            <div class="card-body text-center" data-bs-toggle="tooltip" title="{{ user_badge.badge.description }}"></div>
+        </div>
+    {% empty %}
+        <p>No badges earned yet. Keep going!</p>
+    {% endfor %}
+{#        <h4 class="mt-4">🏅 Badges Earned</h4>#}
+{#        {% if user_badge %}#}
+{#          <div class="d-flex flex-wrap">#}
+{#            {% for user_badge in user_badges %}#}
+{#              <div class="card m-2" style="width: 8rem;">#}
+{#                <div class="card-body text-center">#}
+{#                  {% if user_badge.badge.image %}#}
+{#                    <img src="{{ user_badge.badge.image.url }}" alt="{{ user_badge.badge.name }}" class="img-fluid mb-2" style="height: 50px;">#}
+{#                  {% endif %}#}
+{#                  <h6 class="card-title">{{ user_badge.badge.name }}</h6>#}
+{#                  <p class="small text-muted">{{ user_badge.date_earned|date:"M d, Y" }}</p>#}
+{#                </div>#}
+{#              </div>#}
+{#            {% endfor %}#}
+{#          </div>#}
+{#        {% else %}#}
+{#          <p>No badges earned yet. Keep going! 🚀</p>#}
+{#        {% endif %}#}
 
   <!-- Earnings Card -->
   <div class="card shadow mb-4">

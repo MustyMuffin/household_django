@@ -35,8 +35,8 @@ def user_profile(request, username):
         next_level_xp = XPManager.next_level_xp(level)
         xp_to_next_level = XPManager.xp_to_next_level(xp, level)
         progress_percent = XPManager.progress_percent(xp, level)
-        user_badges = check_and_award_badges.get_user_badges(user)
-        badge_progress = check_and_award_badges.get_user_progress(user)
+        user_badge = UserBadge.objects.filter(user=user).select_related('badge')
+        # badge_progress = check_and_award_badges.get_user_progress(user)
 
     context = {
         'profile_user': user,
@@ -49,8 +49,8 @@ def user_profile(request, username):
         'next_level_xp': next_level_xp,
         'xp_to_next_level': xp_to_next_level,
         'progress_percent': progress_percent,
-        'user_badges': user_badges,
-        'badge_progress': badge_progress,
+        'user_badge': user_badge,
+        # 'badge_progress': badge_progress,
     }
 
     return render(request, 'accounts/user_profile.html', context)
@@ -111,27 +111,47 @@ def activity_feed(request):
     context = {'grouped_activity': grouped_activity}
     return render(request, 'accounts/activity_feed.html', context)
 
-def user_badges_view(request):
-    badges = Badge.objects.all()
-    user_badges = UserBadge.objects.filter(user=request.user)
 
-    user_badge_map = {ub.badge_id: ub for ub in user_badges}
+# def user_badges_view(request):
+#     filter_option = request.GET.get('filter', 'all')
+#     sort_option = request.GET.get('sort', 'default')
+#
+#     badges = Badge.objects.all()
+#     user_badges = UserBadge.objects.filter(user=request.user)
+#     user_badge_map = {ub.badge_id: ub for ub in user_badges}
+#
+#     badge_list = []
+#
+#     for badge in badges:
+#         user_badge = user_badge_map.get(badge.id)
+#         if user_badge:
+#             badge.progress = user_badge.progress
+#             badge.progress_percent = min(int((user_badge.progress / badge.requirement) * 100), 100)
+#             badge.earned = user_badge.earned
+#         else:
+#             badge.progress = 0
+#             badge.progress_percent = 0
+#             badge.earned = False
+#
+#         # Apply filter
+#         if filter_option == 'earned' and not badge.earned:
+#             continue
+#         if filter_option == 'locked' and badge.earned:
+#             continue
+#
+#         badge_list.append(badge)
+#
+#     # Apply sorting
+#     if sort_option == 'progress':
+#         badge_list.sort(key=lambda b: b.progress_percent, reverse=True)
+#
+#     context = {
+#         'badges': badge_list,
+#         'current_filter': filter_option,
+#         'current_sort': sort_option,
+#     }
+#     return render(request, 'accounts/user_badges.html', context)
 
-    for badge in badges:
-        user_badge = user_badge_map.get(badge.id)
-        if user_badge:
-            badge.progress = user_badge.progress
-            badge.progress_percent = min(int((user_badge.progress / badge.requirement) * 100), 100)
-            badge.earned = user_badge.earned
-        else:
-            badge.progress = 0
-            badge.progress_percent = 0
-            badge.earned = False
-
-    context = {
-        'badges': badges,
-    }
-    return render(request, 'accounts/user_badges.html', context)
 
 def register(request):
     """Register a new user."""

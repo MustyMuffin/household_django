@@ -5,14 +5,43 @@
   
   <div class="d-flex flex-wrap justify-content-center">
     {% for badge in badges %}
+        <!-- Filter and Sort Controls -->
+        <div class="mb-4 text-center d-flex flex-wrap justify-content-center gap-2">
+        
+          <!-- Filter Buttons -->
+          <div class="btn-group" role="group" aria-label="Badge Filters">
+            <a href="?filter=all&sort={{ current_sort }}" class="btn btn-outline-primary {% if current_filter == 'all' %}active{% endif %}">All</a>
+            <a href="?filter=earned&sort={{ current_sort }}" class="btn btn-outline-success {% if current_filter == 'earned' %}active{% endif %}">Earned</a>
+            <a href="?filter=locked&sort={{ current_sort }}" class="btn btn-outline-secondary {% if current_filter == 'locked' %}active{% endif %}">Locked</a>
+          </div>
+        
+          <!-- Sort Dropdown -->
+          <div class="dropdown">
+            <button class="btn btn-outline-dark dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Sort
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item {% if current_sort == 'default' %}active{% endif %}" href="?filter={{ current_filter }}&sort=default">Default</a></li>
+              <li><a class="dropdown-item {% if current_sort == 'progress' %}active{% endif %}" href="?filter={{ current_filter }}&sort=progress">Closest to Completion</a></li>
+            </ul>
+          </div>
+        
+        </div>
+
     <div class="card text-center m-2" style="width: 8rem; opacity: {% if badge.earned %}1{% else %}0.5{% endif %};" data-bs-toggle="modal" data-bs-target="#badgeModal{{ badge.id }}">
       <div class="card-body p-2 d-flex flex-column align-items-center justify-content-between">
         
-        {% if badge.image %}
-        <img src="{{ badge.image.url }}" class="img-fluid mb-2" alt="{{ badge.name }}" style="height: 60px;">
-        {% endif %}
-        
-        <h6 class="card-title small mb-2">{{ badge.name }}</h6>
+          {% with close_badges=almost_unlocked|dictsortreversed:"progress_percent" %}
+            {% with close_badges=close_badges|slice:":10" %}
+              {% for badge in close_badges %}
+                {% if not badge.earned and badge.progress_percent >= 90 %}
+                  {% if forloop.first %}
+                    <div class="alert alert-success shadow-sm" role="alert">
+                      <strong>🌟 Almost there!</strong> You're very close to unlocking:
+                      <ul class="mb-0 mt-2">
+                  {% endif %}
+          
+          <li><strong>{{ badge.name }}</strong> ({{ badge.progress_percent }}% complete)</li>
         
         {% if not badge.earned %}
           <small class="text-muted">🔒 Locked</small>
