@@ -1,0 +1,57 @@
+{% extends "household_main/base.html" %}
+{% block content %}
+<div class="container py-4">
+  <h2>🏅 Your Badges</h2>
+  
+  <div class="d-flex flex-wrap justify-content-center">
+    {% for badge in badges %}
+    <div class="card text-center m-2" style="width: 8rem; opacity: {% if badge.earned %}1{% else %}0.5{% endif %};" data-bs-toggle="modal" data-bs-target="#badgeModal{{ badge.id }}">
+      <div class="card-body p-2 d-flex flex-column align-items-center justify-content-between">
+        
+        {% if badge.image %}
+        <img src="{{ badge.image.url }}" class="img-fluid mb-2" alt="{{ badge.name }}" style="height: 60px;">
+        {% endif %}
+        
+        <h6 class="card-title small mb-2">{{ badge.name }}</h6>
+        
+        {% if not badge.earned %}
+          <small class="text-muted">🔒 Locked</small>
+        {% endif %}
+        
+        <!-- Progress Bar -->
+        <div class="progress mt-2" style="height: 5px; width: 100%;">
+          <div class="progress-bar {% if badge.earned %}bg-success{% else %}bg-secondary{% endif %}" role="progressbar"
+               style="width: {{ badge.progress_percent }}%;" 
+               aria-valuenow="{{ badge.progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+
+        <!-- Progress Text -->
+        <small class="text-muted mt-1">{{ badge.progress|intcomma }} / {{ badge.requirement|intcomma }}</small>
+
+      </div>
+    </div>
+
+    <!-- Modal for badge details -->
+    <div class="modal fade" id="badgeModal{{ badge.id }}" tabindex="-1" aria-labelledby="badgeModalLabel{{ badge.id }}" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="badgeModalLabel{{ badge.id }}">{{ badge.name }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body text-center">
+            {% if badge.image %}
+              <img src="{{ badge.image.url }}" class="img-fluid mb-3" alt="{{ badge.name }}" style="height: 100px;">
+            {% endif %}
+            <p>{{ badge.description }}</p>
+            <p><strong>Requirement:</strong> {{ badge.requirement|intcomma }}</p>
+            <p><strong>Your Progress:</strong> {{ badge.progress|intcomma }} ({{ badge.progress_percent }}%)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

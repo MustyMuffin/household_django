@@ -3,7 +3,7 @@ from collections import defaultdict
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-
+from accounts.xp_helpers import award_xp  # import central XP awarder
 from accounts.models import UserStats
 from .forms import BookEntryForm, BookForm
 from .models import Book, WordsRead
@@ -36,8 +36,6 @@ def book(request, book_id):
     book_entries = book.bookentry_set.order_by('-date_added')
     context = {'book': book, 'book_entries': book_entries}
     return render(request, 'book_club/book.html', context)
-
-from accounts.xp_helpers import award_xp  # import central XP awarder
 
 @login_required
 def new_book_entry(request, book_id):

@@ -10,6 +10,9 @@ from chores.models import EarnedWage, ChoreEntry
 from itertools import chain
 from operator import itemgetter
 from accounts.xp_utils import XPManager
+from .models import Badge, UserBadge
+from accounts.badge_helpers import check_and_award_badges
+
 
 @login_required
 def user_profile(request, username):
@@ -32,6 +35,8 @@ def user_profile(request, username):
         next_level_xp = XPManager.next_level_xp(level)
         xp_to_next_level = XPManager.xp_to_next_level(xp, level)
         progress_percent = XPManager.progress_percent(xp, level)
+        user_badges = check_and_award_badges.get_user_badges(user)
+        badge_progress = check_and_award_badges.get_user_progress(user)
 
     context = {
         'profile_user': user,
@@ -44,6 +49,8 @@ def user_profile(request, username):
         'next_level_xp': next_level_xp,
         'xp_to_next_level': xp_to_next_level,
         'progress_percent': progress_percent,
+        'user_badges': user_badges,
+        'badge_progress': badge_progress,
     }
 
     return render(request, 'accounts/user_profile.html', context)
@@ -103,6 +110,28 @@ def activity_feed(request):
 
     context = {'grouped_activity': grouped_activity}
     return render(request, 'accounts/activity_feed.html', context)
+
+def user_badges_view(request):
+    badges = Badge.objects.all()
+    user_badges = UserBadge.objects.filter(user=request.user)
+
+    user_badge_map = {ub.badge_id: ub for ub in user_badges}
+
+    for badge in badges:
+        user_badge = user_badge_map.get(badge.id)
+        if user_badge:
+            badge.progress = user_badge.progress
+            badge.progress_percent = min(int((user_badge.progress / badge.requirement) * 100), 100)
+            badge.earned = user_badge.earned
+        else:
+            badge.progress = 0
+            badge.progress_percent = 0
+            badge.earned = False
+
+    context = {
+        'badges': badges,
+    }
+    return render(request, 'accounts/user_badges.html', context)
 
 def register(request):
     """Register a new user."""

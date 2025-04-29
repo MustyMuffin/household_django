@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from accounts.xp_utils import XPManager
 from django.apps import apps
 
-
 class XPSettings(models.Model):
     base = models.PositiveIntegerField(default=50)
     exponent = models.FloatField(default=0.75)
@@ -96,6 +95,35 @@ class UserStats(models.Model):
     def xp_to_next_level(self):
         from accounts.xp_utils import XPManager
         return XPManager.xp_to_next_level(self.xp, self.level)
+
+class BadgeType(models.Model):
+    name = models.CharField(max_length=100)  # Which Module, Example: "Chores", "Book Club"
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Badge(models.Model):
+    badge_type = models.ForeignKey(BadgeType, on_delete=models.CASCADE, related_name="badges")
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    xp_required = models.PositiveIntegerField(default=0, help_text="XP needed to unlock (optional)")
+    words_required = models.PositiveIntegerField(default=0, help_text="Words needed (optional, for book club)")
+    chores_completed_required = models.PositiveIntegerField(default=0, help_text="Chores needed (optional)")
+    # image = models.ImageField(upload_to="badges/", blank=True, null=True)  # Optional: nice badge images!
+
+    def __str__(self):
+        return f"{self.name} ({self.badge_type.name})"
+
+class UserBadge(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE)
+    earned = models.BooleanField(default=False)
+    progress = models.PositiveIntegerField(default=0)
+    date_earned = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'badge')
 
 
 class XPLog(models.Model):

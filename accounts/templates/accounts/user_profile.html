@@ -21,6 +21,14 @@
     {{ progress_percent }}%
   </div>
 </div>
+    <h4>Badges Earned</h4>
+{% for user_badge in user_badges %}
+    <div class="badge bg-primary text-wrap p-2 m-2">
+      🏅 {{ user_badge.badge.name }}
+    </div>
+{% empty %}
+    <p>No badges earned yet. Keep going!</p>
+{% endfor %}
 
   <!-- Earnings Card -->
   <div class="card shadow mb-4">
