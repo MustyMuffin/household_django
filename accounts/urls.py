@@ -1,7 +1,6 @@
 from django.urls import path, include
-from accounts.views import activity_feed
+from accounts.views import activity_feed, get_milestone_options
 from . import views
-from .admin import get_milestone_options
 
 app_name = 'accounts'
 
@@ -13,5 +12,5 @@ urlpatterns = [
  path('profile/<str:username>/', views.user_profile, name='user_profile'),
  path('activity_feed/', activity_feed, name='activity_feed'),
  path('badges/', views.all_badges, name='all_badges'),
- path("admin/badges/milestone-options/", get_milestone_options, name="badge_milestone_options"),
+ path("admin/accounts/badge/milestone-options/", views.get_milestone_options, name='accounts_badge_milestone-options'),
 ]

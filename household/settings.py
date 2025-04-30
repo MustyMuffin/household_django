@@ -69,7 +69,7 @@ ROOT_URLCONF = 'household.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -136,9 +136,9 @@ CMS_COLOR_SCHEME = "dark"
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / "staticfiles",  # or os.path.join(BASE_DIR, "static")
+    BASE_DIR / "static",  # or os.path.join(BASE_DIR, "static")
 ]
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = 'media/'
 

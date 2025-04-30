@@ -1,0 +1,16 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+  {{ block.super }}
+    <script>
+        console.log("✅ Custom change_form.html loaded");
+        window.badgeMilestoneURL = "{% url 'admin:accounts_badge_milestone-options' %}";
+    </script>
+    <script src="{% static 'admin/js/badge_dynamic.js' %}"></script>
+{% endblock %}
+
+{% block content_title %}
+  <h1>🎯 Badge Edit Page (Custom Template)</h1>
+  {{ block.super }}
+{% endblock %}

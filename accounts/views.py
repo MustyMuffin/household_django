@@ -1,15 +1,20 @@
 from datetime import timedelta
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from accounts.models import UserStats, XPSettings, XPLog, Badge, UserBadge
 from book_club.models import BooksRead, BookEntry
-from chores.models import EarnedWage, ChoreEntry
+from chores.models import EarnedWage, ChoreEntry, Chore
 from itertools import chain
 from operator import itemgetter
 from accounts.xp_utils import XPManager
+from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+
 from accounts.badge_helpers import check_and_award_badges
 
 
@@ -118,6 +123,17 @@ def activity_feed(request):
     return render(request, 'accounts/activity_feed.html', context)
 
 
+@staff_member_required
+def get_milestone_options(request):
+    app = request.GET.get("app")
+    print(f"[DEBUG] get_milestone_options called for app: {app}")
+
+    if app == 'chores':
+        chores = Chore.objects.all()
+        html = render_to_string("admin/accounts/badge/milestone_field_chores.html", {"chores": chores})
+        return HttpResponse(html)
+
+    return HttpResponse(render_to_string("admin/accounts/badge/milestone_field_charfield.html"))
 
 # def user_badges_view(request):
 #     filter_option = request.GET.get('filter', 'all')
@@ -158,7 +174,6 @@ def activity_feed(request):
 #         'current_sort': sort_option,
 #     }
 #     return render(request, 'accounts/all_badges.html', context)
-
 
 def register(request):
     """Register a new user."""
