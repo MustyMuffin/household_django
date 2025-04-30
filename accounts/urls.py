@@ -11,4 +11,5 @@ urlpatterns = [
  path('register/', views.register, name='register'),
  path('profile/<str:username>/', views.user_profile, name='user_profile'),
  path('activity_feed/', activity_feed, name='activity_feed'),
+ path('badges/', views.all_badges, name='all_badges'),
 ]

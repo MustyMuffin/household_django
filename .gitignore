@@ -29,7 +29,7 @@ local_settings.py
 *.sublime-workspace
 
 # Static/media files
-staticfiles/
+static/
 media/
 
 # Test artifacts

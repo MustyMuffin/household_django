@@ -4,13 +4,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from accounts.models import UserStats, XPSettings, XPLog
+from accounts.models import UserStats, XPSettings, XPLog, BadgeType, Badge, UserBadge
 from book_club.models import BooksRead, BookEntry
 from chores.models import EarnedWage, ChoreEntry
 from itertools import chain
 from operator import itemgetter
 from accounts.xp_utils import XPManager
-from .models import Badge, UserBadge
 from accounts.badge_helpers import check_and_award_badges
 
 
@@ -54,6 +53,15 @@ def user_profile(request, username):
     }
 
     return render(request, 'accounts/user_profile.html', context)
+
+
+@login_required
+def all_badges(request):
+    badges = Badge.objects.all().order_by('module')
+    context = {
+        'badges': badges
+    }
+    return render(request, 'accounts/all_badges.html', context)
 
 def activity_feed(request):
     show_all_users = True
@@ -150,7 +158,7 @@ def activity_feed(request):
 #         'current_filter': filter_option,
 #         'current_sort': sort_option,
 #     }
-#     return render(request, 'accounts/user_badges.html', context)
+#     return render(request, 'accounts/all_badges.html', context)
 
 
 def register(request):

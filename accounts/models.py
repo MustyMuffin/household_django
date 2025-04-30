@@ -104,27 +104,23 @@ class BadgeType(models.Model):
         return self.name
 
 class Badge(models.Model):
-    badge_type = models.ForeignKey(BadgeType, on_delete=models.CASCADE, related_name="badges")
     name = models.CharField(max_length=100)
     description = models.TextField()
-    xp_required = models.PositiveIntegerField(default=0, help_text="XP needed to unlock (optional)")
-    words_required = models.PositiveIntegerField(default=0, help_text="Words needed (optional, for book club)")
-    chores_completed_required = models.PositiveIntegerField(default=0, help_text="Chores needed (optional)")
-    # image = models.ImageField(upload_to="badges/", blank=True, null=True)  # Optional: nice badge images!
+    icon = models.ImageField(upload_to='household/badges/')
+    module = models.CharField(max_length=50)  # e.g., 'chores', 'books'
+    milestone_type = models.CharField(max_length=100)  # e.g., 'chore_slug', 'books_read'
+    milestone_value = models.PositiveIntegerField()
 
     def __str__(self):
-        return f"{self.name} ({self.badge_type.name})"
+        return self.name
 
 class UserBadge(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     badge = models.ForeignKey(Badge, on_delete=models.CASCADE)
-    earned = models.BooleanField(default=False)
-    progress = models.PositiveIntegerField(default=0)
-    date_earned = models.DateTimeField(auto_now_add=True)
+    awarded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('user', 'badge')
-
 
 class XPLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

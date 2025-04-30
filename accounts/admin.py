@@ -14,10 +14,10 @@ class BadgeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Badge)
 class BadgeAdmin(admin.ModelAdmin):
-    list_display = ("name", "badge_type", "xp_required", "words_required", "chores_completed_required")
-    list_filter = ("badge_type",)
+    list_display = ("name", "description", "icon", "module", "milestone_type", "milestone_value")
+    list_filter = ("module",)
 
 @admin.register(UserBadge)
 class UserBadgeAdmin(admin.ModelAdmin):
-    list_display = ("user", "badge", "date_earned")
-    list_filter = ("badge__badge_type",)
+    list_display = ("user", "badge", "awarded_at")
+    list_filter = ("badge",)
