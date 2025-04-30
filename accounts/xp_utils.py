@@ -15,8 +15,8 @@ class XPManager:
                     raise XPSettings.DoesNotExist
             except XPSettings.DoesNotExist:
                 class DummySettings:
-                    base = 200
-                    exponent = 1.15
+                    base = 50
+                    exponent = 0.75
                 cls._cached_settings = DummySettings()
 
         return cls._cached_settings.base, cls._cached_settings.exponent

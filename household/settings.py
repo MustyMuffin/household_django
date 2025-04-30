@@ -133,13 +133,15 @@ CMS_COLOR_SCHEME = "dark"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'household/static/'
-
+STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
-    BASE_DIR / "household/static/",  # or os.path.join(BASE_DIR, "static")
+    BASE_DIR / "staticfiles",  # or os.path.join(BASE_DIR, "static")
 ]
+STATIC_ROOT = BASE_DIR / "static"
+
 MEDIA_URL = 'media/'
+
 MEDIA_ROOT = BASE_DIR / 'household/media'
 
 # Default primary key field type

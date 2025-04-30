@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from accounts.xp_utils import XPManager
 from django.apps import apps
+from .constants import ALLOWED_APPS
 
 class XPSettings(models.Model):
     base = models.PositiveIntegerField(default=50)
@@ -37,7 +38,6 @@ class XPSettings(models.Model):
 
     @classmethod
     def get_settings(cls):
-        """ Safe load helper: fallback if XPSettings doesn't exist. """
         try:
             settings_obj = XPSettings.objects.first()
             if not settings_obj:
@@ -96,19 +96,16 @@ class UserStats(models.Model):
         from accounts.xp_utils import XPManager
         return XPManager.xp_to_next_level(self.xp, self.level)
 
-class BadgeType(models.Model):
-    name = models.CharField(max_length=100)  # Which Module, Example: "Chores", "Book Club"
-    description = models.TextField(blank=True)
-
-    def __str__(self):
-        return self.name
-
 class Badge(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
     icon = models.ImageField(upload_to='household/badges/')
-    module = models.CharField(max_length=50)  # e.g., 'chores', 'books'
-    milestone_type = models.CharField(max_length=100)  # e.g., 'chore_slug', 'books_read'
+    app_label = models.CharField(
+        max_length=50,
+        choices=ALLOWED_APPS,
+        help_text="Select the app/module this badge applies to."
+    )
+    milestone_type = models.CharField(max_length=100)
     milestone_value = models.PositiveIntegerField()
 
     def __str__(self):

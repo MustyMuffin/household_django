@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from accounts.models import UserStats, XPSettings, XPLog, BadgeType, Badge, UserBadge
+from accounts.models import UserStats, XPSettings, XPLog, Badge, UserBadge
 from book_club.models import BooksRead, BookEntry
 from chores.models import EarnedWage, ChoreEntry
 from itertools import chain
@@ -96,7 +96,6 @@ def activity_feed(request):
         reverse=True
     )
 
-    # Groups by timestamp within a small time window
     grouped_activity = []
     last_group_time = None
     current_group = []
@@ -104,7 +103,6 @@ def activity_feed(request):
     for entry in combined:
         if not last_group_time or abs((entry['timestamp'] - last_group_time)) > timedelta(seconds=1):
             if current_group:
-                # Compute XP sum for the previous group
                 total_xp = sum(item['xp'] for item in current_group)
                 grouped_activity.append({'items': current_group, 'total_xp': total_xp})
             current_group = [entry]
@@ -118,6 +116,7 @@ def activity_feed(request):
 
     context = {'grouped_activity': grouped_activity}
     return render(request, 'accounts/activity_feed.html', context)
+
 
 
 # def user_badges_view(request):

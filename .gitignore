@@ -31,6 +31,7 @@ local_settings.py
 # Static/media files
 static/
 media/
+staticfiles/
 
 # Test artifacts
 coverage/
