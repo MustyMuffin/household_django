@@ -17,7 +17,6 @@ from django.template.loader import render_to_string
 
 from accounts.badge_helpers import check_and_award_badges
 
-
 @login_required
 def user_profile(request, username):
     user = get_object_or_404(User, username=username)
@@ -25,6 +24,7 @@ def user_profile(request, username):
     books = BooksRead.objects.filter(user=user)
     earnings = EarnedWage.objects.filter(user=user).first()
     xp_logs = XPLog.objects.filter(user=user).order_by('-date_awarded')
+    date_awarded = UserBadge.objects.filter(user=user).order_by('-awarded_at')
 
     # Default values
     xp = 0
@@ -54,6 +54,7 @@ def user_profile(request, username):
         'xp_to_next_level': xp_to_next_level,
         'progress_percent': progress_percent,
         'user_badge': user_badge,
+        'date_awarded': date_awarded,
         # 'badge_progress': badge_progress,
     }
 
@@ -126,7 +127,7 @@ def activity_feed(request):
 @staff_member_required
 def get_milestone_options(request):
     app = request.GET.get("app")
-    print(f"[DEBUG] get_milestone_options called for app: {app}")
+    # print(f"[DEBUG] get_milestone_options called for app: {app}")
 
     if app == 'chores':
         chores = Chore.objects.all()

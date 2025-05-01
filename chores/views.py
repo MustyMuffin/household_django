@@ -62,10 +62,10 @@ def new_chore_entry(request, chore_id):
             earned_wage.earnedSincePayout += Decimal(chore.wage)
             earned_wage.save()
 
-            # Update badge count
-            checker = ChoreBadgeChecker()
-            total_completed = ChoreEntry.objects.filter(user=user, chore=chore).count()
-            checker.check_and_award(user, chore.slug, total_completed)
+            # # Update badge count
+            # checker = ChoreBadgeChecker()
+            # total_completed = ChoreEntry.objects.filter(user=user, chore=chore).count()
+            # checker.check_and_award(user, chore.slug, total_completed)
 
             # Award XP
             result = award_xp(

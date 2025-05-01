@@ -31,12 +31,15 @@ class BadgeMilestoneForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         app = (
-            self.data.get("app_label")
-            or self.initial.get("app_label")
-            or getattr(self.instance, "app_label", None)
+                self.data.get("app_label")
+                or self.initial.get("app_label")
+                or getattr(self.instance, "app_label", None)
         )
 
         print(f"[DEBUG] BadgeMilestoneForm initialized with app_label={app}")
+
+        if 'milestone_type' in self.fields:
+            del self.fields['milestone_type']
 
         if app == 'chores':
             print("[DEBUG] Using ModelChoiceField for Chores")

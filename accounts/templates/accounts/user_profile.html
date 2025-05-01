@@ -52,7 +52,7 @@
                       <p><strong>Module:</strong> {{ user_badge.badge.module }}</p>
                       <p><strong>Description:</strong> {{ user_badge.badge.description }}</p>
                       <p><strong>Milestone:</strong> {{ user_badge.badge.milestone }}</p>
-                      <p><small>Earned on: {{ user_badge.date_earned|date:"M d, Y" }}</small></p>
+                      <p><small>Earned on: {{ user_badge.awarded_at|date:"M d, Y" }}</small></p>
                     </div>
                     <div class="modal-footer">
                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
