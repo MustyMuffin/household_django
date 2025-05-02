@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from accounts.xp_utils import XPManager
 from django.apps import apps
 from .constants import ALLOWED_APPS
+from accounts.badge_helpers import BadgeProgressProvider
 
 class XPSettings(models.Model):
     base = models.PositiveIntegerField(default=50)
@@ -110,6 +111,9 @@ class Badge(models.Model):
 
     def __str__(self):
         return self.name
+
+    def get_progress_for_user(self, user):
+        return BadgeProgressProvider.get_progress(self, user)
 
 class UserBadge(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

@@ -7,3 +7,4 @@ class BookClubConfig(AppConfig):
 
     def ready(self):
         import book_club.signals
+        import book_club.badge_progress_book_club

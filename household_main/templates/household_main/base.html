@@ -150,21 +150,23 @@
           });
 
           toastList.forEach(function(toast, index) {
-            toast.show();
+              toast.show();
 
-            // 🎉 Fire confetti if the toast contains "Congratulations"
-            const toastBody = toastElList[index].querySelector('.toast-body');
-            if (toastBody && toastBody.textContent.includes('Congratulations')) {
-              setTimeout(() => {
-                confetti({
-                  particleCount: 150,
-                  spread: 70,
-                  origin: { y: 0.6 }
-                });
-              }, 500);
-            }
+              const toastBody = toastElList[index].querySelector('.toast-body');
+              if (toastBody && (
+                  toastBody.textContent.includes('Congratulations') ||
+                  toastBody.textContent.includes('Badge Unlocked'))
+              ) {
+                  setTimeout(() => {
+                      confetti({
+                          particleCount: 150,
+                          spread: 70,
+                          origin: {y: 0.6}
+                      });
+                  }, 500);
+              }
+          })
           });
-        });
         </script>
         {% endif %}
         <script>

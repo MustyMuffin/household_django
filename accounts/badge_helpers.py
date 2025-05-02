@@ -1,31 +1,35 @@
+from django.utils.timezone import now
 from django.contrib import messages
-from accounts.models import UserStats
-from book_club.models import WordsRead
-from chores.models import ChoreEntry
 
+def check_and_award_badges(user, app_label, milestone_key, current_value, request=None):
+    # Move imports here to avoid circular import at module level
+    from accounts.models import UserBadge, Badge
 
-def check_and_award_badges(user):
-    from accounts.models import Badge, UserBadge
+    unlocked_badges = UserBadge.objects.filter(user=user).values_list('badge_id', flat=True)
+    eligible_badges = Badge.objects.filter(
+        app_label=app_label,
+        milestone_type=milestone_key,
+        milestone_value__lte=current_value
+    ).exclude(id__in=unlocked_badges)
 
-    stats = UserStats.objects.get(user=user)
-    words_read = WordsRead.objects.filter(user=user).first()
-    chores_done = ChoreEntry.objects.filter(user=user).count()
+    for badge in eligible_badges:
+        UserBadge.objects.create(user=user, badge=badge, awarded_at=now())
+        if request:
+            messages.success(request, f"🏅 Badge Unlocked!: {badge.name}")
 
-    badges = Badge.objects.all()
+class BadgeProgressProvider:
+    registry = {}
 
-    for badge in badges:
-        already_awarded = UserBadge.objects.filter(user=user, badge=badge).exists()
-        if already_awarded:
-            continue
+    @classmethod
+    def register(cls, app_label):
+        def decorator(fn):
+            cls.registry[app_label] = fn
+            return fn
+        return decorator
 
-        # Conditions
-        meets_xp = stats.xp >= badge.xp_required
-        meets_words = words_read and (words_read.wordsLifetime >= badge.words_required)
-        meets_chores = chores_done >= badge.chores_completed_required
-
-        if meets_xp or meets_words or meets_chores:
-            UserBadge.objects.create(user=user, badge=badge)
-            messages.success(
-                None,
-                f"🏅 Congratulations! You unlocked the badge: {badge.name}!"
-            )
+    @classmethod
+    def get_progress(cls, badge, user):
+        func = cls.registry.get(badge.app_label)
+        if func:
+            return func(badge, user)
+        return 0

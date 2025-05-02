@@ -42,7 +42,8 @@ class BadgeMilestoneForm(forms.ModelForm):
             del self.fields['milestone_type']
 
         if app == 'chores':
-            print("[DEBUG] Using ModelChoiceField for Chores")
+            # print("[DEBUG] Using ModelChoiceField for Chores")
+
             self.fields['milestone_type'] = forms.ModelChoiceField(
                 queryset=Chore.objects.all(),
                 label='Chore Milestone',
@@ -50,15 +51,19 @@ class BadgeMilestoneForm(forms.ModelForm):
                 required=True
             )
         elif app == 'book_club':
-            print("[DEBUG] Using CharField for Book Club")
-            self.fields['milestone_type'] = forms.CharField(
-                max_length=100,
-                label='Book Milestone',
-                help_text="E.g., number of books read or total words read.",
+            print("[DEBUG] Switching to Book milestone options")
+
+            self.fields['milestone_type'] = forms.ChoiceField(
+                choices=[
+                    ('books_read', 'Books Read'),
+                    ('words_read', 'Words Read'),
+                    ('specific_book', 'Specific Book'),
+                ],
+                label='Book Milestone Type',
                 required=True
             )
         else:
-            print("[DEBUG] Using generic fallback CharField")
+            # print("[DEBUG] Using generic fallback CharField")
             self.fields['milestone_type'] = forms.CharField(
                 max_length=100,
                 label='Milestone Type',

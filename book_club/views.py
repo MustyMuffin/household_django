@@ -1,12 +1,12 @@
 from collections import defaultdict
-
+from accounts.badge_helpers import check_and_award_badges
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
-from accounts.xp_helpers import award_xp  # import central XP awarder
+from accounts.xp_helpers import award_xp
 from accounts.models import UserStats
 from .forms import BookEntryForm, BookForm
-from .models import Book, WordsRead
+from .models import Book, WordsRead, BooksRead
 
 
 def books_by_category(request):
@@ -50,6 +50,12 @@ def new_book_entry(request, book_id):
             new_entry.book = book
             new_entry.user = request.user
             new_entry.save()
+
+            books_read_count = BooksRead.objects.filter(user=request.user).count()
+            check_and_award_badges(request.user, 'book_club', 'books_read', books_read_count, request)
+
+            words_total = WordsRead.objects.get(user=request.user).wordsLifetime
+            check_and_award_badges(request.user, 'book_club', 'words_read', words_total, request)
 
 
             # Award XP using the xp helper

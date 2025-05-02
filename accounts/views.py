@@ -1,21 +1,83 @@
 from datetime import timedelta
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.views import View
+from django.views.generic import TemplateView
+
 from accounts.models import UserStats, XPSettings, XPLog, Badge, UserBadge
-from book_club.models import BooksRead, BookEntry
+from book_club.models import BooksRead, BookEntry, Book
 from chores.models import EarnedWage, ChoreEntry, Chore
 from itertools import chain
 from operator import itemgetter
 from accounts.xp_utils import XPManager
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import render_to_string
+from chores.models import ChoreEntry
+from book_club.models import BooksRead
+from django.db.models import Count
+from accounts.badge_helpers import BadgeProgressProvider
 
-from accounts.badge_helpers import check_and_award_badges
+class AllBadges(LoginRequiredMixin, View):
+    def get(self, request):
+        app_label_filter = request.GET.get('app_label')
+        milestone_filter = request.GET.get('milestone_type')
+
+        all_badges = Badge.objects.all()
+
+        if app_label_filter:
+            all_badges = all_badges.filter(app_label=app_label_filter)
+
+        if milestone_filter:
+            all_badges = all_badges.filter(milestone_type=milestone_filter)
+
+        awarded_badges = UserBadge.objects.filter(user=request.user)
+        awarded_ids = set(awarded_badges.values_list('badge_id', flat=True))
+
+        badge_data = []
+        for badge in all_badges:
+            is_unlocked = badge.id in awarded_ids
+            awarded_at = awarded_badges.get(badge_id=badge.id).awarded_at if is_unlocked else None
+            progress = badge.get_progress_for_user(request.user) if not is_unlocked else None
+
+            badge_data.append({
+                'badge': badge,
+                'is_unlocked': is_unlocked,
+                'awarded_at': awarded_at,
+                'progress_percent': progress
+            })
+
+        # Filter milestone types based on app_label
+        milestone_types = Badge.objects.filter(app_label=app_label_filter).values_list('milestone_type', flat=True).distinct() if app_label_filter else Badge.objects.values_list('milestone_type', flat=True).distinct()
+
+        # Sort badges: unlocked first, then by milestone type
+        badge_data.sort(key=lambda b: (not b['is_unlocked'], b['badge'].milestone_type.lower()))
+
+        context = {
+            'badges': badge_data,
+            'milestone_types': milestone_types,
+            'app_labels': Badge.objects.values_list('app_label', flat=True).distinct(),
+            'active_app_label': app_label_filter,
+            'active_filter': milestone_filter,
+        }
+        return render(request, 'accounts/all_badges.html', context)
+
+class MilestoneTypeOptionsView(LoginRequiredMixin, View):
+    def get(self, request, *args, **kwargs):
+        app_label = request.GET.get("app_label")
+        if not app_label:
+            return JsonResponse({'options': []})
+
+        milestone_types = (
+            Badge.objects.filter(app_label=app_label)
+            .values_list('milestone_type', flat=True)
+            .distinct()
+        )
+        return JsonResponse({'options': list(milestone_types)})
 
 @login_required
 def user_profile(request, username):
@@ -60,14 +122,6 @@ def user_profile(request, username):
 
     return render(request, 'accounts/user_profile.html', context)
 
-
-@login_required
-def all_badges(request):
-    badges = Badge.objects.all().order_by('module')
-    context = {
-        'badges': badges
-    }
-    return render(request, 'accounts/all_badges.html', context)
 
 def activity_feed(request):
     show_all_users = True
@@ -134,47 +188,14 @@ def get_milestone_options(request):
         html = render_to_string("admin/accounts/badge/milestone_field_chores.html", {"chores": chores})
         return HttpResponse(html)
 
-    return HttpResponse(render_to_string("admin/accounts/badge/milestone_field_charfield.html"))
+    elif app == "book_club":
+        options = [
+            {"id": "books_read", "name": "Books Read"},
+            {"id": "words_read", "name": "Words Read"}
+        ]
+        return JsonResponse({"options": options})
 
-# def user_badges_view(request):
-#     filter_option = request.GET.get('filter', 'all')
-#     sort_option = request.GET.get('sort', 'default')
-#
-#     badges = Badge.objects.all()
-#     user_badges = UserBadge.objects.filter(user=request.user)
-#     user_badge_map = {ub.badge_id: ub for ub in user_badges}
-#
-#     badge_list = []
-#
-#     for badge in badges:
-#         user_badge = user_badge_map.get(badge.id)
-#         if user_badge:
-#             badge.progress = user_badge.progress
-#             badge.progress_percent = min(int((user_badge.progress / badge.requirement) * 100), 100)
-#             badge.earned = user_badge.earned
-#         else:
-#             badge.progress = 0
-#             badge.progress_percent = 0
-#             badge.earned = False
-#
-#         # Apply filter
-#         if filter_option == 'earned' and not badge.earned:
-#             continue
-#         if filter_option == 'locked' and badge.earned:
-#             continue
-#
-#         badge_list.append(badge)
-#
-#     # Apply sorting
-#     if sort_option == 'progress':
-#         badge_list.sort(key=lambda b: b.progress_percent, reverse=True)
-#
-#     context = {
-#         'badges': badge_list,
-#         'current_filter': filter_option,
-#         'current_sort': sort_option,
-#     }
-#     return render(request, 'accounts/all_badges.html', context)
+    return HttpResponse(render_to_string("admin/accounts/badge/milestone_field_charfield.html"))
 
 def register(request):
     """Register a new user."""

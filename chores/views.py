@@ -4,7 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from collections import defaultdict
 from decimal import Decimal
-from .badge_helpers import ChoreBadgeChecker
+
+from accounts.badge_helpers import check_and_award_badges
+from .badge_progress_chores import get_chores_progress
 from accounts.models import UserStats, XPSettings, XPLog
 # from django.http import Http404
 from accounts.xp_utils import XPManager
@@ -62,10 +64,8 @@ def new_chore_entry(request, chore_id):
             earned_wage.earnedSincePayout += Decimal(chore.wage)
             earned_wage.save()
 
-            # # Update badge count
-            # checker = ChoreBadgeChecker()
-            # total_completed = ChoreEntry.objects.filter(user=user, chore=chore).count()
-            # checker.check_and_award(user, chore.slug, total_completed)
+            chore_count = ChoreEntry.objects.filter(user=request.user, chore=chore).count()
+            check_and_award_badges(request.user, 'chores', str(chore.id), chore_count, request)
 
             # Award XP
             result = award_xp(

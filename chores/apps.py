@@ -7,3 +7,4 @@ class ChoresConfig(AppConfig):
 
     def ready(self):
         import chores.signals
+        import chores.badge_progress_chores
