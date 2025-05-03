@@ -49,11 +49,16 @@ def new_book_entry(request, book_id):
             new_entry.user = request.user
             new_entry.save()
 
+            books_read_record, created = BooksRead.objects.get_or_create(
+                user=request.user,
+                book_name=book.text
+            )
+
             from accounts.badge_helpers import check_and_award_badges
 
             # Count total books read
-            books_read_total = BookEntry.objects.select_related('user').count()
-            print(f"DEBUG: {books_read_total}")
+            books_read_total = BooksRead.objects.filter(user=request.user).count()
+            print(f"DEBUG: Books read total for this user: {books_read_total}")
 
             # Check for book-related badges
             check_and_award_badges(
@@ -63,16 +68,6 @@ def new_book_entry(request, book_id):
                 current_value=books_read_total,
                 request=request
             )
-
-            # words_total = WordsRead.objects.get(user=request.user).wordsLifetime
-            #
-            # check_and_award_badges(
-            #     user=request.user,
-            #     app_label="book_club",
-            #     milestone_type="words_read",
-            #     current_value=words_total,
-            #     request=request
-            # )
 
 
             # Award XP using the xp helper
@@ -92,6 +87,16 @@ def new_book_entry(request, book_id):
             words_entry, created = WordsRead.objects.get_or_create(user=request.user)
             words_entry.wordsLifetime += book.words
             words_entry.save()
+
+            words_total = WordsRead.objects.get(user=request.user).wordsLifetime
+
+            check_and_award_badges(
+                user=request.user,
+                app_label="book_club",
+                milestone_type="words_read",
+                current_value=words_total,
+                request=request
+            )
 
             userstats, _ = UserStats.objects.get_or_create(user=request.user)
             if hasattr(userstats, 'words_read'):
