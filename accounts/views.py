@@ -181,10 +181,11 @@ def activity_feed(request):
 @staff_member_required
 def get_milestone_options(request):
     app = request.GET.get("app")
-    # print(f"[DEBUG] get_milestone_options called for app: {app}")
+    print(f"[DEBUG] get_milestone_options called for app: {app}")
 
     if app == 'chores':
         chores = Chore.objects.all()
+        print(f"[DEBUG] chores = {chores}")
         html = render_to_string("admin/accounts/badge/milestone_field_chores.html", {"chores": chores})
         return HttpResponse(html)
 

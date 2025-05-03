@@ -42,7 +42,7 @@ class BadgeMilestoneForm(forms.ModelForm):
             del self.fields['milestone_type']
 
         if app == 'chores':
-            # print("[DEBUG] Using ModelChoiceField for Chores")
+            print("[DEBUG] Using ModelChoiceField for Chores")
 
             self.fields['milestone_type'] = forms.ModelChoiceField(
                 queryset=Chore.objects.all(),

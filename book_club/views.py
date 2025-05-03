@@ -58,7 +58,7 @@ def new_book_entry(request, book_id):
 
             # Count total books read
             books_read_total = BooksRead.objects.filter(user=request.user).count()
-            print(f"DEBUG: Books read total for this user: {books_read_total}")
+            # print(f"DEBUG: Books read total for this user: {books_read_total}")
 
             # Check for book-related badges
             check_and_award_badges(
