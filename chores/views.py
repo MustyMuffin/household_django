@@ -67,7 +67,7 @@ def new_chore_entry(request, chore_id):
             check_and_award_badges(
                 user=request.user,
                 app_label="chores",
-                milestone_key=chore.text,
+                milestone_type=chore.text,
                 current_value=current_count,
                 request=request
             )

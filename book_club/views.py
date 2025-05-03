@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from accounts.xp_helpers import award_xp
 from accounts.models import UserStats
 from .forms import BookEntryForm, BookForm
-from .models import Book, WordsRead, BooksRead
+from .models import Book, WordsRead, BooksRead, BookEntry
 
 
 def books_by_category(request):
@@ -19,8 +19,6 @@ def books_by_category(request):
         category_name = item.book_category.name if item.book_category else "Uncategorized"
         books_by_category[category_name].append(item)
 
-    print("Categories in view context:", books_by_category.keys())
-
     context = {'books_by_category': dict(books_by_category)}
     return render(request, 'book_club/books_by_category.html', context)
 
@@ -31,7 +29,7 @@ def books(request):
     return render(request, 'book_club/books.html', context)
 
 def book(request, book_id):
-    """Show a single chore and all its entries."""
+    """Show a single book and all its entries."""
     book = Book.objects.get(id=book_id)
     book_entries = book.bookentry_set.order_by('-date_added')
     context = {'book': book, 'book_entries': book_entries}
@@ -51,11 +49,30 @@ def new_book_entry(request, book_id):
             new_entry.user = request.user
             new_entry.save()
 
-            books_read_count = BooksRead.objects.filter(user=request.user).count()
-            check_and_award_badges(request.user, 'book_club', 'books_read', books_read_count, request)
+            from accounts.badge_helpers import check_and_award_badges
 
-            words_total = WordsRead.objects.get(user=request.user).wordsLifetime
-            check_and_award_badges(request.user, 'book_club', 'words_read', words_total, request)
+            # Count total books read
+            books_read_total = BookEntry.objects.select_related('user').count()
+            print(f"DEBUG: {books_read_total}")
+
+            # Check for book-related badges
+            check_and_award_badges(
+                user=request.user,
+                app_label="book_club",
+                milestone_type="books_read",
+                current_value=books_read_total,
+                request=request
+            )
+
+            # words_total = WordsRead.objects.get(user=request.user).wordsLifetime
+            #
+            # check_and_award_badges(
+            #     user=request.user,
+            #     app_label="book_club",
+            #     milestone_type="words_read",
+            #     current_value=words_total,
+            #     request=request
+            # )
 
 
             # Award XP using the xp helper
@@ -76,7 +93,6 @@ def new_book_entry(request, book_id):
             words_entry.wordsLifetime += book.words
             words_entry.save()
 
-            # Update UserStats (total words if you track it here too)
             userstats, _ = UserStats.objects.get_or_create(user=request.user)
             if hasattr(userstats, 'words_read'):
                 userstats.words_read += book.words
