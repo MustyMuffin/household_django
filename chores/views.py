@@ -1,18 +1,17 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.decorators import user_passes_test
 from collections import defaultdict
 from decimal import Decimal
 
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import render, redirect, get_object_or_404
+
 from accounts.badge_helpers import check_and_award_badges
-from .badge_progress_chores import get_chores_progress
-from accounts.models import UserStats, XPSettings, XPLog
 # from django.http import Http404
-from accounts.xp_utils import XPManager
 from accounts.xp_helpers import award_xp
-from .models import Chore, EarnedWage, ChoreEntry, ChoreCategory
 from .forms import ChoreEntryForm
+from .models import Chore, EarnedWage, ChoreEntry
+
 
 def chores_by_category(request):
     # Group chores by their category
@@ -23,8 +22,6 @@ def chores_by_category(request):
     for item in all_chores:
         category_name = item.chore_category.name if item.chore_category else "Uncategorized"
         chores_by_category[category_name].append(item)
-
-    print("Categories in view context:", chores_by_category.keys())
 
     context = {'chores_by_category': dict(chores_by_category)}
     return render(request, 'chores/chores_by_category.html', context)
@@ -64,8 +61,16 @@ def new_chore_entry(request, chore_id):
             earned_wage.earnedSincePayout += Decimal(chore.wage)
             earned_wage.save()
 
-            chore_count = ChoreEntry.objects.filter(user=request.user, chore=chore).count()
-            check_and_award_badges(request.user, 'chores', str(chore.id), chore_count, request)
+            from accounts.badge_helpers import check_and_award_badges
+            current_count = ChoreEntry.objects.filter(user=request.user, chore=chore).count()
+
+            check_and_award_badges(
+                user=request.user,
+                app_label="chores",
+                milestone_key=chore.text,
+                current_value=current_count,
+                request=request
+            )
 
             # Award XP
             result = award_xp(
@@ -83,6 +88,7 @@ def new_chore_entry(request, chore_id):
                 messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
 
             return redirect('chores:chores_by_category')
+
 
     context = {
         'chore': chore,
