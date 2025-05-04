@@ -1,8 +1,11 @@
 # Household Management App
-README v0.2
+README v0.3
 
-This Django project was created by a parent who wanted to motivate their young laborers. It is a household productivity and tracking tool, designed to manage and gamify various aspects of home life by awarding experience points to various chores or reading tasks. The leveling curve is customizable by admin, with a recommended base of 100-200 and a curve of 1.1 to 1.4. 
-It also allows users to track books read (and total words), monitor earnings from chores, and maintain leaderboards to encourage friendly competition.
+This Django project was created by a parent who wanted to motivate their young laborers to help around the house more (and be excited about it). It grew into something that I believe everyone could use and benefit from as well.
+
+At its core, it is a household productivity and tracking tool, designed to manage, track, and gamify various aspects of home life by awarding experience points for various chores or reading milestones. The leveling curve is customizable by admin, with a recommended base of 100-200 and a curve of 1.1 to 1.4. 
+
+It currently tracks books read (and total words), chores completed (and earnings), as well as maintains leaderboards to encourage friendly competition.
 
 ## In developement 
 
