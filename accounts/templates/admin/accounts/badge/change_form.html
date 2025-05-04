@@ -3,9 +3,12 @@
 
 {% block extrahead %}
   {{ block.super }}
+  {{ media }}
     <script>
         console.log("✅ Custom change_form.html loaded");
-        window.badgeMilestoneURL = "{% url 'admin:accounts_badge_milestone-options' %}";
+         window.badgeMilestoneInitial = "{{ adminform.form.instance.milestone_type|default:'' }}";
+         window.badgeMilestoneURL = "{% url 'admin:accounts_badge_milestone_options' %}";
+         {#window.badgeMilestoneInitial = "{{ adminform.form.instance.milestone_type|default:'' }}";#}
     </script>
     <script src="{% static 'admin/js/badge_dynamic.js' %}"></script>
 {% endblock %}

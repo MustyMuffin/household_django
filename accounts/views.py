@@ -68,7 +68,9 @@ class AllBadges(LoginRequiredMixin, View):
 
 class MilestoneTypeOptionsView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
+
         app_label = request.GET.get("app_label")
+
         if not app_label:
             return JsonResponse({'options': []})
 
@@ -78,6 +80,33 @@ class MilestoneTypeOptionsView(LoginRequiredMixin, View):
             .distinct()
         )
         return JsonResponse({'options': list(milestone_types)})
+
+def get_milestone_options(request):
+    app = request.GET.get("app")
+    initial = request.GET.get("initial")
+    print(f"[DEBUG] app={app}, initial={initial}")
+
+    if app == "chores":
+        chores = Chore.objects.all()
+        html = render_to_string(
+            "admin/accounts/badge/milestone_field_chores.html",
+            {"chores": chores, "initial": initial}
+        )
+        return HttpResponse(html, content_type="text/html")
+
+    elif app == "book_club":
+        data = {
+            "options": [
+                {"id": "books_read", "name": "Books Read"},
+                {"id": "words_read", "name": "Words Read"},
+                {"id": "specific_book", "name": "Specific Book"},
+            ],
+            "initial": initial
+        }
+        return JsonResponse(data)
+
+    return JsonResponse({"options": []})
+
 
 @login_required
 def user_profile(request, username):
@@ -177,26 +206,6 @@ def activity_feed(request):
     context = {'grouped_activity': grouped_activity}
     return render(request, 'accounts/activity_feed.html', context)
 
-
-@staff_member_required
-def get_milestone_options(request):
-    app = request.GET.get("app")
-    print(f"[DEBUG] get_milestone_options called for app: {app}")
-
-    if app == 'chores':
-        chores = Chore.objects.all()
-        print(f"[DEBUG] chores = {chores}")
-        html = render_to_string("admin/accounts/badge/milestone_field_chores.html", {"chores": chores})
-        return HttpResponse(html)
-
-    elif app == "book_club":
-        options = [
-            {"id": "books_read", "name": "Books Read"},
-            {"id": "words_read", "name": "Words Read"}
-        ]
-        return JsonResponse({"options": options})
-
-    return HttpResponse(render_to_string("admin/accounts/badge/milestone_field_charfield.html"))
 
 def register(request):
     """Register a new user."""

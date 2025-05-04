@@ -2,7 +2,6 @@ from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
-from accounts.xp_utils import XPManager
 from django.apps import apps
 from .constants import ALLOWED_APPS
 from accounts.badge_helpers import BadgeProgressProvider

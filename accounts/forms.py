@@ -1,6 +1,5 @@
 from django import forms
 from .models import Badge
-from chores.models import Chore
 from .constants import ALLOWED_APPS
 from django import forms
 from accounts.models import Badge
@@ -9,6 +8,7 @@ try:
     from chores.models import Chore
 except ImportError:
     Chore = None
+    print("DEBUG: Chore not imported")
 
 class ModuleBadgeConfigForm(forms.ModelForm):
     class Meta:
@@ -30,16 +30,13 @@ class BadgeMilestoneForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        print(f"[DEBUG] BadgeMilestoneForm initialized")
+
         app = (
                 self.data.get("app_label")
                 or self.initial.get("app_label")
                 or getattr(self.instance, "app_label", None)
         )
-
-        print(f"[DEBUG] BadgeMilestoneForm initialized with app_label={app}")
-
-        if 'milestone_type' in self.fields:
-            del self.fields['milestone_type']
 
         if app == 'chores':
             print("[DEBUG] Using ModelChoiceField for Chores")
@@ -50,6 +47,7 @@ class BadgeMilestoneForm(forms.ModelForm):
                 help_text="Select the specific chore this badge applies to.",
                 required=True
             )
+
         elif app == 'book_club':
             print("[DEBUG] Switching to Book milestone options")
 
@@ -63,7 +61,7 @@ class BadgeMilestoneForm(forms.ModelForm):
                 required=True
             )
         else:
-            # print("[DEBUG] Using generic fallback CharField")
+            print("[DEBUG] Using generic fallback CharField")
             self.fields['milestone_type'] = forms.CharField(
                 max_length=100,
                 label='Milestone Type',

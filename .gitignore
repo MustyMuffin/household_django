@@ -29,6 +29,7 @@ local_settings.py
 *.sublime-workspace
 
 # Static/media files
+!*/staticfiles/admin/js/badge_dynamic.js
 static/
 media/
 staticfiles/

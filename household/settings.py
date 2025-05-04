@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'book_club',
 
     #Added for signals
-    # 'chores.apps.ChoresConfig',
+   # 'chores.apps.ChoresConfig',
 
 
     # Third party apps.
@@ -133,12 +133,11 @@ CMS_COLOR_SCHEME = "dark"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = '/static/'
+import os
 
-STATICFILES_DIRS = [
-    BASE_DIR / "static",  # or os.path.join(BASE_DIR, "static")
-]
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = '/static/'
+STATICFILES_DIRS = BASE_DIR / "static",
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = 'media/'
 

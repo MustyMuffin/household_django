@@ -102,7 +102,7 @@
         appLabelSelect?.addEventListener('change', function () {
           const selectedApp = this.value;
     
-          fetch(`/badges/milestone-options/?app_label=${selectedApp}`)
+          fetch(`/badges/milestone_options/?app_label=${selectedApp}`)
             .then(response => response.json())
             .then(data => {
               milestoneSelect.innerHTML = '<option value="">All Milestones</option>';
