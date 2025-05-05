@@ -41,3 +41,11 @@ class BooksRead(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     book_name = models.CharField(max_length=20, default="BoomWhacker")
     date_added = models.DateTimeField(auto_now_add=True)
+
+class BookProgressTracker(models.Model):
+    """For tracking book progress and awarding xp for books still in progress."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    book_name = models.CharField(max_length=20)
+    date_added = models.DateTimeField(auto_now_add=True)
+    words_completed = models.IntegerField(default=0)
+    text = models.CharField(max_length=100, default="Chapter 1")

@@ -5,10 +5,19 @@
   <p><a href="{% url 'book_club:book' book.id %}">{{ book }}</a></p>
 
   <p>Add a new entry:</p>
-  <form action="{% url 'book_club:new_book_entry' book.id %}" method='post'>
-    {% csrf_token %}
-    {{ form.as_div }}
-    <button name='submit'>Add book entry</button>
-  </form>
+    <div>
+        <form action="{% url 'book_club:new_book_entry' book.id %}" method='post'>
+            {% csrf_token %}
+            {{ form.as_div }}
+            <button name='submit'>Completed book entry</button>
+        </form>
+    </div>
+
+    <div>
+{#        <form action="{% url 'book_club:new_book_tracker_entry' book.id %}" method='post'>#}
+{#            {% csrf_token %}#}
+{#            {{ form.as_div }}#}
+        <p><a href="{% url 'book_club:new_book_tracker_entry' book.id %}">{{ "Track Progress" }}</a></p>
+    </div>
 
 {% endblock content %}

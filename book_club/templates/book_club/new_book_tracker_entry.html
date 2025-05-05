@@ -1,0 +1,15 @@
+{% extends "household_main/base.html" %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">📚 New Book Entry</h2>
+
+  <form method="post" class="needs-validation" novalidate>
+    {% csrf_token %}
+    {% bootstrap_form form fields="text,words_completed" %}
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+</div>
+{% endblock %}
+
