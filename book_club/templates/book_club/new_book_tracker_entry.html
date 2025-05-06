@@ -4,7 +4,12 @@
 {% block content %}
 <div class="container py-4">
   <h2 class="mb-4">📚 New Book Entry</h2>
+    <p>Words in {{ book }}: {{ book.words }}</p>
 
+    <p> Words estimator:</p>
+    <div class="progress">
+        <div class="progress-bar" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
   <form method="post" class="needs-validation" novalidate>
     {% csrf_token %}
     {% bootstrap_form form fields="text,words_completed" %}
@@ -12,4 +17,3 @@
   </form>
 </div>
 {% endblock %}
-
