@@ -31,4 +31,6 @@
       <p>No books found :(.</p>
     {% endfor %}
   </div>
+
+      <a class="btn btn-lg btn-block btn-outline-primary" href="{% url 'book_club:book_backlog' %}" role="button">📚 Books Currently In Progress</a>
 {% endblock content %}

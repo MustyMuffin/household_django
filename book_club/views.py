@@ -1,13 +1,12 @@
 from collections import defaultdict
-from accounts.badge_helpers import check_and_award_badges
+from django.db.models import F
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect, get_object_or_404
-from accounts.xp_helpers import award_xp
+from django.shortcuts import get_object_or_404, redirect, render
 from accounts.models import UserStats
-from . import forms
+from accounts.xp_helpers import award_xp
 from .forms import BookEntryForm, BookForm, BookProgressTrackerForm
-from .models import Book, WordsRead, BooksRead, BookEntry, BookProgressTracker
+from .models import Book, WordsRead, BooksRead, BookProgressTracker
 
 
 def books_by_category(request):
@@ -108,21 +107,28 @@ def new_book_entry(request, book_id):
     context = {'book': book, 'form': form}
     return render(request, 'book_club/new_book_entry.html', context)
 
-@login_required
+@login_required()
 def new_book_tracker_entry(request, book_id):
     book = get_object_or_404(Book, id=book_id)
-    book_name = book.text
 
-    if request.method != 'POST':
-        form = BookProgressTrackerForm()
-    else:
-        form = BookProgressTrackerForm(data=request.POST)
+    # Check for existing entry
+    existing_entry = BookProgressTracker.objects.filter(user=request.user, book_name=book).first()
+
+    if existing_entry and request.method != 'POST':
+        # Prompt the user to confirm update
+        messages.warning(request, f"You've already logged progress for this book. Would you like to update your entry?")
+        return redirect('book_club:update_book_tracker_entry', pk=existing_entry.pk)
+
+    form = BookProgressTrackerForm(request.POST or None)
+
+    if request.method == 'POST':
+        form = BookProgressTrackerForm(request.POST)
         if form.is_valid():
             words_progress = form.cleaned_data['words_completed']
             words_progress_int = int(words_progress)
 
             new_entry = form.save(commit=False)
-            new_entry.book_name = book_name
+            new_entry.book_name = book
             new_entry.user = request.user
             new_entry.words_completed = words_progress_int
             new_entry.save()
@@ -131,31 +137,90 @@ def new_book_tracker_entry(request, book_id):
             words_entry.wordsLifetime += words_progress_int
             words_entry.save()
 
-            # Award XP using the xp helper
-        result = award_xp(
-            user=request.user,
-            source_object=book,
-            reason=f"Logged book: {book.text}",
-            source_type="book"
-        )
+            result = award_xp(
+                user=request.user,
+                source_object=words_progress_int,
+                reason=f"Logged book: {book.text}",
+                source_type="book_partial"
+            )
 
-        if result.get('xp_awarded', 0) > 0:
-            messages.success(request, f"✅ You earned {result['xp_awarded']} XP for logging a book!")
+            if result.get('xp_awarded', 0) > 0:
+                messages.success(request, f"✅ You earned {result['xp_awarded']} XP for logging a book!")
 
-        if result.get('leveled_up'):
-            messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
+            if result.get('leveled_up'):
+                messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
 
-        words_total = WordsRead.objects.get(user=request.user).wordsLifetime
+            words_total = WordsRead.objects.get(user=request.user).wordsLifetime
 
-        userstats, _ = UserStats.objects.get_or_create(user=request.user)
-        if hasattr(userstats, 'words_read'):
-            userstats.words_read += book.words
-            userstats.save(update_fields=["words_read"])
+            userstats, _ = UserStats.objects.get_or_create(user=request.user)
+            if hasattr(userstats, 'words_read'):
+                userstats.words_read += book.words
+                userstats.save(update_fields=["words_read"])
 
-        return redirect('book_club:books_by_category')
+            return redirect('book_club:books_by_category')
+    else:
+        form = BookProgressTrackerForm()
 
-    context = {'book': book, 'form': form}
-    return render(request, 'book_club/new_book_tracker_entry.html', context)
+    return render(request, 'book_club/new_book_tracker_entry.html', {
+        'form': form,
+        'book': book
+    })
+
+
+@login_required
+def update_book_tracker_entry(request, pk):
+    entry = get_object_or_404(BookProgressTracker, pk=pk, user=request.user)
+    book = entry.book_name
+    old_words_completed = entry.words_completed
+
+    if request.method == 'POST':
+        form = BookProgressTrackerForm(request.POST, instance=entry)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"✅ Updated progress for '{book}'")
+            new_words_completed = form.cleaned_data['words_completed']
+            words_progressed = new_words_completed - old_words_completed
+
+            result = award_xp(
+                user=request.user,
+                source_object=words_progressed,
+                reason=f"Logged book: {book.text}",
+                source_type="book_partial"
+            )
+
+            if result.get('xp_awarded', 0) > 0:
+                messages.success(request, f"✅ You earned {result['xp_awarded']} XP for logging a book!")
+
+            if result.get('leveled_up'):
+                messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
+
+            words_total = WordsRead.objects.get(user=request.user).wordsLifetime
+
+            userstats, _ = UserStats.objects.get_or_create(user=request.user)
+            if hasattr(userstats, 'words_read'):
+                userstats.words_read += book.words
+                userstats.save(update_fields=["words_read"])
+
+            return redirect('book_club:books_by_category')
+
+    else:
+        form = BookProgressTrackerForm(instance=entry)
+
+    return render(request, 'book_club/update_book_tracker_entry.html', {
+        'form': form,
+        'book': book
+    })
+
+@login_required
+def book_backlog(request):
+    in_progress_books = BookProgressTracker.objects.select_related('book_name').filter(
+        user=request.user,
+        words_completed__gt=0,
+    ).exclude(words_completed__gte=F('book_name__words'))
+
+    return render(request, 'book_club/book_backlog.html', {
+        'in_progress_books': in_progress_books
+    })
 
 
 def new_book(request):

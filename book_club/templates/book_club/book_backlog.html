@@ -1,0 +1,19 @@
+{% extends "household_main/base.html" %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h2>📚 Book Backlog</h2>
+    {% if in_progress_books %}
+      <ul class="list-group">
+        {% for entry in in_progress_books %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ entry.book_name.text }} – {{ entry.words_completed }} / {{ entry.book_name.words }} words
+            <a href="{% url 'book_club:new_book_tracker_entry' entry.book_name.id %}" class="btn btn-sm btn-primary">Update Progress</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted mt-3">You have no books in progress.</p>
+    {% endif %}
+  </div>
+{% endblock %}

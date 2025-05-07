@@ -21,6 +21,8 @@ def award_xp(user, source_object=None, reason="", source_type="chore"):
         xp_awarded = int(Decimal(source_object.wage) * xp_settings.xp_per_chore_wage)
     elif source_type == "book":
         xp_awarded = int(Decimal(source_object.words) * xp_settings.xp_per_word)
+    elif source_type == "book_partial":
+        xp_awarded = int(source_object * xp_settings.xp_per_word)
     else:
         xp_awarded = 0
 

@@ -16,8 +16,19 @@ class BookEntryForm(forms.ModelForm):
         model = BookEntry
         fields = []
 
+
 class BookProgressTrackerForm(forms.ModelForm):
     class Meta:
-        model = BookProgressTracker
+        model = BookProgressTracker  # or your custom model
         fields = ['text', 'words_completed']
-        labels = {'text': '', 'words_completed': ''}
+
+
+# class BookProgressTrackerForm(forms.ModelForm):
+#     class Meta:
+#         model = BookProgressTracker
+#         fields = ['text', 'words_completed']
+#         labels = {'text': '', 'words_completed': ''}
+
+# class BookProgressTrackerForm(forms.Form):
+#     words_completed = forms.IntegerField(widget=forms.HiddenInput())
+#     notes = forms.CharField(widget=forms.Textarea, required=False)
