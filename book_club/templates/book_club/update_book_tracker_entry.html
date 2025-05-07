@@ -4,7 +4,7 @@
 <div class="container mt-4">
   <div class="card">
     <div class="card-header">
-      <h4>📝 Update Progress for {{ book.title }}</h4>
+      <h4>📝 Update Progress for {{ book }}</h4>
     </div>
     <div class="card-body">
       <form method="post">
@@ -24,6 +24,12 @@
   </div>
 </div>
 
+    <div class="container mt-3">
+            <form action="{% url 'book_club:new_book_entry' book.id %}" method='post'>
+                {% csrf_token %}
+                <button name='submit' class="btn btn-sm btn-block btn-outline-primary">Completed?</button>
+            </form>
+    </div>
 <script>
   const slider = document.getElementById("wordSlider");
   const hiddenInput = document.getElementById("id_words_completed");

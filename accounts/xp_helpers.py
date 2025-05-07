@@ -2,33 +2,34 @@ from decimal import Decimal
 from accounts.models import XPLog, XPSettings, UserStats
 from accounts.xp_utils import XPManager
 
-def award_xp(user, source_object=None, reason="", source_type="chore"):
-    """Award XP to a user based on the source object (chore or book)."""
+def award_xp(user, source_object=None, reason="", source_type="chore", override_xp_amount=None):
+    """Award XP to a user based on the source object, or override with a specific XP amount."""
 
     userstats, created = UserStats.objects.get_or_create(user=user)
-
     old_level = XPManager.level_from_xp(userstats.xp)
 
-    xp_awarded = 0
-
+    # Fetch XP settings (or fallback)
     xp_settings = XPSettings.objects.first()
     if not xp_settings:
         xp_settings = XPSettings(base=50, exponent=0.75)
-        """ fallback settings are 50 for base and 0.75 xp curve
-        admin should dial in curve and base in admin panel """
 
-    if source_type == "chore":
-        xp_awarded = int(Decimal(source_object.wage) * xp_settings.xp_per_chore_wage)
-    elif source_type == "book":
-        xp_awarded = int(Decimal(source_object.words) * xp_settings.xp_per_word)
-    elif source_type == "book_partial":
-        xp_awarded = int(source_object * xp_settings.xp_per_word)
+    if override_xp_amount is not None:
+        xp_awarded = int(override_xp_amount)
     else:
-        xp_awarded = 0
+        if source_type == "chore":
+            xp_awarded = int(Decimal(source_object.wage) * xp_settings.xp_per_chore_wage)
+        elif source_type == "book":
+            xp_awarded = int(Decimal(source_object.words) * xp_settings.xp_per_word)
+        elif source_type == "book_partial":
+            xp_awarded = int(Decimal(source_object) * xp_settings.xp_per_word)
+        else:
+            xp_awarded = 0
 
+    # Update stats
     userstats.xp += xp_awarded
     userstats.save(update_fields=["xp"])
 
+    # Log XP gain
     XPLog.objects.create(user=user, amount=xp_awarded, reason=reason)
 
     new_level = XPManager.level_from_xp(userstats.xp)

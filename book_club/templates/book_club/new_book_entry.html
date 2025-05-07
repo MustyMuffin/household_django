@@ -7,9 +7,6 @@
                 {% csrf_token %}
                 {{ form.as_div }}
                 <button name='submit' class="btn btn-lg btn-block btn-outline-primary">Completed {{ book }}?</button>
-{#                <button type="button" name="submit" class="btn btn-outline-dark">Completed {{ book }}?</button>#}
-{#                <button type="button" class="btn btn-outline-dark">Completed {{ book }}?</button>#}
-{#                <a class="btn btn-lg btn-block btn-outline-primary" href="#" role="button">Completed {{ book }}?</a>#}
             </form>
             </ul>
             <ul>
@@ -18,8 +15,5 @@
             <ul>
                 <a class="btn btn-lg btn-block btn-outline-primary" href="{% url 'book_club:new_book_tracker_entry' book.id %}" role="button">Track where you currently are</a>
             </ul>
-{#            <ul>#}
-{#            <p><a href="{% url 'book_club:book' book.id %}">{{ book }}</a></p>#}
-{#            </ul>#}
 
 {% endblock content %}
