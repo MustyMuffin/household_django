@@ -22,6 +22,8 @@ def award_xp(user, source_object=None, reason="", source_type="chore", override_
             xp_awarded = int(Decimal(source_object.words) * xp_settings.xp_per_word)
         elif source_type == "book_partial":
             xp_awarded = int(Decimal(source_object) * xp_settings.xp_per_word)
+        elif source_type == "finished_book":
+            xp_awarded = xp_settings.xp_per_book
         else:
             xp_awarded = 0
 

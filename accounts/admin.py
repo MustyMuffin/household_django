@@ -15,7 +15,9 @@ class XPSettingsAdmin(admin.ModelAdmin):
 class BadgeAdmin(admin.ModelAdmin):
     list_display = ("name", "description", "icon", "app_label", "milestone_type", "milestone_value")
     list_filter = ("app_label",)
+
     print("✅ BadgeAdmin loaded")
+
     form = BadgeMilestoneForm
 
     class Media:

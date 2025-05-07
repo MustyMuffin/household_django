@@ -4,13 +4,21 @@
 {% block extrahead %}
   {{ block.super }}
   {{ media }}
-    <script>
-        console.log("✅ Custom change_form.html loaded");
-         window.badgeMilestoneInitial = "{{ adminform.form.instance.milestone_type|default:'' }}";
-         window.badgeMilestoneURL = "{% url 'admin:accounts_badge_milestone_options' %}";
-         {#window.badgeMilestoneInitial = "{{ adminform.form.instance.milestone_type|default:'' }}";#}
-    </script>
-    <script src="{% static 'admin/js/badge_dynamic.js' %}"></script>
+  <script>
+    console.log("✅ Custom change_form.html loaded");
+
+    // Debug the variables being passed
+    const initialMilestone = "{{ adminform.form.initial.milestone_type|escapejs }}";
+    const milestoneURL = "{% url 'admin:accounts_badge_milestone_options' %}";
+
+    console.log("➡️ Initial milestone:", initialMilestone);
+    console.log("➡️ Milestone URL:", milestoneURL);
+
+    // Make them available to JS
+    window.badgeMilestoneInitial = initialMilestone;
+    window.badgeMilestoneURL = milestoneURL;
+  </script>
+  <script src="{% static 'admin/js/badge_dynamic.js' %}"></script>
 {% endblock %}
 
 {% block content_title %}

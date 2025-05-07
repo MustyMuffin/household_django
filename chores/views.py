@@ -7,6 +7,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 
 from accounts.badge_helpers import check_and_award_badges
+from accounts.models import UserStats
 # from django.http import Http404
 from accounts.xp_helpers import award_xp
 from .forms import ChoreEntryForm
@@ -70,6 +71,14 @@ def new_chore_entry(request, chore_id):
                 milestone_type=chore.text,
                 current_value=current_count,
                 request=request
+            )
+
+            check_and_award_badges(
+                user=request.user,
+                app_label="chores",
+                milestone_type="earned_wage",
+                current_value=chore.wage,
+                request=request  # to show a success message
             )
 
             # Award XP

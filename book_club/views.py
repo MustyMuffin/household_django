@@ -61,7 +61,7 @@ def new_book_entry(request, book_id):
                 )
 
                 if result.get('xp_awarded', 0) > 0:
-                    messages.success(request, f"✅ You earned {result['xp_awarded']} XP for logging { book.text }!")
+                    messages.success(request, f"✅ You earned {result['xp_awarded']} XP for the remaining words in { book.text }!")
 
                 if result.get('leveled_up'):
                     messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
@@ -87,6 +87,19 @@ def new_book_entry(request, book_id):
             new_entry.book = book
             new_entry.user = request.user
             new_entry.save()
+
+            result = award_xp(
+                user=request.user,
+                source_object=book,
+                reason="📚 Finished {{ book }}",
+                source_type="finished_book"
+            )
+
+            if result.get('xp_awarded', 0) > 0:
+                messages.success(request, f"✅ You earned {result['xp_awarded']} bonus XP for completing a book!")
+
+            if result.get('leveled_up'):
+                messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
 
             books_read_record, created = BooksRead.objects.get_or_create(
                 user=request.user,

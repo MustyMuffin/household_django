@@ -30,21 +30,40 @@ class BadgeMilestoneForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        print(f"[DEBUG] Fields in form: {list(self.fields.keys())}")
+        print(f"[DEBUG] Form data: {self.data}")
+        print(f"[DEBUG] Form initial: {self.initial}")
+        print(f"[DEBUG] Instance: {self.instance}")
+
         print(f"[DEBUG] BadgeMilestoneForm initialized")
 
-        app = (
-                self.data.get("app_label")
-                or self.initial.get("app_label")
-                or getattr(self.instance, "app_label", None)
-        )
+        app = None
+
+        # Check POSTed data
+        if "app_label" in self.data:
+            app = self.data.get("app_label")
+
+        # Check initial data (typically used in change forms)
+        elif "app_label" in self.initial:
+            app = self.initial["app_label"]
+
+        # Check model instance (if editing an existing Badge)
+        elif hasattr(self.instance, "app_label") and self.instance.app_label:
+            app = self.instance.app_label
+
+        print(f"[DEBUG] app: {app}")
 
         if app == 'chores':
-            print("[DEBUG] Using ModelChoiceField for Chores")
+            print("[DEBUG] Using ChoiceField with wage + chores")
 
-            self.fields['milestone_type'] = forms.ModelChoiceField(
-                queryset=Chore.objects.all(),
-                label='Chore Milestone',
-                help_text="Select the specific chore this badge applies to.",
+            chore_choices = [(str(chore.id), chore.text) for chore in Chore.objects.all()]
+            wage_option = [('earned_wage', 'Total Wage Earned')]
+            combined_choices = wage_option + chore_choices
+
+            self.fields['milestone_type'] = forms.ChoiceField(
+                choices=combined_choices,
+                label='Chore Milestone Type',
+                help_text="Select a chore or choose 'Total Wage Earned'.",
                 required=True
             )
 
@@ -68,4 +87,6 @@ class BadgeMilestoneForm(forms.ModelForm):
                 help_text="Enter a custom milestone (e.g., 'Tasks Completed')",
                 required=True
             )
+
+
 

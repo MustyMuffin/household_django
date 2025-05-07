@@ -11,6 +11,7 @@ class XPSettings(models.Model):
     exponent = models.FloatField(default=0.75)
     xp_per_word = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('0.002'))
     xp_per_chore_wage = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('10.0'))
+    xp_per_book = models.IntegerField(default='50')
 
     def __str__(self):
         return f"XP Settings (Base: {self.base}, Exponent: {self.exponent})"

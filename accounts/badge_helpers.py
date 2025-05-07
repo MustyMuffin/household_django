@@ -2,10 +2,17 @@ import traceback
 from django.http import request
 from django.utils.timezone import now
 from django.contrib import messages
+from chores import models
 
 def check_and_award_badges(user, app_label, milestone_type, current_value, request=None):
     # Move imports here to avoid circular import at module level
     from accounts.models import UserBadge, Badge
+    from django.db.models import Sum
+    from chores.models import EarnedWage
+
+    if milestone_type == "earned_wage":
+        current_value = EarnedWage.objects.filter(user=user).aggregate(
+            total=Sum('earnedLifetime')) ['total'] or 0
 
     print(f"[DEBUG] Checking badges for user={user.username}, app_label={app_label}, milestone_type={milestone_type}, current_value={current_value}")
 

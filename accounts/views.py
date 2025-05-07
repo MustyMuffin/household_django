@@ -88,11 +88,10 @@ def get_milestone_options(request):
 
     if app == "chores":
         chores = Chore.objects.all()
-        html = render_to_string(
-            "admin/accounts/badge/milestone_field_chores.html",
-            {"chores": chores, "initial": initial}
-        )
-        return HttpResponse(html, content_type="text/html")
+        options = [{"id": "earned_wage", "name": "Total Wage Earned"}] + [
+            {"id": str(chore.id), "name": chore.text} for chore in chores
+        ]
+        return JsonResponse({"options": options, "initial": initial})
 
     elif app == "book_club":
         data = {

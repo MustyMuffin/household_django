@@ -134,11 +134,10 @@ CMS_COLOR_SCHEME = "dark"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-import os
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = BASE_DIR / "static",
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = BASE_DIR / "assets/static",
+STATIC_ROOT = 'staticfiles'
 
 MEDIA_URL = 'media/'
 
