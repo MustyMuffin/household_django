@@ -1,4 +1,3 @@
-import logging
 from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -22,45 +21,37 @@ from book_club.models import BooksRead
 from django.db.models import Count
 from accounts.badge_helpers import BadgeProgressProvider
 
-logger = logging.getLogger(__name__)
 
 class AllBadges(LoginRequiredMixin, View):
     def get(self, request):
         app_label_filter = request.GET.get('app_label')
         milestone_filter = request.GET.get('milestone_type')
+        sort_mode = request.GET.get('sort', 'default')
 
         all_badges = Badge.objects.all()
-        logger.debug(f"Initial badge count: {all_badges.count()}")
 
         if app_label_filter:
             all_badges = all_badges.filter(app_label=app_label_filter)
-            logger.debug(f"Filtered by app_label '{app_label_filter}': {all_badges.count()} badges")
 
         if milestone_filter:
             all_badges = all_badges.filter(milestone_type=milestone_filter)
-            logger.debug(f"Filtered by milestone_type '{milestone_filter}': {all_badges.count()} badges")
 
         awarded_badges = UserBadge.objects.filter(user=request.user)
         awarded_ids = set(awarded_badges.values_list('badge_id', flat=True))
-        logger.debug(f"User has {len(awarded_ids)} awarded badges")
 
         badge_data = []
         for badge in all_badges:
             is_unlocked = badge.id in awarded_ids
             awarded_at = awarded_badges.get(badge_id=badge.id).awarded_at if is_unlocked else None
+            raw_progress = badge.get_progress_for_user(request.user, return_raw=True)
+            progress_percent = None if is_unlocked else badge.get_progress_for_user(request.user)
 
-            if not is_unlocked:
-                progress = badge.get_progress_for_user(request.user)
-            else:
-                progress = None
-
-            raw_progress = badge.get_progress_for_user(request.user)
             badge_data.append({
                 'badge': badge,
                 'is_unlocked': is_unlocked,
                 'awarded_at': awarded_at,
-                'progress_percent': progress,
-                'current_value': raw_progress,
+                'progress_percent': progress_percent,
+                'current_value': raw_progress
             })
 
         milestone_types = (
@@ -72,7 +63,14 @@ class AllBadges(LoginRequiredMixin, View):
             Badge.objects.values_list('milestone_type', flat=True).distinct()
         )
 
-        badge_data.sort(key=lambda b: (not b['is_unlocked'], b['badge'].milestone_type.lower()))
+        sort_mode = request.GET.get('sort', 'default')
+
+        badge_data.sort(
+            key=lambda b: (
+                not b['is_unlocked'],
+                -(b['progress_percent'] or 0) if b['progress_percent'] is not None else 0
+            )
+        )
 
         context = {
             'badges': badge_data,
@@ -80,37 +78,27 @@ class AllBadges(LoginRequiredMixin, View):
             'app_labels': Badge.objects.values_list('app_label', flat=True).distinct(),
             'active_app_label': app_label_filter,
             'active_filter': milestone_filter,
+            'sort_mode': sort_mode
         }
         return render(request, 'accounts/all_badges.html', context)
 
-@BadgeProgressProvider.register('book_club')
-def book_club_progress(badge, user):
-    if badge.milestone_type == 'books_read':
-        books_read = BooksRead.objects.filter(user=user).count()
-        books_read_final = (books_read / badge.milestone_value) * 100
-        print("DEBUG books_read_final", books_read_final)
-        return books_read_final
-    return 0
 
-# @BadgeProgressProvider.register('book_club')
-# def book_progress(badge, user):
-#     try:
-#         books_read = BooksRead.objects.get(user=user)
-#
-#         print("DEBUG books_read", books_read)
-#
-#         books_read_final = (books_read.objects.count() / badge.milestone_value) * 100
-#
-#         print("DEBUG books_read", books_read_final)
-#
-#         if badge.milestone_type == 'books_read':
-#             return books_read_final
-#         else:
-#             print("DEBUG ELSE TRIGGERED")
-#             return 0
-#     except BooksRead.DoesNotExist:
-#         print("DEBUG EXCEPT TRIGGERED")
-#         return 0
+@BadgeProgressProvider.register("book_club")
+def book_club_progress(badge, user):
+    milestone_type = badge.milestone_type
+
+    if milestone_type == "books_read":
+        return BooksRead.objects.filter(user=user).count()
+
+    elif milestone_type == "words_read":
+        words = WordsRead.objects.filter(user=user).first()
+        return words.wordsLifetime if words else 0
+
+    # elif milestone_type == "specific_book":
+    #     # For now, return 1 if they've read it, or 0
+    #     return 1 if BooksRead.objects.filter(user=user, book_name=badge.name).exists() else 0
+
+    return 0
 
 class MilestoneTypeOptionsView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
@@ -263,7 +251,9 @@ def register(request):
 
         if form.is_valid():
             new_user = form.save()
-            # Log the user in and then redirect to home page.
+
+            WordsRead.objects.get_or_create(user=new_user, wordsLifetime=0)
+
             login(request, new_user)
             return redirect('household_main:index')
 

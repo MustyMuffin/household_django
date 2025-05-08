@@ -6,7 +6,34 @@
 {% block content %}
 <div class="container py-4">
   <h2 class="mb-4 text-center">🏅 All Badges</h2>
+     <!-- Filter Dropdown -->
+  <form method="get" class="mb-3 d-flex gap-2">
+  <select name="app_label" class="form-select w-auto">
+    <option value="">All Modules</option>
+    {% for label in app_labels %}
+      <option value="{{ label }}" {% if label == active_app_filter %}selected{% endif %}>{{ label|capfirst }}</option>
+    {% endfor %}
+  </select>
 
+  <select name="milestone_type" class="form-select w-auto">
+    <option value="">All Milestones</option>
+    {% for type in milestone_types %}
+      <option value="{{ type }}" {% if type == active_milestone_filter %}selected{% endif %}>{{ type|capfirst }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit" class="btn btn-primary">Filter</button>
+  </form>
+{#        <form method="get" class="mb-3">#}
+{#        <input type="hidden" name="app_label" value="{{ active_app_label }}">#}
+{#        <input type="hidden" name="milestone_type" value="{{ active_filter }}">#}
+{#            <label for="sort-select">Sort by:</label>#}
+{#        <select id="sort-select" name="sort" onchange="this.form.submit()">#}
+{#        <option value="default">Default</option>#}
+{#        <option value="progress">Progress</option>#}
+{#        <option value="milestone">Milestone Type</option>#}
+{#        </select>#}
+{#        </form>#}
   <div class="row">
     {% for badge_data in badges %}
       {% with badge=badge_data.badge is_unlocked=badge_data.is_unlocked awarded_at=badge_data.awarded_at progress_percent=badge_data.progress_percent %}
@@ -21,9 +48,9 @@
 
               <small class="text-muted mt-1">
                 {% if is_unlocked %}
-                  <span class="badge bg-success mt-2">Unlocked</span>
+                  <span class="badge bg-secondary mt-2">Unlocked</span>
                 {% else %}
-                  <span class="badge bg-warning text-dark mt-2">Locked</span>
+                  <span class="badge bg-dark text-light mt-2">Locked</span>
                 {% endif %}
               </small>
 
@@ -49,7 +76,7 @@
 
   <!-- Modals -->
   {% for badge_data in badges %}
-  {% with badge=badge_data.badge is_unlocked=badge_data.is_unlocked awarded_at=badge_data.awarded_at current_value=badge_data.current_value %}
+  {% with badge=badge_data.badge is_unlocked=badge_data.is_unlocked awarded_at=badge_data.awarded_at current_value=badge_data.current_value progress_percent=badge_data.progress_percent%}
       <div class="modal fade" id="badgeModal{{ badge.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content bg-dark text-light border-light">
@@ -68,9 +95,7 @@
                         </div>
               {% if awarded_at %}
                 <span class="badge bg-success">Unlocked on {{ awarded_at|date:"M d, Y" }}</span>
-              {% endif %}
-            
-                {% if not is_unlocked and progress_percent %}
+                  {% else %}
                     <div class="w-100 mt-2">
                       <div class="progress" style="height: 5px;">
                         <div class="progress-bar bg-info" role="progressbar"
@@ -80,7 +105,7 @@
                       </div>
                       <small class="text-light">{{ progress_percent|floatformat:0 }}% complete</small>
                     </div>
-                  {% endif %}
+              {% endif %}
             </div>
           </div>
         </div>

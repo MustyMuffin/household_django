@@ -74,7 +74,7 @@ class BadgeMilestoneForm(forms.ModelForm):
                 choices=[
                     ('books_read', 'Books Read'),
                     ('words_read', 'Words Read'),
-                    ('specific_book', 'Specific Book'),
+                    # ('specific_book', 'Specific Book'),
                 ],
                 label='Book Milestone Type',
                 required=True

@@ -112,8 +112,13 @@ class Badge(models.Model):
     def __str__(self):
         return self.name
 
-    def get_progress_for_user(self, user):
-        return BadgeProgressProvider.get_progress(self, user)
+    def get_progress_for_user(self, user, return_raw=False):
+        value = BadgeProgressProvider.get_progress(self, user)
+        if return_raw:
+            return value
+        if not self.milestone_value:
+            return 0
+        return min(100, round((value / self.milestone_value) * 100))
 
 class UserBadge(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

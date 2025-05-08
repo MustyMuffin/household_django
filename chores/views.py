@@ -1,18 +1,38 @@
 from collections import defaultdict
 from decimal import Decimal
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
+from django.db import models
 from django.shortcuts import render, redirect, get_object_or_404
 
-from accounts.badge_helpers import check_and_award_badges
+from accounts.badge_helpers import check_and_award_badges, BadgeProgressProvider
 from accounts.models import UserStats
 # from django.http import Http404
 from accounts.xp_helpers import award_xp
 from .forms import ChoreEntryForm
 from .models import Chore, EarnedWage, ChoreEntry
 
+from chores.models import Chore, ChoreEntry
+
+@BadgeProgressProvider.register("chores")
+def chore_progress(badge, user):
+    milestone = badge.milestone_type
+    # print(f"DEBUG milestone: {milestone} ({type(milestone)})")
+
+    if milestone == "earned_wage":
+        print("✅ Chore badge with earned_wage milestone matched")
+        return ChoreEntry.objects.filter(user=user).aggregate(
+            total=models.Sum("wage")
+        )["total"] or 0
+
+    try:
+        chore = Chore.objects.get(text=milestone)
+        print(f"✅ Matched chore by text: {chore.text}")
+        return ChoreEntry.objects.filter(user=user, chore=chore).count()
+    except Chore.DoesNotExist:
+        print(f"❌ Chore not found for text: {milestone}")
+        return 0
 
 def chores_by_category(request):
     # Group chores by their category
