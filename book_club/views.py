@@ -3,13 +3,11 @@ from django.db.models import F
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
-
+from book_club.utils import update_badges_for_books
 from accounts.badge_helpers import check_and_award_badges
-from accounts.models import UserStats
 from accounts.xp_helpers import award_xp
 from .forms import BookEntryForm, BookForm, BookProgressTrackerForm
-from .models import Book, WordsRead, BooksRead, BookProgressTracker
-
+from .models import Book, WordsRead, BookProgressTracker
 
 def books_by_category(request):
     # Group books by their category
@@ -46,30 +44,19 @@ def new_book_entry(request, book_id):
     else:
         form = BookEntryForm(data=request.POST)
         if form.is_valid():
-
             try:
                 tracker = BookProgressTracker.objects.get(user=request.user, book_name=book)
                 remaining_words = max(book.words - tracker.words_completed, 0)
                 tracker.delete()
                 print(f"[DEBUG] Tracker found. Awarding {remaining_words} words worth of XP.")
-
                 result = award_xp(
                     user=request.user,
                     source_object=remaining_words,
                     reason="📚 Finished tracked book",
                     source_type="book_partial"
                 )
-
-                if result.get('xp_awarded', 0) > 0:
-                    messages.success(request, f"✅ You earned {result['xp_awarded']} XP for the remaining words in { book.text }!")
-
-                if result.get('leveled_up'):
-                    messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
-
             except BookProgressTracker.DoesNotExist:
-                remaining_words = book.words
                 print(f"[DEBUG] No tracker found. Awarding full {book.words} words.")
-
                 result = award_xp(
                     user=request.user,
                     source_object=book,
@@ -77,73 +64,39 @@ def new_book_entry(request, book_id):
                     source_type="book"
                 )
 
-                if result.get('xp_awarded', 0) > 0:
-                    messages.success(request, f"✅ You earned {result['xp_awarded']} XP for completing { book.text }!")
-
-                if result.get('leveled_up'):
-                    messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
-
+            # Save the final entry
             new_entry = form.save(commit=False)
             new_entry.book = book
             new_entry.user = request.user
             new_entry.save()
 
+            # Award bonus for finishing
             result = award_xp(
                 user=request.user,
                 source_object=book,
-                reason="📚 Finished {{ book }}",
+                reason="📚 Finished full book bonus",
                 source_type="finished_book"
             )
 
             if result.get('xp_awarded', 0) > 0:
-                messages.success(request, f"✅ You earned {result['xp_awarded']} bonus XP for completing a book!")
+                messages.success(request, f"✅ Bonus XP: {result['xp_awarded']} for finishing a book!")
 
             if result.get('leveled_up'):
-                messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
+                messages.success(request, f"🎉 You leveled up to Level {result['new_level']}!")
 
-            books_read_record, created = BooksRead.objects.get_or_create(
+            # 🔁 REPLACEMENT: Badge + stats update
+            update_badges_for_books(
                 user=request.user,
-                book_name=book.text
-            )
-
-            from accounts.badge_helpers import check_and_award_badges
-
-            # Count total books read
-            books_read_total = BooksRead.objects.filter(user=request.user).count()
-            # print(f"DEBUG: Books read total for this user: {books_read_total}")
-
-            # Check for book-related badges
-            check_and_award_badges(
-                user=request.user,
-                app_label="book_club",
-                milestone_type="books_read",
-                current_value=books_read_total,
+                book=book,
+                words_increment=book.words,
                 request=request
             )
-
-            words_entry, created = WordsRead.objects.get_or_create(user=request.user)
-            words_entry.wordsLifetime += book.words
-            words_entry.save()
-
-            words_total = WordsRead.objects.get(user=request.user).wordsLifetime
-
-            check_and_award_badges(
-                user=request.user,
-                app_label="book_club",
-                milestone_type="words_read",
-                current_value=words_total,
-                request=request
-            )
-
-            userstats, _ = UserStats.objects.get_or_create(user=request.user)
-            if hasattr(userstats, 'words_read'):
-                userstats.words_read += book.words
-                userstats.save(update_fields=["words_read"])
 
             return redirect('book_club:books_by_category')
 
     context = {'book': book, 'form': form}
     return render(request, 'book_club/new_book_entry.html', context)
+
 
 @login_required()
 def new_book_tracker_entry(request, book_id):
@@ -153,59 +106,42 @@ def new_book_tracker_entry(request, book_id):
     existing_entry = BookProgressTracker.objects.filter(user=request.user, book_name=book).first()
 
     if existing_entry and request.method != 'POST':
-        # Prompt the user to confirm update
         messages.warning(request, f"You've already logged progress for this book. Update your previous entry.")
         return redirect('book_club:update_book_tracker_entry', pk=existing_entry.pk)
 
     form = BookProgressTrackerForm(request.POST or None)
 
-    if request.method == 'POST':
-        form = BookProgressTrackerForm(request.POST)
-        if form.is_valid():
-            words_progress = form.cleaned_data['words_completed']
-            words_progress_int = int(words_progress)
+    if request.method == 'POST' and form.is_valid():
+        words_progress = form.cleaned_data['words_completed']
+        words_progress_int = int(words_progress)
 
-            new_entry = form.save(commit=False)
-            new_entry.book_name = book
-            new_entry.user = request.user
-            new_entry.words_completed = words_progress_int
-            new_entry.save()
+        new_entry = form.save(commit=False)
+        new_entry.book_name = book
+        new_entry.user = request.user
+        new_entry.words_completed = words_progress_int
+        new_entry.save()
 
-            words_entry, created = WordsRead.objects.get_or_create(user=request.user)
-            words_entry.wordsLifetime += words_progress_int
-            words_entry.save()
+        result = award_xp(
+            user=request.user,
+            source_object=words_progress_int,
+            reason=f"📘 Logged partial progress in '{book.text}'",
+            source_type="book_partial"
+        )
 
-            result = award_xp(
-                user=request.user,
-                source_object=words_progress_int,
-                reason=f"Logged book: {book.text}",
-                source_type="book_partial"
-            )
+        if result.get('xp_awarded', 0) > 0:
+            messages.success(request, f"✅ You earned {result['xp_awarded']} XP for logging progress.")
 
-            if result.get('xp_awarded', 0) > 0:
-                messages.success(request, f"✅ You earned {result['xp_awarded']} XP for logging a book!")
+        if result.get('leveled_up'):
+            messages.success(request, f"🎉 You leveled up to Level {result['new_level']}!")
 
-            if result.get('leveled_up'):
-                messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
+        update_badges_for_books(
+            user=request.user,
+            book=book,
+            words_increment=words_progress_int,
+            request=request
+        )
 
-            words_total = WordsRead.objects.get(user=request.user).wordsLifetime
-
-            check_and_award_badges(
-                user=request.user,
-                app_label="book_club",
-                milestone_type="words_read",
-                current_value=words_total,
-                request=request
-            )
-
-            userstats, _ = UserStats.objects.get_or_create(user=request.user)
-            if hasattr(userstats, 'words_read'):
-                userstats.words_read += book.words
-                userstats.save(update_fields=["words_read"])
-
-            return redirect('book_club:books_by_category')
-    else:
-        form = BookProgressTrackerForm()
+        return redirect('book_club:books_by_category')
 
     return render(request, 'book_club/new_book_tracker_entry.html', {
         'form': form,
@@ -223,44 +159,32 @@ def update_book_tracker_entry(request, pk):
         form = BookProgressTrackerForm(request.POST, instance=entry)
         if form.is_valid():
             form.save()
-            messages.success(request, f"✅ Updated progress for '{book}'")
             new_words_completed = form.cleaned_data['words_completed']
             words_progressed = new_words_completed - old_words_completed
 
-            words_entry, created = WordsRead.objects.get_or_create(user=request.user)
-            words_entry.wordsLifetime += words_progressed
-            words_entry.save()
+            messages.success(request, f"✅ Updated progress for '{book}'")
 
             result = award_xp(
                 user=request.user,
                 source_object=words_progressed,
-                reason=f"Logged book: {book.text}",
+                reason=f"📘 Updated progress for '{book.text}'",
                 source_type="book_partial"
             )
 
             if result.get('xp_awarded', 0) > 0:
-                messages.success(request, f"✅ You earned {result['xp_awarded']} XP for logging a book!")
+                messages.success(request, f"✅ You earned {result['xp_awarded']} XP for additional progress.")
 
             if result.get('leveled_up'):
-                messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
+                messages.success(request, f"🎉 You leveled up to Level {result['new_level']}!")
 
-            words_total = WordsRead.objects.get(user=request.user).wordsLifetime
-
-            check_and_award_badges(
+            update_badges_for_books(
                 user=request.user,
-                app_label="book_club",
-                milestone_type="words_read",
-                current_value=words_total,
+                book=book,
+                words_increment=words_progressed,
                 request=request
             )
 
-            userstats, _ = UserStats.objects.get_or_create(user=request.user)
-            if hasattr(userstats, 'words_read'):
-                userstats.words_read += book.words
-                userstats.save(update_fields=["words_read"])
-
             return redirect('book_club:books_by_category')
-
     else:
         form = BookProgressTrackerForm(instance=entry)
 
@@ -268,6 +192,7 @@ def update_book_tracker_entry(request, pk):
         'form': form,
         'book': book
     })
+
 
 @login_required
 def book_backlog(request):

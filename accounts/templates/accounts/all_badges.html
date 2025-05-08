@@ -6,34 +6,30 @@
 {% block content %}
 <div class="container py-4">
   <h2 class="mb-4 text-center">🏅 All Badges</h2>
-     <!-- Filter Dropdown -->
+
+  <!-- Filter Dropdown -->
   <form method="get" class="mb-3 d-flex gap-2">
-  <select name="app_label" class="form-select w-auto">
-    <option value="">All Modules</option>
-    {% for label in app_labels %}
-      <option value="{{ label }}" {% if label == active_app_filter %}selected{% endif %}>{{ label|capfirst }}</option>
-    {% endfor %}
-  </select>
+    <select name="app_label" class="form-select w-auto">
+      <option value="">All Modules</option>
+      {% for label in app_labels %}
+        <option value="{{ label }}" {% if label == active_app_filter %}selected{% endif %}>
+          {{ label|capfirst }}
+        </option>
+      {% endfor %}
+    </select>
 
-  <select name="milestone_type" class="form-select w-auto">
-    <option value="">All Milestones</option>
-    {% for type in milestone_types %}
-      <option value="{{ type }}" {% if type == active_milestone_filter %}selected{% endif %}>{{ type|capfirst }}</option>
-    {% endfor %}
-  </select>
+    <select name="milestone_type" class="form-select w-auto">
+      <option value="">All Milestones</option>
+      {% for type in milestone_types %}
+        <option value="{{ type }}" {% if type == active_milestone_filter %}selected{% endif %}>
+          {{ type|milestone_label }}
+        </option>
+      {% endfor %}
+    </select>
 
-  <button type="submit" class="btn btn-primary">Filter</button>
+    <button type="submit" class="btn btn-primary">Filter</button>
   </form>
-{#        <form method="get" class="mb-3">#}
-{#        <input type="hidden" name="app_label" value="{{ active_app_label }}">#}
-{#        <input type="hidden" name="milestone_type" value="{{ active_filter }}">#}
-{#            <label for="sort-select">Sort by:</label>#}
-{#        <select id="sort-select" name="sort" onchange="this.form.submit()">#}
-{#        <option value="default">Default</option>#}
-{#        <option value="progress">Progress</option>#}
-{#        <option value="milestone">Milestone Type</option>#}
-{#        </select>#}
-{#        </form>#}
+
   <div class="row">
     {% for badge_data in badges %}
       {% with badge=badge_data.badge is_unlocked=badge_data.is_unlocked awarded_at=badge_data.awarded_at progress_percent=badge_data.progress_percent %}
@@ -42,7 +38,7 @@
                       {% if is_unlocked %}bg-light text-dark{% else %}bg-secondary text-light{% endif %}"
                data-bs-toggle="modal" data-bs-target="#badgeModal{{ badge.id }}"
                style="cursor: pointer; transition: transform 0.2s;">
-            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+            <div class="card-body py-3 d-flex flex-column justify-content-center align-items-center">
               <img src="{{ badge.icon.url }}" class="img-fluid mb-2" style="max-height: 60px;" alt="{{ badge.name }}">
               <h6 class="mb-0">{{ badge.name }}</h6>
 
@@ -76,35 +72,37 @@
 
   <!-- Modals -->
   {% for badge_data in badges %}
-  {% with badge=badge_data.badge is_unlocked=badge_data.is_unlocked awarded_at=badge_data.awarded_at current_value=badge_data.current_value progress_percent=badge_data.progress_percent%}
-      <div class="modal fade" id="badgeModal{{ badge.id }}" tabindex="-1" aria-hidden="true">
+    {% with badge=badge_data.badge is_unlocked=badge_data.is_unlocked awarded_at=badge_data.awarded_at current_value=badge_data.current_value progress_percent=badge_data.progress_percent %}
+      <div class="modal fade" id="badgeModal{{ badge.id }}" tabindex="-1" aria-labelledby="badgeModalLabel{{ badge.id }}" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content bg-dark text-light border-light">
             <div class="modal-header">
-              <h5 class="modal-title">{{ badge.name }}</h5>
+              <h5 class="modal-title" id="badgeModalLabel{{ badge.id }}">{{ badge.name }}</h5>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body text-center">
               <img src="{{ badge.icon.url }}" alt="{{ badge.name }}"
                    class="img-fluid mb-3" style="max-height: 80px;">
-                    <p class="mb-2 text-secondary">{{ badge.description }}</p>
-                        <div class="text-muted mb-2">
-                            Milestone:
-                            {{ current_value|intcomma }} / {{ badge.milestone_value|intcomma }}
-                            {{ badge.milestone_type|milestone_label }}
-                        </div>
+              <p class="mb-2 text-secondary">{{ badge.description }}</p>
+
+              <div class="text-muted mb-2">
+                Milestone:
+                {{ current_value|intcomma }} / {{ badge.milestone_value|intcomma }}
+                {{ badge.milestone_type|milestone_label }}
+              </div>
+
               {% if awarded_at %}
                 <span class="badge bg-success">Unlocked on {{ awarded_at|date:"M d, Y" }}</span>
-                  {% else %}
-                    <div class="w-100 mt-2">
-                      <div class="progress" style="height: 5px;">
-                        <div class="progress-bar bg-info" role="progressbar"
-                             style="width: {{ progress_percent }}%;"
-                             aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
-                        </div>
-                      </div>
-                      <small class="text-light">{{ progress_percent|floatformat:0 }}% complete</small>
+              {% else %}
+                <div class="w-100 mt-2">
+                  <div class="progress" style="height: 5px;">
+                    <div class="progress-bar bg-info" role="progressbar"
+                         style="width: {{ progress_percent }}%;"
+                         aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
                     </div>
+                  </div>
+                  <small class="text-light">{{ progress_percent|floatformat:0 }}% complete</small>
+                </div>
               {% endif %}
             </div>
           </div>

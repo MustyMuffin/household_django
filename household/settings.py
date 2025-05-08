@@ -147,7 +147,7 @@ CMS_COLOR_SCHEME = "dark"
 
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = BASE_DIR / "assets/static/admin",
+STATICFILES_DIRS = BASE_DIR / "assets/static/",
 STATIC_ROOT = 'staticfiles'
 
 MEDIA_URL = 'media/'
