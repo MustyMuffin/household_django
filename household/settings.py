@@ -16,8 +16,18 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+# LOGGING = {
+#     'version': 1,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level': 'DEBUG',
+#     },
+# }
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-9^xyaa+x1nv8nyy6jcm(mbcj$^ywqp-@so)ewl7agfs+vs92ic'
@@ -44,6 +54,7 @@ INSTALLED_APPS = [
     # Third party apps.
     'django_bootstrap5',
     'widget_tweaks',
+    'dark_mode_switch',
 
     # Default django apps
     'django.contrib.admin',
@@ -136,7 +147,7 @@ CMS_COLOR_SCHEME = "dark"
 
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = BASE_DIR / "assets/static",
+STATICFILES_DIRS = BASE_DIR / "assets/static/admin",
 STATIC_ROOT = 'staticfiles'
 
 MEDIA_URL = 'media/'

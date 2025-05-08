@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -7,9 +8,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.views import View
 from django.views.generic import TemplateView
-
 from accounts.models import UserStats, XPSettings, XPLog, Badge, UserBadge
-from book_club.models import BooksRead, BookEntry, Book
+from book_club.models import BooksRead, BookEntry, Book, WordsRead
 from chores.models import EarnedWage, ChoreEntry, Chore
 from itertools import chain
 from operator import itemgetter
@@ -22,39 +22,56 @@ from book_club.models import BooksRead
 from django.db.models import Count
 from accounts.badge_helpers import BadgeProgressProvider
 
+logger = logging.getLogger(__name__)
+
 class AllBadges(LoginRequiredMixin, View):
     def get(self, request):
         app_label_filter = request.GET.get('app_label')
         milestone_filter = request.GET.get('milestone_type')
 
         all_badges = Badge.objects.all()
+        logger.debug(f"Initial badge count: {all_badges.count()}")
 
         if app_label_filter:
             all_badges = all_badges.filter(app_label=app_label_filter)
+            logger.debug(f"Filtered by app_label '{app_label_filter}': {all_badges.count()} badges")
 
         if milestone_filter:
             all_badges = all_badges.filter(milestone_type=milestone_filter)
+            logger.debug(f"Filtered by milestone_type '{milestone_filter}': {all_badges.count()} badges")
 
         awarded_badges = UserBadge.objects.filter(user=request.user)
         awarded_ids = set(awarded_badges.values_list('badge_id', flat=True))
+        logger.debug(f"User has {len(awarded_ids)} awarded badges")
 
         badge_data = []
         for badge in all_badges:
             is_unlocked = badge.id in awarded_ids
             awarded_at = awarded_badges.get(badge_id=badge.id).awarded_at if is_unlocked else None
-            progress = badge.get_progress_for_user(request.user) if not is_unlocked else None
 
+            if not is_unlocked:
+                progress = badge.get_progress_for_user(request.user)
+            else:
+                progress = None
+
+            raw_progress = badge.get_progress_for_user(request.user)
             badge_data.append({
                 'badge': badge,
                 'is_unlocked': is_unlocked,
                 'awarded_at': awarded_at,
-                'progress_percent': progress
+                'progress_percent': progress,
+                'current_value': raw_progress,
             })
 
-        # Filter milestone types based on app_label
-        milestone_types = Badge.objects.filter(app_label=app_label_filter).values_list('milestone_type', flat=True).distinct() if app_label_filter else Badge.objects.values_list('milestone_type', flat=True).distinct()
+        milestone_types = (
+            Badge.objects
+            .filter(app_label=app_label_filter)
+            .values_list('milestone_type', flat=True)
+            .distinct()
+            if app_label_filter else
+            Badge.objects.values_list('milestone_type', flat=True).distinct()
+        )
 
-        # Sort badges: unlocked first, then by milestone type
         badge_data.sort(key=lambda b: (not b['is_unlocked'], b['badge'].milestone_type.lower()))
 
         context = {
@@ -65,6 +82,35 @@ class AllBadges(LoginRequiredMixin, View):
             'active_filter': milestone_filter,
         }
         return render(request, 'accounts/all_badges.html', context)
+
+@BadgeProgressProvider.register('book_club')
+def book_club_progress(badge, user):
+    if badge.milestone_type == 'books_read':
+        books_read = BooksRead.objects.filter(user=user).count()
+        books_read_final = (books_read / badge.milestone_value) * 100
+        print("DEBUG books_read_final", books_read_final)
+        return books_read_final
+    return 0
+
+# @BadgeProgressProvider.register('book_club')
+# def book_progress(badge, user):
+#     try:
+#         books_read = BooksRead.objects.get(user=user)
+#
+#         print("DEBUG books_read", books_read)
+#
+#         books_read_final = (books_read.objects.count() / badge.milestone_value) * 100
+#
+#         print("DEBUG books_read", books_read_final)
+#
+#         if badge.milestone_type == 'books_read':
+#             return books_read_final
+#         else:
+#             print("DEBUG ELSE TRIGGERED")
+#             return 0
+#     except BooksRead.DoesNotExist:
+#         print("DEBUG EXCEPT TRIGGERED")
+#         return 0
 
 class MilestoneTypeOptionsView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
@@ -98,7 +144,7 @@ def get_milestone_options(request):
             "options": [
                 {"id": "books_read", "name": "Books Read"},
                 {"id": "words_read", "name": "Words Read"},
-                {"id": "specific_book", "name": "Specific Book"},
+                # {"id": "specific_book", "name": "Specific Book"},
             ],
             "initial": initial
         }

@@ -1,121 +1,91 @@
 {% extends "household_main/base.html" %}
 {% load static %}
 {% load custom_filters %}
+{% load humanize %}
 
 {% block content %}
 <div class="container py-4">
-  <h2 class="mb-4">🏅 All Badges</h2>
+  <h2 class="mb-4 text-center">🏅 All Badges</h2>
 
-  <!-- Filter Dropdown -->
-  <form method="get" class="mb-3 d-flex gap-2">
-  <select name="app_label" class="form-select w-auto">
-    <option value="">All Modules</option>
-    {% for label in app_labels %}
-      <option value="{{ label }}" {% if label == active_app_filter %}selected{% endif %}>{{ label|capfirst }}</option>
-    {% endfor %}
-  </select>
-
-  <select name="milestone_type" class="form-select w-auto">
-    <option value="">All Milestones</option>
-    {% for type in milestone_types %}
-      <option value="{{ type }}" {% if type == active_milestone_filter %}selected{% endif %}>{{ type|capfirst }}</option>
-    {% endfor %}
-  </select>
-
-  <button type="submit" class="btn btn-primary">Filter</button>
-</form>
-
-  <!-- Badge Grid -->
   <div class="row">
     {% for badge_data in badges %}
-      {% with badge=badge_data.badge %}
-        <div class="col-md-4 col-lg-3 col-xl-2 mb-4">
-          <div class="card text-center h-100 {% if not badge_data.is_unlocked %}bg-light text-muted{% endif %}" 
-               data-bs-toggle="modal" data-bs-target="#badgeModal{{ badge.id }}" style="cursor: pointer;">
-            <div class="card-body d-flex flex-column align-items-center justify-content-center">
+      {% with badge=badge_data.badge is_unlocked=badge_data.is_unlocked awarded_at=badge_data.awarded_at progress_percent=badge_data.progress_percent %}
+        <div class="col-6 col-md-3 col-lg-2 mb-4">
+          <div class="card h-100 text-center shadow-sm border-0 badge-card 
+                      {% if is_unlocked %}bg-light text-dark{% else %}bg-secondary text-light{% endif %}"
+               data-bs-toggle="modal" data-bs-target="#badgeModal{{ badge.id }}"
+               style="cursor: pointer; transition: transform 0.2s;">
+            <div class="card-body d-flex flex-column justify-content-center align-items-center">
+              <img src="{{ badge.icon.url }}" class="img-fluid mb-2" style="max-height: 60px;" alt="{{ badge.name }}">
+              <h6 class="mb-0">{{ badge.name }}</h6>
 
-              <img src="{{ badge.icon.url }}" alt="{{ badge.name }}" class="img-fluid mb-2" style="height: 60px;">
+              <small class="text-muted mt-1">
+                {% if is_unlocked %}
+                  <span class="badge bg-success mt-2">Unlocked</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark mt-2">Locked</span>
+                {% endif %}
+              </small>
 
-              <h6 class="card-title mb-1">{{ badge.name }}</h6>
-              <small class="text-muted">{{ badge.milestone_type|capfirst }}</small>
-
-              {% if badge_data.is_unlocked %}
-                <div class="mt-2">
-                  <span class="badge bg-success">Unlocked</span><br>
-                  <small class="text-muted">On {{ badge_data.awarded_at|date:"M d, Y" }}</small>
-                </div>
-              {% else %}
-                <div class="mt-3 w-100">
-                  <div class="progress" style="height: 6px;">
-                    <div class="progress-bar" role="progressbar"
-                         style="width: {{ badge_data.progress_percent }}%;"
-                         aria-valuenow="{{ badge_data.progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+              {% if not is_unlocked and progress_percent %}
+                <div class="w-100 mt-2">
+                  <div class="progress" style="height: 5px;">
+                    <div class="progress-bar bg-info" role="progressbar"
+                         style="width: {{ progress_percent }}%;"
+                         aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
                     </div>
                   </div>
-                  <small class="text-muted d-block mt-1">{{ badge_data.progress_percent }}% Complete</small>
+                  <small class="text-light">{{ progress_percent|floatformat:0 }}% complete</small>
                 </div>
               {% endif %}
-            </div>
-          </div>
-
-          <!-- Modal for Badge Details -->
-          <div class="modal fade" id="badgeModal{{ badge.id }}" tabindex="-1" aria-labelledby="badgeModalLabel{{ badge.id }}" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="badgeModalLabel{{ badge.id }}">{{ badge.name }}</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                  <img src="{{ badge.icon.url }}" alt="{{ badge.name }}" class="img-fluid mb-3" style="height: 80px;">
-                  <p><strong>Milestone:</strong> {{ badge.milestone_type }}</p>
-                  <p><strong>Description:</strong> {{ badge.description }}</p>
-                  <p><strong>Goal:</strong> {{ badge.milestone_value }}</p>
-                  {% if badge_data.is_unlocked %}
-                    <p class="text-success"><strong>Unlocked on {{ badge_data.awarded_at|date:"M d, Y" }}</strong></p>
-                  {% else %}
-                    <div class="progress mb-2" style="height: 10px;">
-                      <div class="progress-bar" role="progressbar"
-                          style="width: {{ badge_data.progress_percent }}%;"
-                          aria-valuenow="{{ badge_data.progress_percent }}" aria-valuemin="0" aria-valuemax="100">
-                      </div>
-                    </div>
-                    <small class="text-muted">{{ badge_data.progress_percent }}% complete</small>
-                  {% endif %}
-                </div>
-              </div>
             </div>
           </div>
         </div>
       {% endwith %}
     {% empty %}
-      <p>No badges created yet.</p>
+      <p>No badges found.</p>
     {% endfor %}
   </div>
-</div>
-    
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-        const appLabelSelect = document.querySelector('[name="app_label"]');
-        const milestoneSelect = document.querySelector('[name="milestone_type"]');
-    
-        appLabelSelect?.addEventListener('change', function () {
-          const selectedApp = this.value;
-    
-          fetch(`/badges/milestone_options/?app_label=${selectedApp}`)
-            .then(response => response.json())
-            .then(data => {
-              milestoneSelect.innerHTML = '<option value="">All Milestones</option>';
-              data.options.forEach(option => {
-                const opt = document.createElement('option');
-                opt.value = option;
-                opt.textContent = option.charAt(0).toUpperCase() + option.slice(1);
-                milestoneSelect.appendChild(opt);
-              });
-            });
-          this.form.submit();
-        });
-      });
-    </script>
 
+  <!-- Modals -->
+  {% for badge_data in badges %}
+  {% with badge=badge_data.badge is_unlocked=badge_data.is_unlocked awarded_at=badge_data.awarded_at current_value=badge_data.current_value %}
+      <div class="modal fade" id="badgeModal{{ badge.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content bg-dark text-light border-light">
+            <div class="modal-header">
+              <h5 class="modal-title">{{ badge.name }}</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+              <img src="{{ badge.icon.url }}" alt="{{ badge.name }}"
+                   class="img-fluid mb-3" style="max-height: 80px;">
+                    <p class="mb-2 text-secondary">{{ badge.description }}</p>
+                        <div class="text-muted mb-2">
+                            Milestone:
+                            {{ current_value|intcomma }} / {{ badge.milestone_value|intcomma }}
+                            {{ badge.milestone_type|milestone_label }}
+                        </div>
+              {% if awarded_at %}
+                <span class="badge bg-success">Unlocked on {{ awarded_at|date:"M d, Y" }}</span>
+              {% endif %}
+            
+                {% if not is_unlocked and progress_percent %}
+                    <div class="w-100 mt-2">
+                      <div class="progress" style="height: 5px;">
+                        <div class="progress-bar bg-info" role="progressbar"
+                             style="width: {{ progress_percent }}%;"
+                             aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                      </div>
+                      <small class="text-light">{{ progress_percent|floatformat:0 }}% complete</small>
+                    </div>
+                  {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endwith %}
+  {% endfor %}
+</div>
 {% endblock %}

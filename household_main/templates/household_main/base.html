@@ -2,18 +2,28 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Household</title>
+    {% load static %}
+    {% block bootstrap5_extra_head %}
+    {{ block.super }}
+    <link href="{% static 'dark_mode_switch/dark-mode-switch.css' %}" rel="stylesheet" type="text/css">
+    {% endblock %}
+    {% block bootstrap5_extra_script %}
+    {{ block.super }}
+    <script src="{% static 'dark_mode_switch/dark-mode-switch.js' %}"></script>
+    {% endblock %}
+    <link href="{% static 'css/custom.css' %}" rel="stylesheet">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Household</title>
 
-  {% load django_bootstrap5 %}
-  {% bootstrap_css %}
-  {% bootstrap_javascript %}
+    {% load django_bootstrap5 %}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 
 <body>
-<nav class="navbar navbar-expand-md navbar-light bg-light mb-4 border">
+<nav class="navbar navbar-expand-md navbar-light bg-dark mb-4 border">
   <div class="container-fluid">
     {% if user.is_authenticated %}
           <li class="nav-item d-flex align-items-center me-3">
@@ -83,6 +93,19 @@
     </div> <!-- /.collapse -->
   </div> <!-- /.container-fluid -->
 </nav>
+
+{#<nav class="navbar navbar-expand">#}
+{#    <div class="container-fluid">#}
+{#        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">#}
+{#            <span class="navbar-toggler-icon"></span>#}
+{#        </button>#}
+{#        <div class="collapse navbar-collapse" id="navbarNav">#}
+{#            <ul class="navbar-nav ms-auto">#}
+{#                {% include 'dark_mode_switch/dark_mode_switch.html' %}#}
+{#            </ul>#}
+{#        </div>#}
+{#    </div>#}
+{#</nav>#}
 
         <!-- Display Django Messages -->
         <div class="container">

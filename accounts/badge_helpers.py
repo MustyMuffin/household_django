@@ -2,7 +2,27 @@ import traceback
 from django.http import request
 from django.utils.timezone import now
 from django.contrib import messages
+
+from book_club.models import BooksRead, WordsRead
 from chores import models
+
+class BadgeProgressProvider:
+    registry = {}
+
+    @classmethod
+    def register(cls, app_label):
+        def decorator(fn):
+            cls.registry[app_label] = fn
+            return fn
+
+        return decorator
+
+    @classmethod
+    def get_progress(cls, badge, user):
+        func = cls.registry.get(badge.app_label)
+        if func:
+            return func(badge, user)
+        return 0
 
 def check_and_award_badges(user, app_label, milestone_type, current_value, request=None):
     # Move imports here to avoid circular import at module level
@@ -42,22 +62,3 @@ def check_and_award_badges(user, app_label, milestone_type, current_value, reque
             print("[DEBUG] No request passed to badge unlocker.")
 
     print(f"[DEBUG] Badge check complete for user={user.username}")
-
-
-class BadgeProgressProvider:
-    registry = {}
-
-    @classmethod
-    def register(cls, app_label):
-        def decorator(fn):
-            cls.registry[app_label] = fn
-            return fn
-
-        return decorator
-
-    @classmethod
-    def get_progress(cls, badge, user):
-        func = cls.registry.get(badge.app_label)
-        if func:
-            return func(badge, user)
-        return 0
