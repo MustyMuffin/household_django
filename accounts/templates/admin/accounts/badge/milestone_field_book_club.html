@@ -1,0 +1,14 @@
+
+<div class="form-row field-milestone_type">
+  <div>
+    <label for="id_milestone_type" class="required">Books Milestone:</label>
+    <select name="milestone_type" class="vSelect" required id="id_milestone_type">
+      {% for book in books %}
+        <option value="{{ book.id }}" {% if book.id|stringformat:"s" == initial %}selected{% endif %}>
+            {{ book.text }}
+        </option>
+      {% endfor %}
+    </select>
+    <p class="help">Select a specific book tracker as the milestone</p>
+  </div>
+</div>

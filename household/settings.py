@@ -16,8 +16,18 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
+# LOGGING = {
+#     'version': 1,
+#     'handlers': {
+#         'console': {
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level': 'DEBUG',
+#     },
+# }
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-9^xyaa+x1nv8nyy6jcm(mbcj$^ywqp-@so)ewl7agfs+vs92ic'
@@ -38,11 +48,13 @@ INSTALLED_APPS = [
     'book_club',
 
     #Added for signals
-    # 'chores.apps.ChoresConfig',
+   # 'chores.apps.ChoresConfig',
 
 
     # Third party apps.
     'django_bootstrap5',
+    'widget_tweaks',
+    'dark_mode_switch',
 
     # Default django apps
     'django.contrib.admin',
@@ -69,7 +81,7 @@ ROOT_URLCONF = 'household.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -133,7 +145,14 @@ CMS_COLOR_SCHEME = "dark"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = BASE_DIR / "assets/static/",
+STATIC_ROOT = 'staticfiles'
+
+MEDIA_URL = 'media/'
+
+MEDIA_ROOT = BASE_DIR / 'household/media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

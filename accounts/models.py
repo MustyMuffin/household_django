@@ -2,15 +2,16 @@ from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import User
-from accounts.xp_utils import XPManager
 from django.apps import apps
-
+from .constants import ALLOWED_APPS
+from accounts.badge_helpers import BadgeProgressProvider
 
 class XPSettings(models.Model):
     base = models.PositiveIntegerField(default=50)
     exponent = models.FloatField(default=0.75)
     xp_per_word = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('0.002'))
     xp_per_chore_wage = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('10.0'))
+    xp_per_book = models.IntegerField(default='50')
 
     def __str__(self):
         return f"XP Settings (Base: {self.base}, Exponent: {self.exponent})"
@@ -38,7 +39,6 @@ class XPSettings(models.Model):
 
     @classmethod
     def get_settings(cls):
-        """ Safe load helper: fallback if XPSettings doesn't exist. """
         try:
             settings_obj = XPSettings.objects.first()
             if not settings_obj:
@@ -97,6 +97,36 @@ class UserStats(models.Model):
         from accounts.xp_utils import XPManager
         return XPManager.xp_to_next_level(self.xp, self.level)
 
+class Badge(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    icon = models.ImageField(upload_to='household/badges/')
+    app_label = models.CharField(
+        max_length=50,
+        choices=ALLOWED_APPS,
+        help_text="Select the app/module this badge applies to."
+    )
+    milestone_type = models.CharField(max_length=100)
+    milestone_value = models.PositiveIntegerField()
+
+    def __str__(self):
+        return self.name
+
+    def get_progress_for_user(self, user, return_raw=False):
+        value = BadgeProgressProvider.get_progress(self, user)
+        if return_raw:
+            return value
+        if not self.milestone_value:
+            return 0
+        return min(100, round((value / self.milestone_value) * 100))
+
+class UserBadge(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE)
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'badge')
 
 class XPLog(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

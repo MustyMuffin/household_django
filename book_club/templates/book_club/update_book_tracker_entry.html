@@ -1,0 +1,44 @@
+{% extends "household_main/base.html" %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card">
+    <div class="card-header">
+      <h4>📝 Update Progress for {{ book }}</h4>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
+          {{ form.text|add_class:"form-control" }}
+        </div>
+        <div class="mb-3">
+          <label for="wordSlider" class="form-label">Words Completed</label>
+          <input type="range" class="form-range" id="wordSlider" min="0" max="{{ book.words }}" value="{{ form.words_completed.value }}" step="1">
+          {{ form.words_completed }}
+        </div>
+        <button type="submit" class="btn btn-primary">💾 Update</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+    <div class="container mt-3">
+            <form action="{% url 'book_club:new_book_entry' book.id %}" method='post'>
+                {% csrf_token %}
+                <button name='submit' class="btn btn-sm btn-block btn-outline-primary">Completed?</button>
+            </form>
+    </div>
+<script>
+  const slider = document.getElementById("wordSlider");
+  const hiddenInput = document.getElementById("id_words_completed");
+
+  slider.addEventListener("input", function () {
+    hiddenInput.value = this.value;
+  });
+
+  // Initialize slider on page load
+  hiddenInput.value = slider.value;
+</script>
+{% endblock %}

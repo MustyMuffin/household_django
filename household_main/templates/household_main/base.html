@@ -1,36 +1,48 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Household</title>
+    {% load static %}
+    {% block bootstrap5_extra_head %}
+    {{ block.super }}
+    <link href="{% static 'dark_mode_switch/dark-mode-switch.css' %}" rel="stylesheet" type="text/css">
+    {% endblock %}
+    {% block bootstrap5_extra_script %}
+    {{ block.super }}
+    <script src="{% static 'dark_mode_switch/dark-mode-switch.js' %}"></script>
+    {% endblock %}
+    <link href="{% static 'css/custom.css' %}" rel="stylesheet">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Household</title>
 
-  {% load django_bootstrap5 %}
-  {% bootstrap_css %}
-  {% bootstrap_javascript %}
+    {% load django_bootstrap5 %}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-
 </head>
 
 <body>
-<nav class="navbar navbar-expand-md navbar-light bg-light mb-4 border">
+<nav class="navbar navbar-expand-md navbar-light bg-dark mb-4 border">
   <div class="container-fluid">
     {% if user.is_authenticated %}
-          <li class="nav-item d-flex align-items-center me-3">
-            <div class="text-end me-2">
-              <div><strong>{{ user.username }}</strong></div>
-              <div class="small">
-                Lv {{ user_level }} ({{ progress_percent|floatformat:0 }}%)
-              </div>
-              <div class="progress" style="height: 5px; width: 100px;">
-                <div class="progress-bar bg-success" role="progressbar"
-                     style="width: {{ progress_percent }}%;"
-                     aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
-                </div>
-              </div>
+    <a class="nav-item me-3">
+        <a href="{% url 'accounts:user_profile' username=user.username %}" class="btn btn-outline-light d-flex align-items-center">
+        <div class="text-end me-2">
+            <div><strong>{{ user.username }}</strong></div>
+            <div class="small">
+            Lvl: {{ user_level }} ({{ progress_percent|floatformat:0 }}%)
             </div>
-          </li>
-  {% endif %}
+            <div class="progress" style="height: 5px; width: 100px;">
+            <div class="progress-bar bg-success" role="progressbar"
+               style="width: {{ progress_percent }}%;"
+               aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+          </div>
+        </div>
+      </div>
+    </a>
+    {% endif %}
+
     <a class="navbar-brand" href="{% url 'household_main:index' %}">Home</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -58,9 +70,6 @@
       <ul class="navbar-nav ms-auto mb-2 mb-md-0">
           <li class="nav-item">
           {% if user.is_authenticated %}
-            <a class="nav-link" href="{% url 'accounts:user_profile' username=request.user.username %}">
-              View My Profile
-            </a>
           </li>
           <li class="nav-item">
             <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
@@ -83,6 +92,19 @@
     </div> <!-- /.collapse -->
   </div> <!-- /.container-fluid -->
 </nav>
+
+{#<nav class="navbar navbar-expand">#}
+{#    <div class="container-fluid">#}
+{#        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">#}
+{#            <span class="navbar-toggler-icon"></span>#}
+{#        </button>#}
+{#        <div class="collapse navbar-collapse" id="navbarNav">#}
+{#            <ul class="navbar-nav ms-auto">#}
+{#                {% include 'dark_mode_switch/dark_mode_switch.html' %}#}
+{#            </ul>#}
+{#        </div>#}
+{#    </div>#}
+{#</nav>#}
 
         <!-- Display Django Messages -->
         <div class="container">
@@ -150,25 +172,30 @@
           });
 
           toastList.forEach(function(toast, index) {
-            toast.show();
+              toast.show();
 
-            // 🎉 Fire confetti if the toast contains "Congratulations"
-            const toastBody = toastElList[index].querySelector('.toast-body');
-            if (toastBody && toastBody.textContent.includes('Congratulations')) {
-              setTimeout(() => {
-                confetti({
-                  particleCount: 150,
-                  spread: 70,
-                  origin: { y: 0.6 }
-                });
-              }, 500);
-            }
+              const toastBody = toastElList[index].querySelector('.toast-body');
+              if (toastBody && (
+                  toastBody.textContent.includes('Congratulations') ||
+                  toastBody.textContent.includes('Badge Unlocked'))
+              ) {
+                  setTimeout(() => {
+                      confetti({
+                          particleCount: 150,
+                          spread: 70,
+                          origin: {y: 0.6}
+                      });
+                  }, 500);
+              }
+          })
           });
-        });
         </script>
         {% endif %}
-
-
-
+        <script>
+          var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+          var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+          })
+        </script>
 </body>
 </html>
