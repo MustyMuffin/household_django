@@ -5,3 +5,4 @@ gunicorn
 django-widget-tweaks
 django-bootstrap5-dark-mode-switch
 pillow
+django-cms
