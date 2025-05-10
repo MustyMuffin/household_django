@@ -72,4 +72,3 @@ Also development related:
 License
 
 Not responsible for hardware damage or any other adverse complications that arise from using this non-commercial software.
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.See the full license in the LICENSE.md file or visit creativecommons.org/licenses/by-nc/4.0.
