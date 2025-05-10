@@ -121,6 +121,10 @@ def new_book_tracker_entry(request, book_id):
         new_entry.words_completed = words_progress_int
         new_entry.save()
 
+        words_entry, _ = WordsRead.objects.get_or_create(user=new_entry.user)
+        words_entry.wordsLifetime += words_progress_int
+        words_entry.save()
+
         result = award_xp(
             user=request.user,
             source_object=words_progress_int,
@@ -161,6 +165,10 @@ def update_book_tracker_entry(request, pk):
             form.save()
             new_words_completed = form.cleaned_data['words_completed']
             words_progressed = new_words_completed - old_words_completed
+
+            words_entry, _ = WordsRead.objects.get_or_create(user=entry.user)
+            words_entry.wordsLifetime += words_progressed
+            words_entry.save()
 
             messages.success(request, f"✅ Updated progress for '{book}'")
 

@@ -15,7 +15,9 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+CMS_CONFIRM_VERSION4 = True
 
+SITE_ID = 1
 # LOGGING = {
 #     'version': 1,
 #     'handlers': {
@@ -55,8 +57,14 @@ INSTALLED_APPS = [
     'django_bootstrap5',
     'widget_tweaks',
     'dark_mode_switch',
+    "django.contrib.sites",
+    "cms",
+    "menus",
+    "treebeard",
+    "sekizai",
 
     # Default django apps
+    "djangocms_admin_style",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -68,12 +76,17 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "django.middleware.locale.LocaleMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "cms.middleware.user.CurrentUserMiddleware",
+    "cms.middleware.page.CurrentPageMiddleware",
+    "cms.middleware.toolbar.ToolbarMiddleware",
+    "cms.middleware.language.LanguageCookieMiddleware",
 ]
 
 ROOT_URLCONF = 'household.urls'
@@ -90,6 +103,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.user_xp_data',
+                "sekizai.context_processors.sekizai"
             ],
         },
     },
@@ -131,7 +145,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGES = [
+    ("en", "English"),
+    ("de", "German"),
+    ("it", "Italian"),
+]
+LANGUAGE_CODE = "en"
 
 TIME_ZONE = 'America/Phoenix'
 
@@ -140,6 +159,8 @@ USE_I18N = True
 USE_TZ = True
 
 CMS_COLOR_SCHEME = "dark"
+
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 
 # Static files (CSS, JavaScript, Images)
