@@ -61,4 +61,4 @@ def check_and_award_badges(user, app_label, milestone_type, current_value, reque
         else:
             # print("[DEBUG] No request passed to badge unlocker.")
 
-            # print(f"[DEBUG] Badge check complete for user={user.username}")
+            print(f"[DEBUG] Badge check complete for user={user.username}")
