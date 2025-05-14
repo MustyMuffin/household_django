@@ -92,6 +92,7 @@ class XPSettings(models.Model):
 
 class UserStats(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    profile_picture = models.ImageField(upload_to="profile_pics/", blank=True,)
 
     overall_xp = models.PositiveIntegerField(default=0)
     chore_xp = models.PositiveIntegerField(default=0)
@@ -104,7 +105,7 @@ class UserStats(models.Model):
 
     def update_levels(self):
         """Updates stored level fields based on XP."""
-        from accounts.xp_utils import XPManager
+        from .xp_utils import XPManager
 
         self.overall_level = XPManager.level_info(self.overall_xp, kind="overall").get("level", 1)
         self.chore_level = XPManager.level_info(self.chore_xp, kind="chore").get("level", 1)

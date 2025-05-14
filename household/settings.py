@@ -92,7 +92,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.user_xp_data',
-                "sekizai.context_processors.sekizai"
+                'accounts.context_processors.user_profile_picture',
+                'sekizai.context_processors.sekizai'
             ],
         },
     },

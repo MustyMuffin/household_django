@@ -31,3 +31,12 @@ def user_xp_data(request):
         'reading_xp_to_next': stats.reading_xp_to_next_level,
         'reading_progress_percent': stats.reading_progress_percent,
     }
+
+def user_profile_picture(request):
+    if request.user.is_authenticated:
+        try:
+            stats = UserStats.objects.get(user=request.user)
+            return {'profile_picture_url': stats.profile_picture.url if stats.profile_picture else None}
+        except UserStats.DoesNotExist:
+            pass
+    return {'profile_picture_url': None}

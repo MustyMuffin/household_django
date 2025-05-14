@@ -9,24 +9,25 @@
           <h1 class="display-4 mb-4">🏠 Household</h1>
 
           {% for category in xp_sections %}
-            <div class="mb-4">
-              <h5 class="mb-1">{{ category.label }}</h5>
-              <p class="mb-1"><strong>Level:</strong> {{ category.level }}</p>
-              <p class="mb-2"><strong>XP:</strong> {{ category.xp|intcomma }} / {{ category.next_level_xp|intcomma }}</p>
+              <div class="mb-4 text-center">
+                <h4>{{ category.label }}</h4>
+                <p><strong>Level:</strong> {{ category.level }}</p>
+                <p><strong>XP:</strong> {{ category.xp|intcomma }} / {{ category.next_level_xp|intcomma }}</p>
 
-              <div class="progress mx-auto" style="height: 10px;">
-                <div class="progress-bar bg-info" role="progressbar"
-                     style="width: {{ category.progress_percent }}%;"
-                     aria-valuenow="{{ category.progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress mx-auto" style="height: 20px; max-width: 600px;">
+                  <div class="progress-bar bg-{{ category.color }}" role="progressbar"
+                       style="width: {{ category.progress_percent }}%;"
+                       aria-valuenow="{{ category.progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+                    {{ category.progress_percent|floatformat:0 }}%
+                  </div>
+                </div>
+
+                <div class="mt-2">
+                  <span class="badge bg-{{ category.color }} text-dark p-2">
+                    ✨ XP to next level: {{ category.xp_to_next|intcomma }}
+                  </span>
                 </div>
               </div>
-
-              <div class="mt-2">
-                <span class="badge bg-info text-light">
-                  ✨ {{ category.xp_to_next|intcomma }} XP to next level
-                </span>
-              </div>
-            </div>
           {% endfor %}
 
           <hr class="bg-secondary">
@@ -113,11 +114,11 @@
   <!-- Books Read Leaderboard -->
   <div class="col-lg-6 mb-4">
     <button class="btn btn-outline-primary mb-2 w-100" type="button" data-bs-toggle="collapse" data-bs-target="#booksLeaderboard" aria-expanded="false" aria-controls="booksLeaderboard">
-      Books Read Leaderboard
+      Words Read Leaderboard
     </button>
     <div class="collapse show" id="booksLeaderboard">
       <div class="card card-body">
-        <h4 class="mb-3">📚 Books Read Leaderboard</h4>
+        <h4 class="mb-3">📚 Words Read Leaderboard</h4>
         {% if books_leaderboard %}
           {% for entry in books_leaderboard %}
             <div class="card mb-2 shadow-sm
@@ -133,7 +134,7 @@
                   </a>
                 </strong>
                 </div>
-                <span class="badge bg-primary">{{ entry.wordsLifetime|intcomma }} words</span>
+                <span class="badge bg-primary">{{ entry.words_read|intcomma }} words</span>
               </div>
             </div>
           {% endfor %}

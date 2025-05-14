@@ -1,5 +1,5 @@
 from django import forms
-from .models import Badge
+from .models import Badge, UserStats
 from .constants import ALLOWED_APPS
 from django import forms
 from accounts.models import Badge
@@ -9,6 +9,12 @@ try:
 except ImportError:
     Chore = None
     # print("DEBUG: Chore not imported")
+
+
+class ProfilePictureForm(forms.ModelForm):
+    class Meta:
+        model = UserStats
+        fields = ['profile_picture']
 
 class ModuleBadgeConfigForm(forms.ModelForm):
     class Meta:

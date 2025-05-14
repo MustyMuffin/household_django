@@ -3,7 +3,7 @@ from django.http import request
 from django.utils.timezone import now
 from django.contrib import messages
 
-from book_club.models import BooksRead, WordsRead
+from book_club.models import BooksRead
 from chores import models
 
 class BadgeProgressProvider:

@@ -1,10 +1,6 @@
 from accounts.models import UserStats
-from accounts.models import UserStats
 from accounts.xp_utils import XPManager
-from accounts.xp_utils import XPManager
-from book_club.models import BooksRead, WordsRead
-from book_club.models import BooksRead, WordsRead
-from chores.models import EarnedWage
+from book_club.models import BooksRead
 from chores.models import EarnedWage
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
@@ -21,10 +17,10 @@ def index(request):
     stats = UserStats.objects.filter(user=user).first()
 
     books_read_list = BooksRead.objects.filter(user=user).order_by('-date_added')
-    words_read_entry = WordsRead.objects.filter(user=user).first()
-    total_words_read = words_read_entry.wordsLifetime if words_read_entry else 0
+    words_read_entry = UserStats.objects.filter(user=user).first()
+    total_words_read = words_read_entry.words_read if words_read_entry else 0
 
-    books_leaderboard = WordsRead.objects.select_related('user').order_by('-wordsLifetime')
+    books_leaderboard = UserStats.objects.select_related('user').order_by('-words_read')
     earnings_leaderboard = EarnedWage.objects.select_related('user').order_by('-earnedLifetime')
 
     try:
@@ -67,9 +63,9 @@ def index(request):
 
         # Optional: for looping
         'xp_sections': [
-            {"label": "Your Overall Level Progress", **overall},
-            {"label": "Your Chore Level Progress", **chore},
-            {"label": "Your Reading Level Progress", **reading},
+            {"label": "Your Overall Level Progress", "color": "info", **overall},
+            {"label": "Your Chore Level Progress", "color": "warning", **chore},
+            {"label": "Your Reading Level Progress", "color": "success", **reading},
         ]
     }
 
