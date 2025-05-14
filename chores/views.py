@@ -21,17 +21,17 @@ def chore_progress(badge, user):
     # print(f"DEBUG milestone: {milestone} ({type(milestone)})")
 
     if milestone == "earned_wage":
-        print("✅ Chore badge with earned_wage milestone matched")
+        # print("✅ Chore badge with earned_wage milestone matched")
         return ChoreEntry.objects.filter(user=user).aggregate(
             total=models.Sum("wage")
         )["total"] or 0
 
     try:
         chore = Chore.objects.get(text=milestone)
-        print(f"✅ Matched chore by text: {chore.text}")
+        # print(f"✅ Matched chore by text: {chore.text}")
         return ChoreEntry.objects.filter(user=user, chore=chore).count()
     except Chore.DoesNotExist:
-        print(f"❌ Chore not found for text: {milestone}")
+        # print(f"❌ Chore not found for text: {milestone}")
         return 0
 
 def chores_by_category(request):
@@ -106,15 +106,12 @@ def new_chore_entry(request, chore_id):
                 user=request.user,
                 source_object=chore,
                 reason=f"Completed chore: {chore.text}",
-                source_type="chore"
+                source_type="chore",
+                request = request
             )
 
             # Show XP earned message
             messages.success(request, f"✅ You earned {result['xp_awarded']} XP for completing a chore!")
-
-            # If leveled up
-            if result['leveled_up']:
-                messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
 
             return redirect('chores:chores_by_category')
 

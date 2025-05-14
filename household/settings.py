@@ -18,18 +18,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CMS_CONFIRM_VERSION4 = True
 
 SITE_ID = 1
-# LOGGING = {
-#     'version': 1,
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler',
-#         },
-#     },
-#     'root': {
-#         'handlers': ['console'],
-#         'level': 'DEBUG',
-#     },
-# }
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-9^xyaa+x1nv8nyy6jcm(mbcj$^ywqp-@so)ewl7agfs+vs92ic'
@@ -46,6 +34,7 @@ INSTALLED_APPS = [
     # My apps.
     'household_main',
     'accounts',
+    # 'xp_system',
     'chores',
     'book_club',
 

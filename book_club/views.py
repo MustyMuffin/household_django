@@ -53,7 +53,8 @@ def new_book_entry(request, book_id):
                     user=request.user,
                     source_object=remaining_words,
                     reason="📚 Finished tracked book",
-                    source_type="book_partial"
+                    source_type="book_partial",
+                    request = request
                 )
             except BookProgressTracker.DoesNotExist:
                 print(f"[DEBUG] No tracker found. Awarding full {book.words} words.")
@@ -61,30 +62,26 @@ def new_book_entry(request, book_id):
                     user=request.user,
                     source_object=book,
                     reason=f"Logged book: {book.text}",
-                    source_type="book"
+                    source_type="book",
+                    request = request
                 )
 
-            # Save the final entry
             new_entry = form.save(commit=False)
             new_entry.book = book
             new_entry.user = request.user
             new_entry.save()
 
-            # Award bonus for finishing
             result = award_xp(
                 user=request.user,
                 source_object=book,
                 reason="📚 Finished full book bonus",
-                source_type="finished_book"
+                source_type="finished_book",
+                request = request
             )
 
             if result.get('xp_awarded', 0) > 0:
                 messages.success(request, f"✅ Bonus XP: {result['xp_awarded']} for finishing a book!")
 
-            if result.get('leveled_up'):
-                messages.success(request, f"🎉 You leveled up to Level {result['new_level']}!")
-
-            # 🔁 REPLACEMENT: Badge + stats update
             update_badges_for_books(
                 user=request.user,
                 book=book,
@@ -129,14 +126,13 @@ def new_book_tracker_entry(request, book_id):
             user=request.user,
             source_object=words_progress_int,
             reason=f"📘 Logged partial progress in '{book.text}'",
-            source_type="book_partial"
+            source_type="book_partial",
+            request = request
         )
 
         if result.get('xp_awarded', 0) > 0:
             messages.success(request, f"✅ You earned {result['xp_awarded']} XP for logging progress.")
 
-        if result.get('leveled_up'):
-            messages.success(request, f"🎉 You leveled up to Level {result['new_level']}!")
 
         update_badges_for_books(
             user=request.user,
@@ -176,14 +172,13 @@ def update_book_tracker_entry(request, pk):
                 user=request.user,
                 source_object=words_progressed,
                 reason=f"📘 Updated progress for '{book.text}'",
-                source_type="book_partial"
+                source_type="book_partial",
+                request = request
             )
 
             if result.get('xp_awarded', 0) > 0:
                 messages.success(request, f"✅ You earned {result['xp_awarded']} XP for additional progress.")
 
-            if result.get('leveled_up'):
-                messages.success(request, f"🎉 You leveled up to Level {result['new_level']}!")
 
             update_badges_for_books(
                 user=request.user,

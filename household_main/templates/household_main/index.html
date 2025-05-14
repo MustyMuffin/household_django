@@ -8,27 +8,27 @@
   <div class="container-fluid py-4">
     <h1 class="display-3">Household</h1>
 
-    <!-- XP Progress Section -->
+      {% for category in xp_sections %}
         <div class="mb-4">
-          <h3>Your Level Progress</h3>
-          <p><strong>Level:</strong> {{ user_level }}</p>
-          <p><strong>XP:</strong> {{ xp|intcomma }} / {{ next_level_xp|intcomma }}</p>
+          <h3>{{ category.label }}</h3>
+          <p><strong>Level:</strong> {{ category.level }}</p>
+          <p><strong>XP:</strong> {{ category.xp|intcomma }} / {{ category.next_level_xp|intcomma }}</p>
 
           <div class="progress" style="height: 30px;">
             <div class="progress-bar bg-info" role="progressbar"
-                 style="width: {{ progress_percent }}%;"
-                 aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
-              {{ progress_percent|floatformat:0 }}%
+                 style="width: {{ category.progress_percent }}%;"
+                 aria-valuenow="{{ category.progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+              {{ category.progress_percent|floatformat:0 }}%
             </div>
           </div>
 
           <div class="mt-2">
-            <span class="badge=info text-light p-2">
-              ✨ XP Needed to next level: {{ xp_to_next|intcomma }}
+            <span class="badge bg-info text-light p-2">
+              ✨ XP Needed to next level: {{ category.xp_to_next|intcomma }}
             </span>
           </div>
         </div>
-
+      {% endfor %}
 
     <!-- Earnings Section -->
     <div class="mb-4">

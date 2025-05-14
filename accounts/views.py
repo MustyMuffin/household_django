@@ -158,8 +158,8 @@ def user_profile(request, username):
     progress_percent = 0
 
     if stats:
-        xp = stats.xp
-        level = stats.level
+        xp = stats.overall_xp
+        level = stats.overall_level
         next_level_xp = XPManager.next_level_xp(level)
         xp_to_next_level = XPManager.xp_to_next_level(xp, level)
         progress_percent = XPManager.progress_percent(xp, level)
