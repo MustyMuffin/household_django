@@ -116,6 +116,7 @@
 {#</nav>#}
 
         <!-- Display Django Messages -->
+        <div id="ajax-messages"></div>
         <div class="container">
           {% if messages %}
             {% for message in messages %}
@@ -206,5 +207,7 @@
             return new bootstrap.Tooltip(tooltipTriggerEl)
           })
         </script>
+
+{% block extra_scripts %}{% endblock %}
 </body>
 </html>

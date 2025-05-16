@@ -1,14 +1,79 @@
 {% extends "household_main/base.html" %}
 
 {% block content %}
-
   <p><a href="{% url 'chores:chore' chore.id %}">{{ chore }}</a></p>
 
   <p>Add a new entry:</p>
-  <form action="{% url 'chores:new_chore_entry' chore.id %}" method='post'>
+  <form id="chore-form" action="{% url 'chores:new_chore_entry' chore.id %}" method='post'>
     {% csrf_token %}
     {{ form.as_div }}
-    <button name='submit'>Add chore timestamp</button>
+    <button type="submit" id="submit-btn" class="btn btn-primary">Add chore timestamp</button>
   </form>
 
+  <div id="form-errors" style="color: red; margin-top: 10px;"></div>
 {% endblock content %}
+
+{% block extra_scripts %}
+<script>
+  console.log("script loaded");
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("chore-form");
+    const button = document.getElementById("submit-btn");
+    const errorDiv = document.getElementById("form-errors");
+
+    if (form && button) {
+      form.addEventListener("submit", async function (e) {
+        e.preventDefault();  // prevent full page reload
+        button.disabled = true;
+        button.textContent = "Submitting...";
+        button.classList.remove("btn-primary");
+        button.classList.add("btn-secondary");
+
+        const formData = new FormData(form);
+        const url = form.action;
+
+        try {
+          const response = await fetch(url, {
+            method: "POST",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+          },
+          body: formData,
+        });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Response received:", data);
+            if (data.success) {
+              const messageBox = document.getElementById("ajax-messages");
+              if (messageBox) {
+                messageBox.innerHTML = `
+                  <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                `;
+              }
+
+              setTimeout(() => {
+                window.location.href = data.redirect_url || "/";  // fallback to homepage
+              }, 2000);
+            } else {
+              throw new Error(data.error || "Submission failed.");
+            }
+          } else {
+            throw new Error("Server error. Please try again.");
+          }
+        } catch (err) {
+          errorDiv.textContent = err.message;
+          button.disabled = false;
+          button.textContent = "Add chore timestamp";
+          button.classList.add("btn-primary");
+          button.classList.remove("btn-secondary");
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

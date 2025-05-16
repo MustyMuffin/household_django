@@ -1,6 +1,7 @@
 """Defines URL patterns for household_main"""
 
 from django.urls import path
+from django.http import JsonResponse
 
 from . import views
 
@@ -20,4 +21,7 @@ urlpatterns = [
     path('edit_entry/<int:entry_id>/', views.edit_entry, name='edit_entry'),
     #Tool for calculating XP
     # path('xp_calculator/', views.xp_calculator_view, name='xp_calculator'),
+    # Chrome devtools probe
+    path('.well-known/appspecific/com.chrome.devtools.json', lambda r: JsonResponse({}))
+
 ]

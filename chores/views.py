@@ -1,19 +1,27 @@
 from collections import defaultdict
+import time
+from django.urls import reverse
 from decimal import Decimal
+from accounts.badge_helpers import check_and_award_badges
+from accounts.badge_helpers import check_and_award_badges, BadgeProgressProvider
+from accounts.models import UserStats
+from accounts.xp_helpers import award_xp
+from django.http import Http404
+from accounts.xp_helpers import award_xp
+from chores.models import Chore, ChoreEntry
 from django.contrib import messages
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.db import models
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.shortcuts import render, redirect, get_object_or_404
 
-from accounts.badge_helpers import check_and_award_badges, BadgeProgressProvider
-from accounts.models import UserStats
-# from django.http import Http404
-from accounts.xp_helpers import award_xp
 from .forms import ChoreEntryForm
 from .models import Chore, EarnedWage, ChoreEntry
 
-from chores.models import Chore, ChoreEntry
 
 @BadgeProgressProvider.register("chores")
 def chore_progress(badge, user):
@@ -73,18 +81,17 @@ def new_chore_entry(request, chore_id):
             new_chore_entry = form.save(commit=False)
             new_chore_entry.chore = chore
             new_chore_entry.user = request.user
-            new_chore_entry.wage = chore.wage  # Set wage at time of entry
+            new_chore_entry.wage = chore.wage
             new_chore_entry.save()
 
             # Update Earnings
-            earned_wage, created = EarnedWage.objects.get_or_create(user=request.user)
+            earned_wage, _ = EarnedWage.objects.get_or_create(user=request.user)
             earned_wage.earnedLifetime += Decimal(chore.wage)
             earned_wage.earnedSincePayout += Decimal(chore.wage)
             earned_wage.save()
 
-            from accounts.badge_helpers import check_and_award_badges
+            # Check and award badges
             current_count = ChoreEntry.objects.filter(user=request.user, chore=chore).count()
-
             check_and_award_badges(
                 user=request.user,
                 app_label="chores",
@@ -92,13 +99,12 @@ def new_chore_entry(request, chore_id):
                 current_value=current_count,
                 request=request
             )
-
             check_and_award_badges(
                 user=request.user,
                 app_label="chores",
                 milestone_type="earned_wage",
                 current_value=chore.wage,
-                request=request  # to show a success message
+                request=request
             )
 
             # Award XP
@@ -107,20 +113,35 @@ def new_chore_entry(request, chore_id):
                 source_object=chore,
                 reason=f"Completed chore: {chore.text}",
                 source_type="chore",
-                request = request
+                request=request
             )
 
-            # Show XP earned message
-            messages.success(request, f"✅ You earned {result['xp_awarded']} XP for completing a chore!")
+            if request.headers.get("x-requested-with", "").lower() == "xmlhttprequest":
+                print("DEBUG: requests.headers returned success")
+                return JsonResponse({
+                    "success": True,
+                    "xp_awarded": str(result["xp_awarded"]),
+                    "message": f"You earned {result['xp_awarded']} XP for completing a chore!",
+                    "redirect_url": reverse("chores:chores_by_category")
+                })
 
+            messages.success(request, f"✅ You earned {result['xp_awarded']} XP for completing a chore!")
             return redirect('chores:chores_by_category')
 
+        else:
+            if request.headers.get("x-requested-with", "").lower() == "xmlhttprequest":
+                print("DEBUG: requests.headers returned FAIL")
+                return JsonResponse({
+                    "success": False,
+                    "error": "Form validation failed. Please check your input."
+                }, status=400)
 
     context = {
         'chore': chore,
         'form': form,
     }
     return render(request, 'chores/new_chore_entry.html', context)
+
 
 
 def payout(request):

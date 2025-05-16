@@ -43,21 +43,21 @@ class XPSettings(models.Model):
             XPTable.objects.all().delete()
             XPTable.objects.bulk_create([
                 XPTable(overall_level=level, xp_required=int(self.base * (level ** self.exponent)))
-                for level in range(1, 101)
+                for level in range(2, 100)
             ])
 
         if chore_changed:
             ChoreXPTable.objects.all().delete()
             ChoreXPTable.objects.bulk_create([
                 ChoreXPTable(chore_level=level, chore_xp_required=int(self.chore_base * (level ** self.chore_exponent)))
-                for level in range(1, 101)
+                for level in range(2, 100)
             ])
 
         if reading_changed:
             ReadingXPTable.objects.all().delete()
             ReadingXPTable.objects.bulk_create([
                 ReadingXPTable(reading_level=level, reading_xp_required=int(self.reading_base * (level ** self.reading_exponent)))
-                for level in range(1, 101)
+                for level in range(2, 100)
             ])
 
         if base_changed or chore_changed or reading_changed:
