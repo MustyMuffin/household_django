@@ -22,6 +22,34 @@ class XPSettings(models.Model):
     def __str__(self):
         return f"XP Settings (Base: {self.base}, Exponent: {self.exponent})"
 
+
+    @classmethod
+    def get_settings(cls):
+        settings_obj = cls.objects.first()
+        if not settings_obj:
+            return cls(
+                base=100, exponent=1.25,
+                chore_base=100, chore_exponent=1.25,
+                reading_base=100, reading_exponent=1.25,
+                xp_per_word=0.0, xp_per_chore_wage=0.0
+            )
+        return settings_obj
+
+    @classmethod
+    def get_xp_per_word(cls):
+        if apps.is_installed('book_club'):
+            return cls.get_settings().xp_per_word
+        return 0.0
+
+    @classmethod
+    def get_xp_per_chore_wage(cls):
+        if apps.is_installed('chores'):
+            return cls.get_settings().xp_per_chore_wage
+        return 0.0
+
+    class Meta:
+        verbose_name_plural = 'XP Settings'
+
     def save(self, *args, **kwargs):
         is_new = not self.pk
         old_settings = XPSettings.objects.get(pk=self.pk) if not is_new else None
@@ -62,33 +90,6 @@ class XPSettings(models.Model):
 
         if base_changed or chore_changed or reading_changed:
             XPManager.resync_all_user_levels()
-
-    @classmethod
-    def get_settings(cls):
-        settings_obj = cls.objects.first()
-        if not settings_obj:
-            return cls(
-                base=100, exponent=1.25,
-                chore_base=100, chore_exponent=1.25,
-                reading_base=100, reading_exponent=1.25,
-                xp_per_word=0.0, xp_per_chore_wage=0.0
-            )
-        return settings_obj
-
-    @classmethod
-    def get_xp_per_word(cls):
-        if apps.is_installed('book_club'):
-            return cls.get_settings().xp_per_word
-        return 0.0
-
-    @classmethod
-    def get_xp_per_chore_wage(cls):
-        if apps.is_installed('chores'):
-            return cls.get_settings().xp_per_chore_wage
-        return 0.0
-
-    class Meta:
-        verbose_name_plural = 'XP Settings'
 
 class UserStats(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

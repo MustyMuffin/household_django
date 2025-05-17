@@ -59,17 +59,17 @@ def generate_xp_tables(sender, instance, created, **kwargs):
 
     XPTable.objects.bulk_create([
         XPTable(overall_level=level, xp_required=int(base * (level ** curve)))
-        for level in range(1, max_level + 1)
+        for level in range(2, max_level + 1)
     ])
 
     ChoreXPTable.objects.bulk_create([
         ChoreXPTable(chore_level=level, chore_xp_required=int(chore_base * (level ** chore_curve)))
-        for level in range(1, max_level + 1)
+        for level in range(2, max_level + 1)
     ])
 
     ReadingXPTable.objects.bulk_create([
         ReadingXPTable(reading_level=level, reading_xp_required=int(reading_base * (level ** reading_curve)))
-        for level in range(1, max_level + 1)
+        for level in range(2, max_level + 1)
     ])
 
     from .xp_utils import XPManager
