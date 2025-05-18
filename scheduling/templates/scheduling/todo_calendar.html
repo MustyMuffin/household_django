@@ -1,0 +1,57 @@
+{% extends 'household_main/base.html' %}
+{% load static %}
+
+{% block page_header %}
+  <h1>Todo</h1>
+{% endblock page_header %}
+
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>To-Do Calendar</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    #calendar {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="calendar"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const calendarEl = document.getElementById('calendar');
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'timeGridWeek',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      height: 'auto',
+      slotMinTime: "08:00:00",
+      slotMaxTime: "21:00:00",
+
+      events: '{% url "todo_calendar_json" %}',
+
+      eventClick: function(info) {
+        alert(info.event.title + "\n" + info.event.start.toLocaleString());
+      }
+    });
+
+    calendar.render();
+  });
+</script>
+</body>
+</html>
+{% endblock content %}

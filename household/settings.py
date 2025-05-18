@@ -34,7 +34,7 @@ INSTALLED_APPS = [
     # My apps.
     'household_main',
     'accounts',
-    # 'xp_system',
+    'scheduling',
     'chores',
     'book_club',
 
@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 
     # Third party apps.
     'django_bootstrap5',
+    "django_celery_beat",
     'widget_tweaks',
     'dark_mode_switch',
     "django.contrib.sites",
@@ -173,3 +174,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # My settings.
 LOGIN_REDIRECT_URL = 'household_main:index'
 LOGOUT_REDIRECT_URL = 'household_main:index'
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/1'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'

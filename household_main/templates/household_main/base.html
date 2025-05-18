@@ -6,6 +6,7 @@
     {% block bootstrap5_extra_head %}
     {{ block.super }}
     <link href="{% static 'dark_mode_switch/dark-mode-switch.css' %}" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     {% endblock %}
     {% block bootstrap5_extra_script %}
     {{ block.super }}
@@ -207,7 +208,7 @@
             return new bootstrap.Tooltip(tooltipTriggerEl)
           })
         </script>
-
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>

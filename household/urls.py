@@ -25,6 +25,8 @@ urlpatterns = [
     path('', include('household_main.urls')),
     path('chores/', include('chores.urls')),
     path('book_club/', include('book_club.urls')),
+    path('scheduling/', include('scheduling.urls')),
+    path('', include('cms.urls'))
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,41 @@
+{% extends 'household_main/base.html' %}
+{% block page_header %}
+  <h1>Schedule</h1>
+{% endblock page_header %}
+
+{% block content %}
+<h2>Schedule Chore</h2>
+{% load static %}
+
+<div id="ajax-messages"></div>
+<form id="schedule-chore-form" method="post" action="{% url 'schedule_chore' %}">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Schedule</button>
+</form>
+
+<div id="todo-preview"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const select = document.getElementById('id_assignee');
+
+  select.addEventListener('change', function () {
+    const userId = this.value;
+
+    fetch(`/scheduling/todo-preview/${userId}/`)
+      .then(response => {
+        if (!response.ok) throw new Error("Network error.");
+        return response.text();
+      })
+      .then(html => {
+        document.getElementById('todo-preview').innerHTML = html;
+      })
+      .catch(err => {
+        document.getElementById('todo-preview').innerHTML = '<p>Failed to load preview.</p>';
+        console.error(err);
+      });
+  });
+});
+</script>
+{% endblock content %}

@@ -1,0 +1,8 @@
+<h4>Upcoming Tasks</h4>
+<ul>
+  {% for todo in todos %}
+    <li>{{ todo.title }} — due {{ todo.scheduled_for|date:"SHORT_DATETIME_FORMAT" }}</li>
+  {% empty %}
+    <li>No upcoming tasks.</li>
+  {% endfor %}
+</ul>
