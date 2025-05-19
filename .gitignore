@@ -44,3 +44,8 @@ Thumbs.db
 
 # Archives
 *.zip
+
+# celery beat schedule file
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+celerybeat-schedule

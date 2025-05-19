@@ -18,6 +18,7 @@ from django.db import models
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.shortcuts import render, redirect, get_object_or_404
+from chores.utils import process_chore_completion
 
 from .forms import ChoreEntryForm
 from .models import Chore, EarnedWage, ChoreEntry
@@ -77,60 +78,24 @@ def new_chore_entry(request, chore_id):
         form = ChoreEntryForm()
     else:
         form = ChoreEntryForm(data=request.POST)
-        if form.is_valid():
-            new_chore_entry = form.save(commit=False)
-            new_chore_entry.chore = chore
-            new_chore_entry.user = request.user
-            new_chore_entry.wage = chore.wage
-            new_chore_entry.save()
+        entry, result, redirect_url, success = process_chore_completion(
+            user=request.user, chore=chore, request=request, form=form
+        )
 
-            # Update Earnings
-            earned_wage, _ = EarnedWage.objects.get_or_create(user=request.user)
-            earned_wage.earnedLifetime += Decimal(chore.wage)
-            earned_wage.earnedSincePayout += Decimal(chore.wage)
-            earned_wage.save()
-
-            # Check and award badges
-            current_count = ChoreEntry.objects.filter(user=request.user, chore=chore).count()
-            check_and_award_badges(
-                user=request.user,
-                app_label="chores",
-                milestone_type=chore.text,
-                current_value=current_count,
-                request=request
-            )
-            check_and_award_badges(
-                user=request.user,
-                app_label="chores",
-                milestone_type="earned_wage",
-                current_value=chore.wage,
-                request=request
-            )
-
-            # Award XP
-            result = award_xp(
-                user=request.user,
-                source_object=chore,
-                reason=f"Completed chore: {chore.text}",
-                source_type="chore",
-                request=request
-            )
-
+        if success:
             if request.headers.get("x-requested-with", "").lower() == "xmlhttprequest":
-                print("DEBUG: requests.headers returned success")
                 return JsonResponse({
                     "success": True,
                     "xp_awarded": str(result["xp_awarded"]),
                     "message": f"You earned {result['xp_awarded']} XP for completing a chore!",
-                    "redirect_url": reverse("chores:chores_by_category")
+                    "redirect_url": redirect_url
                 })
 
             messages.success(request, f"✅ You earned {result['xp_awarded']} XP for completing a chore!")
-            return redirect('chores:chores_by_category')
+            return redirect(redirect_url)
 
         else:
             if request.headers.get("x-requested-with", "").lower() == "xmlhttprequest":
-                print("DEBUG: requests.headers returned FAIL")
                 return JsonResponse({
                     "success": False,
                     "error": "Form validation failed. Please check your input."

@@ -8,7 +8,7 @@
 {% load static %}
 
 <div id="ajax-messages"></div>
-<form id="schedule-chore-form" method="post" action="{% url 'schedule_chore' %}">
+<form id="schedule-chore-form" method="post" action="{% url 'scheduling:schedule_chore' %}">
   {% csrf_token %}
   {{ form.as_p }}
   <button type="submit">Schedule</button>

@@ -48,7 +48,6 @@
                  aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
         </div>
-
       </a>
     {% endif %}
 
@@ -66,6 +65,9 @@
       <!-- Left-side navigation links -->
       <ul class="navbar-nav me-auto mb-2 mb-md-0">
         <li class="nav-item">
+          <a class="nav-link" href="{% url 'scheduling:todo_calendar' %}">Todo</a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="{% url 'household_main:notes' %}">Notes</a>
         </li>
         <li class="nav-item">
@@ -76,11 +78,30 @@
         </li>
       </ul>
 
+
       <!-- Right-side user/account links -->
       <ul class="navbar-nav ms-auto mb-2 mb-md-0">
           <li class="nav-item">
           {% if user.is_authenticated %}
           </li>
+              <div class="dropdown">
+              <button class="btn btn-sm btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                Notifications ({{ unread_count }})
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
+                {% for message in request.user.notifications.all|slice:":5" %}
+                  <li>
+                    <a class="dropdown-item {% if not message.read %}fw-bold{% endif %}"
+                       href="{% url 'scheduling:read_notification' message.id %}">
+                      {{ message.message }}
+                    </a>
+                  </li>
+                {% empty %}
+                  <li class="dropdown-item text-muted">No notifications</li>
+                {% endfor %}
+              </ul>
+            </div>
+
           <li class="nav-item">
             <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
               {% csrf_token %}
@@ -208,7 +229,9 @@
             return new bootstrap.Tooltip(tooltipTriggerEl)
           })
         </script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>
