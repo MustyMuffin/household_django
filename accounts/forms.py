@@ -1,5 +1,5 @@
 from django import forms
-from .models import Badge
+from .models import Badge, UserStats
 from .constants import ALLOWED_APPS
 from django import forms
 from accounts.models import Badge
@@ -8,7 +8,13 @@ try:
     from chores.models import Chore
 except ImportError:
     Chore = None
-    print("DEBUG: Chore not imported")
+    # print("DEBUG: Chore not imported")
+
+
+class ProfilePictureForm(forms.ModelForm):
+    class Meta:
+        model = UserStats
+        fields = ['profile_picture']
 
 class ModuleBadgeConfigForm(forms.ModelForm):
     class Meta:
@@ -30,12 +36,12 @@ class BadgeMilestoneForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        print(f"[DEBUG] Fields in form: {list(self.fields.keys())}")
-        print(f"[DEBUG] Form data: {self.data}")
-        print(f"[DEBUG] Form initial: {self.initial}")
-        print(f"[DEBUG] Instance: {self.instance}")
-
-        print(f"[DEBUG] BadgeMilestoneForm initialized")
+        # print(f"[DEBUG] Fields in form: {list(self.fields.keys())}")
+        # print(f"[DEBUG] Form data: {self.data}")
+        # print(f"[DEBUG] Form initial: {self.initial}")
+        # print(f"[DEBUG] Instance: {self.instance}")
+        #
+        # print(f"[DEBUG] BadgeMilestoneForm initialized")
 
         app = None
 
@@ -51,10 +57,10 @@ class BadgeMilestoneForm(forms.ModelForm):
         elif hasattr(self.instance, "app_label") and self.instance.app_label:
             app = self.instance.app_label
 
-        print(f"[DEBUG] app: {app}")
+        # print(f"[DEBUG] app: {app}")
 
         if app == 'chores':
-            print("[DEBUG] Using ChoiceField with wage + chores")
+            # print("[DEBUG] Using ChoiceField with wage + chores")
 
             chore_choices = [(str(chore.id), chore.text) for chore in Chore.objects.all()]
             wage_option = [('earned_wage', 'Total Wage Earned')]
@@ -68,7 +74,7 @@ class BadgeMilestoneForm(forms.ModelForm):
             )
 
         elif app == 'book_club':
-            print("[DEBUG] Switching to Book milestone options")
+            # print("[DEBUG] Switching to Book milestone options")
 
             self.fields['milestone_type'] = forms.ChoiceField(
                 choices=[

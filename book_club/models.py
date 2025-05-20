@@ -30,12 +30,6 @@ class BookEntry(models.Model):
     class Meta:
         verbose_name_plural = 'book_entries'
 
-class WordsRead(models.Model):
-    """Lifetime words read per user, across all books."""
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    wordsLifetime = models.IntegerField()
-    last_updated = models.DateTimeField(auto_now=True)
-
 class BooksRead(models.Model):
     """For tracking books read"""
     user = models.ForeignKey(User, on_delete=models.CASCADE)

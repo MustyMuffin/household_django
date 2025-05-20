@@ -1,0 +1,9 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+  <h2>Reschedule Recurring Sets</h2>
+  <form method="post">{% csrf_token %}
+    <p>New start date and time:</p>
+    <input type="datetime-local" name="new_start" required>
+    <input type="submit" name="apply" value="Apply" class="default">
+  </form>
+{% endblock %}

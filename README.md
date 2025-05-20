@@ -1,23 +1,36 @@
 # Household Management App
-README v0.3
+README v0.4
 
 This Django project was created by a parent who wanted to motivate their young laborers to help around the house more (and be excited about it). It grew into something that I believe everyone could use and benefit from as well.
 
-At its core, it is a household productivity and tracking tool, designed to manage, track, and gamify various aspects of home life by awarding experience points for various chores or reading milestones. The leveling curve is customizable by admin, with a recommended base of 100-200 and a curve of 1.1 to 1.4. 
+At its core, it is a household productivity and tracking tool, designed to manage, track, and gamify various aspects of home life by awarding experience points for various chores or reading milestones. The leveling curve is customizable by admin, with a recommended base of 100-200 and a curve of 1.1 to 1.7. 
 
 It currently tracks books read (and total words), chores completed (and earnings), as well as maintains leaderboards to encourage friendly competition.
+
+## Prerequisites
+- Python and pip
+- Redis or other celery messages broker
+- Everything else can be found and installed through requirements.txt
+
+Optional but recommended:
+- Nginx for Gunicorn proxy
+- PostgreSQL for better db management and control
+
+## Deployment
+
+- Recommended to use Gunicorn as WSGI server and Nginx as a reverse proxy
+- PostgreSQL as the recommended database
+
 
 ## In developement 
 
 actively in development (test branch):
 - Badges system that allows site admin to create badges that track admin selected number of books read, amount of words read, frequency of chores done, and total "wage" earned from chores. 
+- Schedule function for scheduling chores and other tasks
 
 planned for future development:
-- Schedule function for scheduling chores (development not started)
-- Stats section for displaying various data information such as who did what chore the most last week/month/year, who read most books, etc. 
+- Stats/Analytics section for displaying various data information such as who did what chore the most last week/month/year, who read most books, etc. 
 
-Also development related:
-- A completely from scratch version of this application with an aim to recreate the architecture for better overall optimisation and increased modularity.
 
 ## Features
 
@@ -53,13 +66,7 @@ Also development related:
 - PostgreSQL (production database)
 - Bootstrap 5 for frontend styling
 - Gunicorn + Nginx for production/household deployment
-
-
-## Deployment
-
-- Recommended to use Gunicorn as WSGI server and Nginx as a reverse proxy
-- PostgreSQL as the recommended database
-- See `django_production_checklist.md` for deployment steps
+- Celery for scheduling tasks
 
 ## Notes
 
@@ -71,4 +78,5 @@ Also development related:
 
 License
 
-Not responsible for hardware damage or any other adverse complications that arise from using this non-commercial software.
+Not responsible for hardware damage or any other adverse complications that arise from using this software.
+See License.md for more information.

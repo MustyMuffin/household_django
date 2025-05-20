@@ -6,6 +6,7 @@
     {% block bootstrap5_extra_head %}
     {{ block.super }}
     <link href="{% static 'dark_mode_switch/dark-mode-switch.css' %}" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     {% endblock %}
     {% block bootstrap5_extra_script %}
     {{ block.super }}
@@ -26,22 +27,30 @@
 <nav class="navbar navbar-expand-md navbar-light bg-dark mb-4 border">
   <div class="container-fluid">
     {% if user.is_authenticated %}
-    <a class="nav-item me-3">
-        <a href="{% url 'accounts:user_profile' username=user.username %}" class="btn btn-outline-light d-flex align-items-center">
-        <div class="text-end me-2">
-            <div><strong>{{ user.username }}</strong></div>
-            <div class="small">
-            Lvl: {{ user_level }} ({{ progress_percent|floatformat:0 }}%)
-            </div>
-            <div class="progress" style="height: 5px; width: 100px;">
+      <a href="{% url 'accounts:user_profile' username=user.username %}" class="btn btn-outline-light d-flex align-items-center">
+
+        <!-- Profile picture -->
+        {% if profile_picture_url %}
+          <img src="{{ profile_picture_url }}" alt="Profile picture"
+               class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+        {% else %}
+          <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2"
+               style="width: 32px; height: 32px; font-size: 1.2em;">👤</div>
+        {% endif %}
+
+        <!-- Username and XP -->
+        <div class="text-start">
+          <div><strong>{{ user.username }}</strong></div>
+          <div class="small">Lvl: {{ user_level }} ({{ progress_percent|floatformat:0 }}%)</div>
+          <div class="progress" style="height: 5px; width: 100px;">
             <div class="progress-bar bg-success" role="progressbar"
-               style="width: {{ progress_percent }}%;"
-               aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
+                 style="width: {{ progress_percent }}%;"
+                 aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100"></div>
           </div>
         </div>
-      </div>
-    </a>
+      </a>
     {% endif %}
+
 
     <a class="navbar-brand" href="{% url 'household_main:index' %}">Home</a>
 
@@ -56,6 +65,9 @@
       <!-- Left-side navigation links -->
       <ul class="navbar-nav me-auto mb-2 mb-md-0">
         <li class="nav-item">
+          <a class="nav-link" href="{% url 'scheduling:todo_calendar' %}">Calendar</a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="{% url 'household_main:notes' %}">Notes</a>
         </li>
         <li class="nav-item">
@@ -66,11 +78,33 @@
         </li>
       </ul>
 
+
       <!-- Right-side user/account links -->
       <ul class="navbar-nav ms-auto mb-2 mb-md-0">
           <li class="nav-item">
           {% if user.is_authenticated %}
           </li>
+              <div class="dropdown">
+              <button class="btn btn-sm btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                Notifications ({{ unread_count }})
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
+                {% if unread_notifications %}
+                  {% for message in unread_notifications %}
+                    <li>
+                      <a class="dropdown-item fw-bold" href="{% url 'scheduling:read_notification' message.id %}">
+                        {{ message.message }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                {% else %}
+                  <li class="dropdown-item text-muted">No notifications</li>
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-center" href="{% url 'scheduling:all_notifications' %}">See all</a></li>
+              </ul>
+            </div>
+
           <li class="nav-item">
             <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
               {% csrf_token %}
@@ -107,6 +141,7 @@
 {#</nav>#}
 
         <!-- Display Django Messages -->
+        <div id="ajax-messages"></div>
         <div class="container">
           {% if messages %}
             {% for message in messages %}
@@ -197,5 +232,9 @@
             return new bootstrap.Tooltip(tooltipTriggerEl)
           })
         </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+{% block extra_scripts %}{% endblock %}
 </body>
 </html>

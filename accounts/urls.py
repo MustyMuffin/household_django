@@ -9,6 +9,7 @@ urlpatterns = [
  path('', include('django.contrib.auth.urls')),
  # Registration page.
  path('register/', views.register, name='register'),
+ path('profile/edit-picture/', views.edit_profile_picture, name='edit_profile_picture'),
  path('profile/<str:username>/', views.user_profile, name='user_profile'),
  path('activity_feed/', activity_feed, name='activity_feed'),
  path('badges/', AllBadges.as_view(), name='all_badges'),

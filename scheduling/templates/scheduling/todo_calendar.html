@@ -1,0 +1,222 @@
+{% extends 'household_main/base.html' %}
+{% load static %}
+{% load group_tags %}
+
+{% block page_header %}
+  <h1>To-Do Calendar</h1>
+{% endblock page_header %}
+
+{% block content %}
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+
+<style>
+  #calendar {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 10px;
+  }
+</style>
+
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <a href="{% url 'scheduling:upcoming_tasks' %}" class="btn btn-outline-primary btn-sm">
+        📋 Upcoming Tasks
+      </a>
+
+      {% if user|in_group:"Privileged" %}
+        <a href="{% url 'scheduling:schedule_chore' %}" class="btn btn-outline-primary btn-sm">
+          ➕ Schedule Task
+        </a>
+      {% endif %}
+    </div>
+
+<!-- Calendar -->
+<div id="calendar"></div>
+
+<!-- Modal -->
+<div class="modal fade" id="claimModal" tabindex="-1" aria-labelledby="claimModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="claimModalLabel">Task Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Task:</strong> <span id="choreTitle"></span></p>
+        <p><strong>Time:</strong> <span id="choreTime"></span></p>
+        <p><strong>Status:</strong> <span id="choreClaimedStatus" class="fw-bold"></span></p>
+        <p><strong>Assigned To:</strong>
+          <span id="choreAssignedVisual" class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center me-2"
+                style="width: 32px; height: 32px; font-weight: bold; font-size: 0.9rem; object-fit: cover;"></span>
+          <span id="choreAssignedTo"></span>
+        </p>
+        <div id="claimWarning" class="text-muted small" style="display:none;">
+          You cannot claim or complete this task.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <form method="post" id="claimForm" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary" id="claimButton">Claim Task</button>
+        </form>
+        <form method="post" id="completeForm" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-success">✅ Complete</button>
+        </form>
+        <form method="post" id="claimCompleteForm" style="display:inline;">
+          {% csrf_token %}
+            <button type="submit" class="btn btn-info" id="claimCompleteButton">⚡ Claim & Complete</button>
+        </form>
+          <form method="post" id="rescindForm" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-warning" id="rescindButton">↩️ Rescind</button>
+        </form>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- JS -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    console.log("📅 DOM ready. Initializing FullCalendar...");
+
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) {
+      console.error("❌ Calendar element not found.");
+      return;
+    }
+
+    const highlightId = new URLSearchParams(window.location.search).get('highlight');
+
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: 'dayGridMonth',
+      headerToolbar: {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+      },
+      height: 'auto',
+      slotMinTime: "08:00:00",
+      slotMaxTime: "21:00:00",
+      events: '{% url "scheduling:todo_calendar_json" %}',
+
+      eventDidMount: function(info) {
+        if (highlightId && info.event.id === highlightId) {
+          info.el.style.border = '2px solid orange';
+          info.el.style.boxShadow = '0 0 10px orange';
+
+          setTimeout(() => {
+            calendar.trigger('eventClick', {
+              el: info.el,
+              event: info.event,
+              jsEvent: new MouseEvent('click'),
+              view: calendar.view
+            });
+          }, 300);
+        }
+      },
+
+      eventClick: function(info) {
+          console.log("✅ Event clicked:", info);
+          const event = info.event;
+          const props = event.extendedProps;
+
+          const modalEl = document.getElementById('claimModal');
+          if (!modalEl) {
+            console.error("❌ Modal element not found.");
+            return;
+          }
+
+          // Set task info in modal
+          document.getElementById('choreTitle').textContent = event.title;
+          document.getElementById('choreTime').textContent = new Date(event.start).toLocaleString();
+          document.getElementById('choreClaimedStatus').textContent = props.claimable ? "Unclaimed" : "Claimed";
+          document.getElementById('choreAssignedTo').textContent = props.assignedTo || '— Unclaimed';
+
+
+          const visualEl = document.getElementById('choreAssignedVisual');
+          const name = props.assignedTo || 'Unclaimed';
+
+          if (props.assignedToProfilePic) {
+              visualEl.style.backgroundImage = `url(${props.assignedToProfilePic})`;
+              visualEl.style.backgroundSize = 'cover';
+              visualEl.textContent = '';  // Clear initials
+          } else {
+              const initials = name
+                .split(' ')
+                .map(word => word[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+              visualEl.style.backgroundImage = 'none';
+              visualEl.textContent = initials;
+          }
+
+
+          // Set form actions
+          document.getElementById('claimForm').action = `/scheduling/claim/${event.id}/`;
+          document.getElementById('completeForm').action = `/scheduling/complete/${event.id}/`;
+          document.getElementById('claimCompleteForm').action = `/scheduling/claim-complete/${event.id}/`;
+
+          // Get buttons
+          const claimBtn = document.getElementById('claimButton');
+          const completeForm = document.getElementById('completeForm');
+          const claimCompleteForm = document.getElementById('claimCompleteForm');
+          const claimWarning = document.getElementById('claimWarning');
+
+          // Hide everything initially
+          claimBtn.style.display = 'none';
+          completeForm.style.display = 'none';
+          claimCompleteForm.style.display = 'none';
+          claimWarning.style.display = 'none';
+
+          // Show appropriate actions
+          const isAssignedToUser = props.assignedTo === "{{ request.user.username }}";
+
+          if (props.claimable) {
+            claimBtn.style.display = 'inline-block';
+            claimCompleteForm.style.display = 'inline-block';
+          }
+
+          if (isAssignedToUser) {
+            completeForm.style.display = 'inline-block';
+          }
+
+          if (!props.claimable && !isAssignedToUser) {
+            claimWarning.style.display = 'block';
+          }
+
+          const rescindForm = document.getElementById('rescindForm');
+          const rescindButton = document.getElementById('rescindButton');
+          rescindForm.action = `/scheduling/rescind/${event.id}/`;
+          rescindButton.style.display = 'none';
+
+          if (props.assignedTo === "{{ request.user.username }}") {
+            rescindButton.style.display = 'inline-block';
+          }
+
+          document.getElementById('claimCompleteButton').onclick = function (e) {
+              const confirmed = confirm("Are you sure you want to claim and immediately complete this task?");
+              if (!confirmed) {
+                e.preventDefault();  // Prevent the form from submitting
+              }
+            };
+
+          // Launch modal
+          const modal = new bootstrap.Modal(modalEl);
+          modal.show();
+        }
+    });
+
+    calendar.render();
+  });
+</script>
+
+
+{% endblock content %}

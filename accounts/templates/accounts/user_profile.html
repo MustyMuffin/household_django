@@ -3,150 +3,166 @@
 
 {% block content %}
 <div class="container py-4">
+  <div class="row">
+    <!-- Profile and XP Section -->
+    <div class="col-lg-4 text-center mb-4">
+      <div class="card shadow h-100">
+        <div class="card-body d-flex flex-column align-items-center">
+          <h3 class="card-title">{{ profile_user.username }}</h3>
 
-  <!-- User Profile Card -->
-  <div class="card shadow mb-4">
-    <div class="card-body">
-      <h2 class="card-title">{{ profile_user.username }}'s Profile</h2>
+          {% if stats.profile_picture %}
+            <img src="{{ stats.profile_picture.url }}" alt="Profile picture" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+          {% else %}
+            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mb-3" style="width: 150px; height: 150px;">
+              <span style="font-size: 2em;">👤</span>
+            </div>
+          {% endif %}
 
-      <h4>Level Progress</h4>
-
-        <p><strong>Level:</strong> {{ stats.level }}</p>
-        <p><strong>Total XP:</strong> {{ stats.xp|intcomma }}</p>
-        <p><strong>XP to next level (Level {{ stats.level|add:1 }}):</strong> {{ xp_to_next|intcomma }} XP</p>
-
-    <div class="progress" style="height: 30px;">
-      <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" role="progressbar"
-        style="width: {{ progress_percent }}%;" aria-valuenow="{{ progress_percent }}" aria-valuemin="0" aria-valuemax="100">
-        {{ progress_percent }}%
+          {% if request.user == profile_user %}
+            <div class="mt-2">
+              <a href="{% url 'accounts:edit_profile_picture' %}" class="btn btn-sm btn-outline-primary mb-1">Edit Profile Picture</a>
+            </div>
+          {% endif %}
+        </div>
       </div>
     </div>
-    
-    <h4 class="mt-4">🏅 Badges Earned</h4>
 
-        {% if user_badge %}
-          <div class="d-flex flex-wrap">
-            {% for user_badge in user_badge %}
-              <div class="card m-2" style="width: 8rem;">
-                <div class="card-body text-center" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#badgeModal{{ user_badge.badge.id }}">
-                  {% if user_badge.badge.icon %}
-                    <img src="{{ user_badge.badge.icon.url }}" alt="{{ user_badge.badge.name }}" class="img-fluid mb-2" style="height: 50px;">
+    <div class="col-lg-8">
+      <div class="card shadow mb-4">
+        <div class="card-body">
+          <h4 class="mb-3">Level Progress</h4>
+          <div class="row">
+            {% for category in xp_sections %}
+              <div class="mb-4">
+                <h5>{{ category.label }}</h5>
+                <p><strong>Level:</strong> {{ category.level }}</p>
+                <p><strong>XP:</strong> {{ category.xp|intcomma }} / {{ category.next_level_xp|intcomma }}</p>
+                <div class="progress" style="height: 20px;">
+                  <div class="progress-bar bg-{{ category.color }}" role="progressbar"
+                       style="width: {{ category.progress_percent }}%;" aria-valuenow="{{ category.progress_percent }}"
+                       aria-valuemin="0" aria-valuemax="100">
+                    {{ category.progress_percent|floatformat:0 }}%
+                  </div>
+                </div>
+                <small class="text-muted">✨ {{ category.xp_to_next|intcomma }} XP to next level</small>
+              </div>
+            {% endfor %}
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BADGES -->
+  <div class="card shadow mb-4">
+    <div class="card-body">
+      <h4 class="mb-3">🏅 Badges Earned</h4>
+      {% if user_badge %}
+        <div class="row">
+          {% for badge in user_badge %}
+            <div class="col-6 col-sm-4 col-md-3 col-lg-2 mb-3">
+              <div class="card text-center h-100" data-bs-toggle="modal" data-bs-target="#badgeModal{{ badge.badge.id }}" style="cursor:pointer;">
+                <div class="card-body">
+                  {% if badge.badge.icon %}
+                    <img src="{{ badge.badge.icon.url }}" class="img-fluid mb-2" style="height: 50px;" alt="{{ badge.badge.name }}">
                   {% endif %}
-                  <h6 class="card-title">{{ user_badge.badge.name }}</h6>
-                  <p class="small text-muted">{{ user_badge.date_earned|date:"M d, Y" }}</p>
+                  <h6 class="card-title small">{{ badge.badge.name }}</h6>
+                  <p class="small text-muted">{{ badge.date_earned|date:"M d, Y" }}</p>
                 </div>
               </div>
-                
-        
-              <!-- Modal for Each Badge -->
-              <div class="modal fade" id="badgeModal{{ user_badge.badge.id }}" tabindex="-1" aria-labelledby="badgeModalLabel{{ user_badge.badge.id }}" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="badgeModalLabel{{ user_badge.badge.id }}">{{ user_badge.badge.name }}</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-center">
-                      {% if user_badge.badge.icon %}
-                        <img src="{{ user_badge.badge.icon.url }}" alt="{{ user_badge.badge.name }}" class="img-fluid mb-3" style="height: 100px;">
-                      {% endif %}
-                      <p><strong>Module:</strong> {{ user_badge.badge.module }}</p>
-                      <p><strong>Description:</strong> {{ user_badge.badge.description }}</p>
-                      <p><strong>Milestone:</strong> {{ user_badge.badge.milestone }}</p>
-                      <p><small>Earned on: {{ user_badge.awarded_at|date:"M d, Y" }}</small></p>
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
+            </div>
+
+            <!-- Modal -->
+            <div class="modal fade" id="badgeModal{{ badge.badge.id }}" tabindex="-1" aria-labelledby="badgeModalLabel{{ badge.badge.id }}" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="badgeModalLabel{{ badge.badge.id }}">{{ badge.badge.name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body text-center">
+                    {% if badge.badge.icon %}
+                      <img src="{{ badge.badge.icon.url }}" class="img-fluid mb-3" style="height: 100px;" alt="{{ badge.badge.name }}">
+                    {% endif %}
+                    <p><strong>Module:</strong> {{ badge.badge.app_label }}</p>
+                    <p><strong>Description:</strong> {{ badge.badge.description }}</p>
+                    <p><strong>Milestone:</strong> {{ badge.badge.milestone_value }}</p>
+                    <p><small>Earned on: {{ badge.awarded_at|date:"M d, Y" }}</small></p>
                   </div>
                 </div>
               </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <p>No badges earned yet. Keep going! 🚀</p>
-        {% endif %}
-    
-    <div class="my-3">
-        <a href="{% url 'accounts:all_badges' %}" class="btn btn-outline-primary">
-            View All Badges
-        </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p>No badges earned yet. Keep going! 🚀</p>
+      {% endif %}
     </div>
+  </div>
 
-
-  <!-- Earnings Card -->
+  <!-- Earnings -->
   <div class="card shadow mb-4">
     <div class="card-body">
       <h4 class="card-title">Earnings</h4>
       {% if earnings %}
-        <p><strong>Earned Since Last Payout:</strong> ${{ earnings.earnedSincePayout|floatformat:2 }}</p>
-        <p><strong>Total Earned Lifetime:</strong> ${{ earnings.earnedLifetime|floatformat:2 }}</p>
+        <p><strong>Since Last Payout:</strong> ${{ earnings.earnedSincePayout|floatformat:2 }}</p>
+        <p><strong>Total Earned:</strong> ${{ earnings.earnedLifetime|floatformat:2 }}</p>
       {% else %}
         <p>No earnings recorded yet.</p>
       {% endif %}
     </div>
   </div>
 
-  <!-- Books Read Card -->
-<div class="card shadow mb-4">
-  <div class="card-body">
-    <h4 class="card-title d-flex justify-content-between align-items-center">
-      Books Read
-      <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#booksCollapse" aria-expanded="false" aria-controls="booksCollapse">
-        Expand
-      </button>
-    </h4>
-
-    <div class="collapse" id="booksCollapse">
-      {% if books %}
-        <ul class="list-group mt-3">
-          {% for book in books %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ book.book_name }}
-              <small class="text-muted">{{ book.date_added|date:"M d, Y" }}</small>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>No books logged yet.</p>
-      {% endif %}
+  <!-- Books and XP Log (Collapsible) -->
+  <div class="card shadow mb-4">
+    <div class="card-body">
+      <h4 class="card-title d-flex justify-content-between align-items-center">
+        Books Read
+        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#booksCollapse">Toggle</button>
+      </h4>
+      <div class="collapse" id="booksCollapse">
+        {% if books %}
+          <ul class="list-group mt-3">
+            {% for book in books %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ book.book_name }}
+                <small class="text-muted">{{ book.date_added|date:"M d, Y" }}</small>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No books logged yet.</p>
+        {% endif %}
+      </div>
     </div>
+  </div>
 
+  <div class="card shadow mb-4">
+    <div class="card-body">
+      <h4 class="card-title d-flex justify-content-between align-items-center">
+        XP Log
+        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#xpLogCollapse">Toggle</button>
+      </h4>
+      <div class="collapse" id="xpLogCollapse">
+        {% if xp_logs %}
+          <ul class="list-group mt-3">
+            {% for log in xp_logs %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ log.reason }}
+                <small class="text-muted">{{ log.amount }} XP — {{ log.date_awarded|date:"M d, Y H:i" }}</small>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No XP log entries yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="text-end mb-4">
+    <a href="{% url 'accounts:activity_feed' %}" class="btn btn-outline-primary">View Full Activity</a>
   </div>
 </div>
-
-    <!-- XP Log Card -->
-<div class="card shadow mb-4">
-  <div class="card-body">
-    <h4 class="card-title d-flex justify-content-between align-items-center">
-      XP Activity Log
-      <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#xpLogCollapse" aria-expanded="false" aria-controls="xpLogCollapse">
-        Expand
-      </button>
-    </h4>
-    
-    <div class="collapse" id="xpLogCollapse">
-      {% if xp_logs %}
-        <ul class="list-group mt-3">
-          {% for log in xp_logs %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ log.reason }}
-              <small class="text-muted">{{ log.amount }} XP — {{ log.date_awarded|date:"M d, Y H:i" }}</small>
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>No XP log entries yet.</p>
-      {% endif %}
-    </div>
-
-  </div>
-</div>
-    
-    <div class="my-3">
-          <a href="{% url 'accounts:activity_feed' %}" class="btn btn-outline-primary">
-            View All User's Activity
-          </a>
-    </div>
-
 {% endblock %}

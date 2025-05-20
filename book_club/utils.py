@@ -1,6 +1,6 @@
 from accounts.badge_helpers import check_and_award_badges
 from accounts.models import UserStats
-from .models import WordsRead, BooksRead, BookProgressTracker
+from .models import BooksRead, BookProgressTracker
 
 def update_badges_for_books(user, book, words_increment, request=None):
     # Only count as "read" if full progress is met
@@ -12,7 +12,7 @@ def update_badges_for_books(user, book, words_increment, request=None):
 
     books_read_total = BooksRead.objects.filter(user=user).count()
 
-    words_total = WordsRead.objects.filter(user=user).first().wordsLifetime
+    words_total = UserStats.objects.filter(user=user).first().words_read
 
     check_and_award_badges(
         user=user,

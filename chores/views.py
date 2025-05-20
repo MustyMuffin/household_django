@@ -1,19 +1,28 @@
 from collections import defaultdict
+import time
+from django.urls import reverse
 from decimal import Decimal
+from accounts.badge_helpers import check_and_award_badges
+from accounts.badge_helpers import check_and_award_badges, BadgeProgressProvider
+from accounts.models import UserStats
+from accounts.xp_helpers import award_xp
+from django.http import Http404
+from accounts.xp_helpers import award_xp
+from chores.models import Chore, ChoreEntry
 from django.contrib import messages
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
 from django.db import models
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.shortcuts import render, redirect, get_object_or_404
+from chores.utils import process_chore_completion
 
-from accounts.badge_helpers import check_and_award_badges, BadgeProgressProvider
-from accounts.models import UserStats
-# from django.http import Http404
-from accounts.xp_helpers import award_xp
 from .forms import ChoreEntryForm
 from .models import Chore, EarnedWage, ChoreEntry
 
-from chores.models import Chore, ChoreEntry
 
 @BadgeProgressProvider.register("chores")
 def chore_progress(badge, user):
@@ -21,17 +30,17 @@ def chore_progress(badge, user):
     # print(f"DEBUG milestone: {milestone} ({type(milestone)})")
 
     if milestone == "earned_wage":
-        print("✅ Chore badge with earned_wage milestone matched")
+        # print("✅ Chore badge with earned_wage milestone matched")
         return ChoreEntry.objects.filter(user=user).aggregate(
             total=models.Sum("wage")
         )["total"] or 0
 
     try:
         chore = Chore.objects.get(text=milestone)
-        print(f"✅ Matched chore by text: {chore.text}")
+        # print(f"✅ Matched chore by text: {chore.text}")
         return ChoreEntry.objects.filter(user=user, chore=chore).count()
     except Chore.DoesNotExist:
-        print(f"❌ Chore not found for text: {milestone}")
+        # print(f"❌ Chore not found for text: {milestone}")
         return 0
 
 def chores_by_category(request):
@@ -69,61 +78,35 @@ def new_chore_entry(request, chore_id):
         form = ChoreEntryForm()
     else:
         form = ChoreEntryForm(data=request.POST)
-        if form.is_valid():
-            new_chore_entry = form.save(commit=False)
-            new_chore_entry.chore = chore
-            new_chore_entry.user = request.user
-            new_chore_entry.wage = chore.wage  # Set wage at time of entry
-            new_chore_entry.save()
+        entry, result, redirect_url, success = process_chore_completion(
+            user=request.user, chore=chore, request=request, form=form
+        )
 
-            # Update Earnings
-            earned_wage, created = EarnedWage.objects.get_or_create(user=request.user)
-            earned_wage.earnedLifetime += Decimal(chore.wage)
-            earned_wage.earnedSincePayout += Decimal(chore.wage)
-            earned_wage.save()
+        if success:
+            if request.headers.get("x-requested-with", "").lower() == "xmlhttprequest":
+                return JsonResponse({
+                    "success": True,
+                    "xp_awarded": str(result["xp_awarded"]),
+                    "message": f"You earned {result['xp_awarded']} XP for completing a chore!",
+                    "redirect_url": redirect_url
+                })
 
-            from accounts.badge_helpers import check_and_award_badges
-            current_count = ChoreEntry.objects.filter(user=request.user, chore=chore).count()
-
-            check_and_award_badges(
-                user=request.user,
-                app_label="chores",
-                milestone_type=chore.text,
-                current_value=current_count,
-                request=request
-            )
-
-            check_and_award_badges(
-                user=request.user,
-                app_label="chores",
-                milestone_type="earned_wage",
-                current_value=chore.wage,
-                request=request  # to show a success message
-            )
-
-            # Award XP
-            result = award_xp(
-                user=request.user,
-                source_object=chore,
-                reason=f"Completed chore: {chore.text}",
-                source_type="chore"
-            )
-
-            # Show XP earned message
             messages.success(request, f"✅ You earned {result['xp_awarded']} XP for completing a chore!")
+            return redirect(redirect_url)
 
-            # If leveled up
-            if result['leveled_up']:
-                messages.success(request, f"🎉 Congratulations! You leveled up to Level {result['new_level']}!")
-
-            return redirect('chores:chores_by_category')
-
+        else:
+            if request.headers.get("x-requested-with", "").lower() == "xmlhttprequest":
+                return JsonResponse({
+                    "success": False,
+                    "error": "Form validation failed. Please check your input."
+                }, status=400)
 
     context = {
         'chore': chore,
         'form': form,
     }
     return render(request, 'chores/new_chore_entry.html', context)
+
 
 
 def payout(request):

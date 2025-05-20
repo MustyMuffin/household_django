@@ -18,18 +18,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CMS_CONFIRM_VERSION4 = True
 
 SITE_ID = 1
-# LOGGING = {
-#     'version': 1,
-#     'handlers': {
-#         'console': {
-#             'class': 'logging.StreamHandler',
-#         },
-#     },
-#     'root': {
-#         'handlers': ['console'],
-#         'level': 'DEBUG',
-#     },
-# }
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-9^xyaa+x1nv8nyy6jcm(mbcj$^ywqp-@so)ewl7agfs+vs92ic'
@@ -46,6 +34,7 @@ INSTALLED_APPS = [
     # My apps.
     'household_main',
     'accounts',
+    'scheduling',
     'chores',
     'book_club',
 
@@ -55,6 +44,7 @@ INSTALLED_APPS = [
 
     # Third party apps.
     'django_bootstrap5',
+    "django_celery_beat",
     'widget_tweaks',
     'dark_mode_switch',
     "django.contrib.sites",
@@ -103,7 +93,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.user_xp_data',
-                "sekizai.context_processors.sekizai"
+                'accounts.context_processors.user_profile_picture',
+                'sekizai.context_processors.sekizai',
+                'scheduling.context_processors.unread_notifications',
             ],
         },
     },
@@ -183,3 +175,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # My settings.
 LOGIN_REDIRECT_URL = 'household_main:index'
 LOGOUT_REDIRECT_URL = 'household_main:index'
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/1'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERYBEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'

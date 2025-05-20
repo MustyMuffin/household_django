@@ -1,0 +1,23 @@
+{% extends 'household_main/base.html' %}
+{% block page_header %}
+  <h1>All Notifications</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  {% if notifications %}
+    <ul class="list-group">
+      {% for note in notifications %}
+        <li class="list-group-item d-flex justify-content-between align-items-center {% if not note.read %}fw-bold{% endif %}">
+          <a href="{% url 'scheduling:read_notification' note.id %}" class="text-decoration-none">
+            {{ note.message }}
+          </a>
+          <small class="text-muted">{{ note.created_at|date:"M j, H:i" }}</small>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted">You have no notifications.</p>
+  {% endif %}
+</div>
+{% endblock %}

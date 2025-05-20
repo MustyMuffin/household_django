@@ -12,9 +12,6 @@ wheels/
 # Automation scripts
 *.ps1
 
-# Django migrations
-*/migrations/
-!*/migrations/__init__.py
 
 # Database & settings
 *.sqlite3
@@ -44,3 +41,8 @@ Thumbs.db
 
 # Archives
 *.zip
+
+# celery beat schedule file
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+celerybeat-schedule

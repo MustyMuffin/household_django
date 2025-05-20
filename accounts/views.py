@@ -1,26 +1,108 @@
 from datetime import timedelta
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from django.views import View
-from django.views.generic import TemplateView
-from accounts.models import UserStats, XPSettings, XPLog, Badge, UserBadge
-from book_club.models import BooksRead, BookEntry, Book, WordsRead
-from chores.models import EarnedWage, ChoreEntry, Chore
 from itertools import chain
 from operator import itemgetter
-from accounts.xp_utils import XPManager
-from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpResponse, JsonResponse
-from django.template.loader import render_to_string
-from chores.models import ChoreEntry
-from book_club.models import BooksRead
-from django.db.models import Count
 from accounts.badge_helpers import BadgeProgressProvider
+from accounts.models import UserStats, XPLog, UserBadge, XPSettings, Badge
+from accounts.xp_utils import XPManager
+from book_club.models import BooksRead, BookEntry, Book
+from chores.models import EarnedWage, ChoreEntry, Chore
+from django.contrib.auth import get_user_model
+from .forms import ProfilePictureForm
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.shortcuts import render, get_object_or_404
+from django.views import View
+from PIL import Image
+from io import BytesIO
+from django.core.files.base import ContentFile
 
+@login_required
+def user_profile(request, username):
+    user = get_object_or_404(User, username=username)
+    stats = UserStats.objects.filter(user=user).first()
+    books = BooksRead.objects.filter(user=user)
+    earnings = EarnedWage.objects.filter(user=user).first()
+    xp_logs = XPLog.objects.filter(user=user).order_by('-date_awarded')
+    user_badge = UserBadge.objects.filter(user=user).select_related('badge').order_by('-awarded_at')
+
+    xp_sections = []
+
+    if stats:
+        xp_sections = [
+            {
+                "label": "Overall Level",
+                "level": stats.overall_level,
+                "xp": stats.overall_xp,
+                "next_level_xp": stats.overall_next_level_xp,
+                "progress_percent": stats.overall_progress_percent,
+                "xp_to_next": stats.overall_xp_to_next_level,
+                "color": "info"
+            },
+            {
+                "label": "Chore Level",
+                "level": stats.chore_level,
+                "xp": stats.chore_xp,
+                "next_level_xp": stats.chore_next_level_xp,
+                "progress_percent": stats.chore_progress_percent,
+                "xp_to_next": stats.chore_xp_to_next_level,
+                "color": "warning"
+            },
+            {
+                "label": "Reading Level",
+                "level": stats.reading_level,
+                "xp": stats.reading_xp,
+                "next_level_xp": stats.reading_next_level_xp,
+                "progress_percent": stats.reading_progress_percent,
+                "xp_to_next": stats.reading_xp_to_next_level,
+                "color": "success"
+            }
+        ]
+
+    context = {
+        'profile_user': user,
+        'stats': stats,
+        'books': books,
+        'earnings': earnings,
+        'xp_logs': xp_logs,
+        'user_badge': user_badge,
+        'xp_sections': xp_sections,
+    }
+
+    return render(request, 'accounts/user_profile.html', context)
+
+
+@login_required
+def edit_profile_picture(request):
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        form = ProfilePictureForm(request.POST, request.FILES, instance=stats)
+        crop_x = int(request.POST.get("crop_x", 0))
+        crop_y = int(request.POST.get("crop_y", 0))
+        crop_width = int(request.POST.get("crop_width", 150))
+        crop_height = int(request.POST.get("crop_height", 150))
+
+        if form.is_valid():
+            image = Image.open(form.cleaned_data['profile_picture'])
+
+            cropped_image = image.crop((crop_x, crop_y, crop_x + crop_width, crop_y + crop_height))
+            cropped_image = cropped_image.resize((300, 300))  # Normalize to 300x300
+
+            buffer = BytesIO()
+            cropped_image.save(fp=buffer, format='JPEG')
+            image_file = ContentFile(buffer.getvalue())
+
+            stats.profile_picture.save(f"{request.user.username}_profile.jpg", image_file)
+            return redirect('accounts:user_profile', username=request.user.username)
+    else:
+        form = ProfilePictureForm(instance=stats)
+
+    return render(request, 'accounts/edit_profile_picture.html', {'form': form})
 
 class AllBadges(LoginRequiredMixin, View):
     def get(self, request):
@@ -91,8 +173,8 @@ def book_club_progress(badge, user):
         return BooksRead.objects.filter(user=user).count()
 
     elif milestone_type == "words_read":
-        words = WordsRead.objects.filter(user=user).first()
-        return words.wordsLifetime if words else 0
+        words = UserStats.objects.filter(user=user).first()
+        return words.words_read if words else 0
 
     # elif milestone_type == "specific_book":
     #     # For now, return 1 if they've read it, or 0
@@ -139,51 +221,6 @@ def get_milestone_options(request):
         return JsonResponse(data)
 
     return JsonResponse({"options": []})
-
-
-@login_required
-def user_profile(request, username):
-    user = get_object_or_404(User, username=username)
-    stats = UserStats.objects.filter(user=user).first()
-    books = BooksRead.objects.filter(user=user)
-    earnings = EarnedWage.objects.filter(user=user).first()
-    xp_logs = XPLog.objects.filter(user=user).order_by('-date_awarded')
-    date_awarded = UserBadge.objects.filter(user=user).order_by('-awarded_at')
-
-    # Default values
-    xp = 0
-    level = 1
-    next_level_xp = 100
-    xp_to_next = 100
-    progress_percent = 0
-
-    if stats:
-        xp = stats.xp
-        level = stats.level
-        next_level_xp = XPManager.next_level_xp(level)
-        xp_to_next_level = XPManager.xp_to_next_level(xp, level)
-        progress_percent = XPManager.progress_percent(xp, level)
-        user_badge = UserBadge.objects.filter(user=user).select_related('badge')
-        # badge_progress = check_and_award_badges.get_user_progress(user)
-
-    context = {
-        'profile_user': user,
-        'stats': stats,
-        'books': books,
-        'earnings': earnings,
-        'xp_logs': xp_logs,
-        'xp': xp,
-        'level': level,
-        'next_level_xp': next_level_xp,
-        'xp_to_next_level': xp_to_next_level,
-        'progress_percent': progress_percent,
-        'user_badge': user_badge,
-        'date_awarded': date_awarded,
-        # 'badge_progress': badge_progress,
-    }
-
-    return render(request, 'accounts/user_profile.html', context)
-
 
 def activity_feed(request):
     show_all_users = True
@@ -252,7 +289,7 @@ def register(request):
         if form.is_valid():
             new_user = form.save()
 
-            WordsRead.objects.get_or_create(user=new_user, wordsLifetime=0)
+            UserStats.objects.get_or_create(user=new_user, words_read=0)
 
             login(request, new_user)
             return redirect('household_main:index')

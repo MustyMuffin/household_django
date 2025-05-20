@@ -1,13 +1,15 @@
-from django.shortcuts import render, redirect
+from accounts.models import UserStats
+from accounts.xp_utils import XPManager
+from book_club.models import BooksRead
+from chores.models import EarnedWage
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
+from django.shortcuts import redirect
+from django.shortcuts import render
 
-from accounts.xp_utils import XPManager
-from book_club.models import BooksRead, WordsRead
-from chores.models import EarnedWage
-from .models import Note, Entry
 from .forms import NoteForm, EntryForm
-from accounts.models import UserStats
+from .models import Note, Entry
+
 
 @login_required
 def index(request):
@@ -15,10 +17,10 @@ def index(request):
     stats = UserStats.objects.filter(user=user).first()
 
     books_read_list = BooksRead.objects.filter(user=user).order_by('-date_added')
-    words_read_entry = WordsRead.objects.filter(user=user).first()
-    total_words_read = words_read_entry.wordsLifetime if words_read_entry else 0
+    words_read_entry = UserStats.objects.filter(user=user).first()
+    total_words_read = words_read_entry.words_read if words_read_entry else 0
 
-    books_leaderboard = WordsRead.objects.select_related('user').order_by('-wordsLifetime')
+    books_leaderboard = UserStats.objects.select_related('user').order_by('-words_read')
     earnings_leaderboard = EarnedWage.objects.select_related('user').order_by('-earnedLifetime')
 
     try:
@@ -29,18 +31,22 @@ def index(request):
         wage_earned = 0.00
         lifetime_earned = 0.00
 
+    def xp_context(xp, level, kind="overall"):
+        info = XPManager.level_info(xp, kind=kind)
+        return {
+            "level": level,
+            "xp": xp,
+            "next_level_xp": info.get("next_xp", 0),
+            "xp_to_next": info.get("xp_to_next", 0),
+            "progress_percent": int(info.get("progress_percent", 0)),
+        }
+
     if stats:
-        xp = stats.xp
-        level = stats.level  # <- 🛠 Use the SAVED level!
-        next_level_xp = XPManager.next_level_xp(level)
-        xp_to_next = XPManager.xp_to_next_level(xp, level)
-        progress_percent = XPManager.progress_percent(xp, level)
+        overall = xp_context(stats.overall_xp, stats.overall_level, "overall")
+        chore = xp_context(stats.chore_xp, stats.chore_level, "chore")
+        reading = xp_context(stats.reading_xp, stats.reading_level, "reading")
     else:
-        xp = 0
-        level = 1
-        next_level_xp = 0
-        xp_to_next = 0
-        progress_percent = 0
+        overall = chore = reading = xp_context(0, 1)
 
     context = {
         'books_read_list': books_read_list,
@@ -49,18 +55,23 @@ def index(request):
         'lifetime_earned': lifetime_earned,
         'books_leaderboard': books_leaderboard,
         'earnings_leaderboard': earnings_leaderboard,
-        'user_level': level,
-        'xp': xp,
-        'next_level_xp': int(next_level_xp),
-        'xp_to_next': int(xp_to_next),
-        'progress_percent': int(progress_percent),
+
+        # Flattened XP fields
+        **{f"overall_{k}": v for k, v in overall.items()},
+        **{f"chore_{k}": v for k, v in chore.items()},
+        **{f"reading_{k}": v for k, v in reading.items()},
+
+        # Optional: for looping
+        'xp_sections': [
+            {"label": "Your Overall Level Progress", "color": "info", **overall},
+            {"label": "Your Chore Level Progress", "color": "warning", **chore},
+            {"label": "Your Reading Level Progress", "color": "success", **reading},
+        ]
     }
+
     return render(request, 'household_main/index.html', context)
 
 
-
-# def xp_calculator_view(request):
-#     return render(request, 'household_main/xp_calculator.html')
 
 @login_required
 def notes(request):
