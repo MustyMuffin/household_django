@@ -65,7 +65,7 @@
       <!-- Left-side navigation links -->
       <ul class="navbar-nav me-auto mb-2 mb-md-0">
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'scheduling:todo_calendar' %}">Todo</a>
+          <a class="nav-link" href="{% url 'scheduling:todo_calendar' %}">Calendar</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{% url 'household_main:notes' %}">Notes</a>
@@ -89,16 +89,19 @@
                 Notifications ({{ unread_count }})
               </button>
               <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
-                {% for message in request.user.notifications.all|slice:":5" %}
-                  <li>
-                    <a class="dropdown-item {% if not message.read %}fw-bold{% endif %}"
-                       href="{% url 'scheduling:read_notification' message.id %}">
-                      {{ message.message }}
-                    </a>
-                  </li>
-                {% empty %}
+                {% if unread_notifications %}
+                  {% for message in unread_notifications %}
+                    <li>
+                      <a class="dropdown-item fw-bold" href="{% url 'scheduling:read_notification' message.id %}">
+                        {{ message.message }}
+                      </a>
+                    </li>
+                  {% endfor %}
+                {% else %}
                   <li class="dropdown-item text-muted">No notifications</li>
-                {% endfor %}
+                {% endif %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-center" href="{% url 'scheduling:all_notifications' %}">See all</a></li>
               </ul>
             </div>
 

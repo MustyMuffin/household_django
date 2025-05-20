@@ -1,3 +1,5 @@
+from itertools import chain
+
 from django.urls import reverse
 from django.db import models
 from django.http import JsonResponse, HttpResponse
@@ -8,30 +10,20 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .forms import ScheduleChoreForm
-from .tasks import add_due_chores_to_todo
+# from .tasks import add_due_chores_to_todo
 from django.contrib.auth.models import Group, User
-from chores.models import ChoreEntry
 from django.shortcuts import get_object_or_404, redirect, render
-from chores.utils import process_chore_completion
 from django.views.decorators.http import require_POST
+from .helpers import claim_scheduled_task, complete_scheduled_task
 
 def is_privileged(user):
     return user.groups.filter(name='Privileged').exists()
 
 @login_required
-def test_notification(request):
-    Notification.objects.create(
-        user=request.user,
-        message="🔔 Test notification sent via view!",
-        read=False
-    )
-    return redirect("scheduling:upcoming_tasks")
-
-@login_required
 def upcoming_tasks_view(request):
     filter_type = request.GET.get("filter", "all")
     start = now()
-    end = start + timedelta(days=30)
+    end = start + timedelta(days=14) # Add to scheduling settings later
 
     items = ScheduledItem.objects.filter(scheduled_for__range=(start, end)).order_by("scheduled_for")
 
@@ -55,26 +47,38 @@ def read_and_redirect_notification(request, notification_id):
     notification.save()
     return redirect(notification.url or "/")
 
-@require_POST
 @login_required
 def assign_scheduled_task(request, item_id):
-    item = get_object_or_404(ScheduledItem, id=item_id)
-    if item.user is not None:
-        messages.error(request, "❌ This task is already claimed.")
-        return redirect('scheduling:upcoming_tasks')
+    item = get_object_or_404(ScheduledItem, pk=item_id)
 
-    assignee_id = request.POST.get("assignee_id")
-    try:
-        assignee = User.objects.get(pk=assignee_id)
-    except User.DoesNotExist:
-        messages.error(request, "❌ Invalid user selected.")
-        return redirect('scheduling:upcoming_tasks')
+    if request.method == "POST":
+        assignee_id = request.POST.get("assignee_id")
+        try:
+            assignee = User.objects.get(pk=assignee_id)
+        except User.DoesNotExist:
+            messages.error(request, "❌ User not found.")
+            return redirect("scheduling:upcoming_tasks")
 
-    item.user = assignee
-    item.save()
+        is_privileged = request.user.groups.filter(name="Privileged").exists()
 
-    formatted_date = item.scheduled_for.strftime("%A, %b %d at %I:%M %p")
-    messages.success(request, f"✅ Assigned task '{item.title}' on {formatted_date} to {assignee.username}.")
+        if item.user and not is_privileged:
+            messages.error(request, "❌ Task is already assigned and cannot be reassigned.")
+            return redirect("scheduling:upcoming_tasks")
+
+        item.user = assignee
+        item.save()
+
+        Notification.objects.create(
+            user=assignee,
+            message=f"📌 You’ve been assigned to: {item.title} scheduled for {item.scheduled_for.strftime('%A %b %d @ %I:%M %p')}",
+            url=f"/scheduling/calendar/?highlight={item.id}"
+        )
+
+        messages.success(request, f"✅ Task '{item.title}' assigned to {assignee.username}.")
+        return redirect("scheduling:upcoming_tasks")
+
+    messages.error(request, "❌ Invalid request method.")
+    return redirect("scheduling:upcoming_tasks")
 
     return redirect('scheduling:upcoming_tasks')
 
@@ -162,7 +166,7 @@ def schedule_chore_view(request):
                     recurring_set=recurring_set
                 )
 
-            add_due_chores_to_todo.delay()
+            # add_due_chores_to_todo.delay()
 
             calendar_url = reverse('scheduling:todo_calendar') + f'?highlight={item.id}'
 
@@ -170,8 +174,19 @@ def schedule_chore_view(request):
                 Notification.objects.create(
                     user=notification_recipient,
                     message=f"You’ve been assigned a task: {chore.text} on {item_time.strftime('%A %b %d @ %I:%M %p')}",
-                    url=f"{reverse('scheduling:todo_calendar')}?highlight={item.id}",
+                    url=calendar_url,
                 )
+            else:
+                recipient_groups = Group.objects.filter(name__in=['Workers', 'Privileged'])
+                all_recipients = set(chain.from_iterable(group.user_set.all() for group in recipient_groups))
+
+                for user in all_recipients:
+                    Notification.objects.create(
+                        user=user,
+                        message=f"📝 '{chore.text}' on {item_time.strftime('%A %b %d @ %I:%M %p')} is available to claim.",
+                        url=calendar_url,
+                    )
+
 
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({
@@ -184,6 +199,13 @@ def schedule_chore_view(request):
     else:
         form = ScheduleChoreForm(user=request.user)
     return render(request, 'scheduling/schedule_chore.html', {'form': form})
+
+@login_required
+def all_notifications_view(request):
+    notifications = request.user.notifications.all().order_by('-created_at')
+    return render(request, 'scheduling/all_notifications.html', {
+        'notifications': notifications,
+    })
 
 @login_required
 def todo_preview_view(request, user_id):
@@ -206,12 +228,7 @@ def todo_calendar_json(request):
     user = request.user
     user_group_ids = set(user.groups.values_list('id', flat=True))
 
-    todos = ScheduledItem.objects.filter(
-        completed=False
-    ).filter(
-        models.Q(user=user) |
-        models.Q(user__isnull=True)
-    )
+    todos = ScheduledItem.objects.filter(completed=False)
 
     events = []
 
@@ -220,60 +237,79 @@ def todo_calendar_json(request):
 
         events.append({
             "id": todo.id,
-            "title": f"[Unclaimed] {todo.title}" if todo.user is None else todo.title,
+            "title": f"{todo.title} - Unclaimed" if todo.user is None else f"{todo.title} - {todo.user}",
             "start": todo.scheduled_for.isoformat(),
             "color": "#ff4444" if todo.scheduled_for < now() else "#3788d8",
             "claimable": todo.user is None,
             "assignedTo": todo.user.username if todo.user else None,
+            "assignedToProfilePic": todo.user.userstats.profile_picture.url if todo.user and hasattr(todo.user, "userstats") and todo.user.userstats.profile_picture else None,
         })
 
     return JsonResponse(events, safe=False)
 
 @login_required
-def complete_scheduled_item(request, item_id):
+def claim_and_complete_task(request, item_id):
     item = get_object_or_404(ScheduledItem, pk=item_id)
 
-    if item.user != request.user:
-        messages.error(request, "❌ You can only complete tasks assigned to you.")
-        return redirect('scheduling:todo_calendar')
+    if item.user is None:
+        claimed, claim_msg = claim_scheduled_task(item, request.user)
+        messages.info(request, claim_msg)
+        if not claimed:
+            return redirect('scheduling:todo_calendar')
 
-    if item.completed:
-        messages.info(request, "✅ This task is already completed.")
-        return redirect('scheduling:todo_calendar')
-
-    item.completed = True
-    item.save()
-
-    try:
-        if item.content_type and item.object_id:
-            chore = item.content_type.get_object_for_this_type(id=item.object_id)
-            _, result, _, _ = process_chore_completion(user=request.user, chore=chore, request=request)
-            messages.success(request, f"✅ Completed task: {item.title} (+{result['xp_awarded']} XP)")
-        else:
-            messages.warning(request, "⚠️ Task completed, but no chore data was linked.")
-    except Exception as e:
-        messages.error(request, f"❌ Could not log chore: {e}")
+    completed, complete_msg = complete_scheduled_task(item, request.user, request)
+    messages.info(request, complete_msg)
 
     return redirect('scheduling:todo_calendar')
-
 
 @login_required
 def claim_scheduled_item(request, item_id):
     item = get_object_or_404(ScheduledItem, pk=item_id)
 
-    if item.user is not None:
-        messages.error(request, "❌ This task is already claimed.")
-        return redirect(reverse('scheduling:todo_calendar'))
+    success, message = claim_scheduled_task(item, request.user)
+    messages.info(request, message)
+
+    return redirect('scheduling:todo_calendar')
+
+
+@login_required
+def complete_scheduled_item(request, item_id):
+    item = get_object_or_404(ScheduledItem, pk=item_id)
+
+    success, message = complete_scheduled_task(item, request.user, request)
+    messages.info(request, message)
+
+    return redirect('scheduling:todo_calendar')
+
+@login_required
+def delete_scheduled_task(request, item_id):
+    item = get_object_or_404(ScheduledItem, id=item_id)
+
+    if not request.user.groups.filter(name="Privileged").exists():
+        messages.error(request, "You don’t have permission to delete this task.")
+        return redirect('scheduling:upcoming_tasks')
+
+    item.delete()
+    messages.success(request, "🗑️ Task deleted successfully.")
+    return redirect('scheduling:upcoming_tasks')
+
+@login_required
+def rescind_scheduled_item(request, item_id):
+    item = get_object_or_404(ScheduledItem, pk=item_id)
+
+    if item.user != request.user:
+        messages.error(request, "❌ You can only rescind tasks assigned to you.")
+        return redirect('scheduling:todo_calendar')
 
     if item.completed:
-        messages.info(request, "✅ This task has already been completed.")
-        return redirect(reverse('scheduling:todo_calendar'))
+        messages.warning(request, "⚠️ You cannot rescind a completed task.")
+        return redirect('scheduling:todo_calendar')
 
-    item.user = request.user
+    item.user = None
     item.save()
 
-    messages.success(request, f"✅ You have claimed: {item.title}")
-    return redirect(reverse('scheduling:todo_calendar'))
+    messages.success(request, "↩️ Task has been rescinded and is now unclaimed.")
+    return redirect('scheduling:todo_calendar')
 
 
 

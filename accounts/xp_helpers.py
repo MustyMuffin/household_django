@@ -1,5 +1,10 @@
 from decimal import Decimal
+
+from django.urls import reverse
+
 from .models import XPLog, XPSettings, UserStats
+from scheduling.models import Notification
+
 from .xp_utils import XPManager
 
 def award_xp(user, source_object=None, reason="", source_type="chore", override_xp_amount=None, request=None):
@@ -47,10 +52,25 @@ def award_xp(user, source_object=None, reason="", source_type="chore", override_
 
         if new_level > old_level:
             messages.success(request, f"🎉 You leveled up to Level {new_level}!")
+            Notification.objects.create(
+                user=user,
+                message=f"🎉 Level up! You’ve reached level {new_level}.",
+                url=reverse('accounts:user_profile', args=[user.username])
+            )
         if new_level_chores > old_level_chores:
             messages.success(request, f"🧹 You reached Chore Level {new_level_chores}!")
+            Notification.objects.create(
+                user=user,
+                message=f"🎉 Level up! 🧹 You reached Chore Level {new_level_chores}.",
+                url=reverse('accounts:user_profile', args=[user.username])
+            )
         if new_level_reading > old_level_reading:
             messages.success(request, f"📚 You reached Reading Level {new_level_reading}!")
+            Notification.objects.create(
+                user=user,
+                message=f"🎉 Level up! 📚 You reached Reading Level {new_level_reading}.",
+                url=reverse('accounts:user_profile', args=[user.username])
+            )
 
     XPLog.objects.create(user=user, amount=xp_awarded, reason=reason)
 

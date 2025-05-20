@@ -1,10 +1,13 @@
 import traceback
 from django.http import request
+from django.urls import reverse
 from django.utils.timezone import now
 from django.contrib import messages
 
 from book_club.models import BooksRead
 from chores import models
+from scheduling.models import Notification
+
 
 class BadgeProgressProvider:
     registry = {}
@@ -58,6 +61,12 @@ def check_and_award_badges(user, app_label, milestone_type, current_value, reque
         if request:
             # print(f"[DEBUG] request is not None: {request}")
             messages.success(request, f"🏆 Badge Unlocked: {badge.name}!")
+            Notification.objects.create(
+                user=user,
+                message=f"🏅 You've unlocked the '{badge.name}' badge!",
+                url=reverse('accounts:user_profile', args=[user.username])
+            )
+
         else:
             # print("[DEBUG] No request passed to badge unlocker.")
 

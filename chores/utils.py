@@ -4,6 +4,7 @@ from accounts.xp_helpers import award_xp
 from accounts.badge_helpers import check_and_award_badges
 from django.urls import reverse
 
+
 def process_chore_completion(user, chore, request=None, form=None):
     """
     Handles XP, wage tracking, and badge awarding for a completed chore.
@@ -34,6 +35,7 @@ def process_chore_completion(user, chore, request=None, form=None):
     if request:
         check_and_award_badges(user, "chores", chore.text, current_count, request)
         check_and_award_badges(user, "chores", "earned_wage", chore.wage, request)
+
 
     # XP
     result = award_xp(

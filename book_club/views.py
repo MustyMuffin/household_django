@@ -75,7 +75,7 @@ def new_book_entry(request, book_id):
         form.instance.user = request.user
         form.save()
 
-        bonus_result = award_xp(request.user, source_object=book, reason="📚 Full book bonus", source_type="finished_book", request=request)
+        bonus_result = award_xp(request.user, source_object=book, reason="📚 Completed book bonus", source_type="finished_book", request=request)
 
         if bonus_result.get('xp_awarded'):
             messages.success(request, f"✅ Bonus XP: {bonus_result['xp_awarded']} for finishing a book!")
