@@ -9,7 +9,10 @@ from accounts.xp_helpers import award_xp
 from .forms import BookEntryForm, BookForm, BookProgressTrackerForm
 from .models import Book, BookProgressTracker
 from accounts.models import UserStats
+from django.contrib.auth.decorators import user_passes_test
 
+def is_privileged(user):
+    return user.groups.filter(name='Privileged').exists()
 
 def books_by_category(request):
     # Group books by their category
@@ -21,7 +24,7 @@ def books_by_category(request):
         category_name = item.book_category.name if item.book_category else "Uncategorized"
         books_by_category[category_name].append(item)
 
-    context = {'books_by_category': dict(books_by_category)}
+    context = {'books_by_category': dict(books_by_category), 'can_add_book': is_privileged(request.user)}
     return render(request, 'book_club/books_by_category.html', context)
 
 def books(request):
@@ -146,20 +149,15 @@ def book_backlog(request):
     })
 
 
-def new_book(request):
-    """Add a new book."""
-    if request.method != 'POST':
-        # No data submitted; create a blank form.
-        form = BookForm()
-    else:
-        # POST data submitted; process data
+@user_passes_test(is_privileged)
+def add_new_book(request):
+    """Add a new book (privileged users only)."""
+    if request.method == 'POST':
         form = BookForm(data=request.POST)
         if form.is_valid():
-
             form.save()
+            return redirect('book_club:books_by_category')
+    else:
+        form = BookForm()
 
-            return redirect('/books')
-
-        # Display a blank or invalid form.
-        context = {'form': form}
-        return render(request, 'book_club/new_book.html', context)
+    return render(request, 'book_club/add_new_book.html', {'form': form})
