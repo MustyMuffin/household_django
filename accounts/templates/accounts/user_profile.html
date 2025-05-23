@@ -98,6 +98,10 @@
       {% else %}
         <p>No badges earned yet. Keep going! 🚀</p>
       {% endif %}
+
+        <div class="text-end mb-4">
+            <a href="{% url 'accounts:all_badges' %}" class="btn btn-outline-primary">All Badges</a>
+        </div>
     </div>
   </div>
 

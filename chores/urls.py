@@ -18,6 +18,9 @@ urlpatterns = [
     path('payout/', views.payout, name='payout'),
     # Path for resetting a user payout
     path('reset/<int:user_id>/', views.reset_earned_wage, name='reset_earned_wage'),
+
+    path('payout_summary/', views.payout_summary, name='payout_summary'),
+    path('payout_partial/<int:user_id>/', views.payout_partial, name='payout_partial'),
     # Page for editing an entry.
     # path('edit_chore_entry/<int:chore_entry_id>/', views.edit_chore_entry, name='edit_chore_entry'),
 ]

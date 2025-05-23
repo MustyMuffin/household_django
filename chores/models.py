@@ -47,3 +47,13 @@ class EarnedWage(models.Model):
 
     class Meta:
         verbose_name_plural = 'earned_wages'
+
+class PayoutLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    performed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='payouts_made')
+    test_field = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.performed_by} paid ${self.amount} to {self.user} on {self.created_at}"

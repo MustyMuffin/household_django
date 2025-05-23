@@ -12,6 +12,13 @@ wheels/
 # Automation scripts
 *.ps1
 
+# #Migrations (because tes env)
+# scheduling/migrations/*
+# book_club/migrations/*
+# accounts/migrations/*
+# chores/migrations/*
+# household_main/migrations/*
+
 
 # Database & settings
 *.sqlite3

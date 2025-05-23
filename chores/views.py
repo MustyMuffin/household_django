@@ -1,27 +1,20 @@
-from collections import defaultdict
 import time
-from django.urls import reverse
+from collections import defaultdict
 from decimal import Decimal
-from accounts.badge_helpers import check_and_award_badges
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required,user_passes_test
+from django.contrib.auth.models import User
+from django.db import models
+from django.http import Http404,JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.views.decorators.http import require_POST
 from accounts.badge_helpers import check_and_award_badges, BadgeProgressProvider
 from accounts.models import UserStats
 from accounts.xp_helpers import award_xp
-from django.http import Http404
-from accounts.xp_helpers import award_xp
-from chores.models import Chore, ChoreEntry
-from django.contrib import messages
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.decorators import user_passes_test
-from django.db import models
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.shortcuts import render, redirect, get_object_or_404
 from chores.utils import process_chore_completion
-
-from .forms import ChoreEntryForm
-from .models import Chore, EarnedWage, ChoreEntry
+from chores.forms import ChoreEntryForm, PartialPayoutForm
+from chores.models import Chore, EarnedWage, ChoreEntry, PayoutLog
 
 
 @BadgeProgressProvider.register("chores")
@@ -107,25 +100,72 @@ def new_chore_entry(request, chore_id):
     }
     return render(request, 'chores/new_chore_entry.html', context)
 
+def is_privileged(user):
+    return user.groups.filter(name='Privileged').exists()
 
+@require_POST
+def payout_partial(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+    earned_wage = get_object_or_404(EarnedWage, user=user)
 
+    try:
+        payout_amount = Decimal(request.POST.get('payout_amount', '0'))
+    except Exception:
+        messages.error(request, "Invalid payout amount.")
+        return redirect('chores:payout_summary')
+
+    if 0 < payout_amount <= earned_wage.earnedSincePayout:
+        earned_wage.earnedSincePayout -= payout_amount
+        earned_wage.save()
+
+        PayoutLog.objects.create(
+            user=user,
+            amount=payout_amount,
+            performed_by=request.user
+        )
+
+        messages.success(request, f"💸 Paid out ${payout_amount:.2f} to {user.username}.")
+    else:
+        messages.error(request, "Invalid payout amount.")
+
+    return redirect('chores:payout_summary')
+
+@login_required
+def payout_summary(request):
+    all_earners = EarnedWage.objects.select_related('user').all()
+    wage_earned = 0
+    if hasattr(request.user, 'earnedwage'):
+        wage_earned = request.user.earnedwage.earnedSinceLastPayout
+
+    logs = PayoutLog.objects.select_related('user', 'performed_by').order_by('-created_at')[:25]  # last 25 logs
+
+    context = {
+        'all_earners': all_earners,
+        'wage_earned': wage_earned,
+        'logs': logs,
+    }
+    return render(request, 'chores/payout_summary.html', context)
 def payout(request):
     # Current user info
+
+
     earner = EarnedWage.objects.get(user=request.user)
     wage_earned = earner.earnedSincePayout
 
     # All users' earnings
     all_earners = EarnedWage.objects.select_related('user').all()
 
+    logs = PayoutLog.objects.select_related('user', 'performed_by').order_by('-created_at')[:25]
+
     context = {
         'wage_earned': wage_earned,
-        'earner': earner,
         'all_earners': all_earners,
+        'logs': logs,
+        'can_payout': is_privileged(request.user),
     }
     return render(request, 'chores/payout.html', context)
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
 def reset_earned_wage(request, user_id):
     earned = get_object_or_404(EarnedWage, user_id=user_id)
     earned.earnedSincePayout = 0
