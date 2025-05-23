@@ -12,6 +12,9 @@ wheels/
 # Automation scripts
 *.ps1
 
+#Migrations (because tes env)
+scheduling/migrations/*
+
 
 # Database & settings
 *.sqlite3
