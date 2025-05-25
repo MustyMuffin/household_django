@@ -8,3 +8,4 @@ pillow
 django-cms
 celery[redis]
 django-celery-beat
+whitenoise

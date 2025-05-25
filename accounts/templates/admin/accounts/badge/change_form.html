@@ -1,9 +1,8 @@
 {% extends "admin/change_form.html" %}
-{% load static %}
-
 {% block extrahead %}
   {{ block.super }}
   {{ media }}
+
   <script>
     console.log("✅ Custom change_form.html loaded");
 
@@ -14,14 +13,48 @@
     console.log("➡️ Initial milestone:", initialMilestone);
     console.log("➡️ Milestone URL:", milestoneURL);
 
-    // Make them available to JS
-    window.badgeMilestoneInitial = initialMilestone;
-    window.badgeMilestoneURL = milestoneURL;
-  </script>
-  <script src="{% static 'admin/js/badge_dynamic.js' %}"></script>
-{% endblock %}
+    document.addEventListener('DOMContentLoaded', function () {
+      const appLabelField = document.getElementById('id_app_label');
+      const wrapper = document.querySelector('.form-row.field-milestone_type');
 
-{% block content_title %}
-  <h1>🎯 Badge Edit Page (Custom Template)</h1>
-  {{ block.super }}
+      function fetchMilestoneOptions(app) {
+          if (!app) return;
+
+          fetch(`${milestoneURL}?app=${encodeURIComponent(app)}&initial=${encodeURIComponent(initialMilestone)}`)
+              .then(response => response.json())
+              .then(data => {
+                  if (!data.options) return;
+
+                  const select = document.createElement('select');
+                  select.name = 'milestone_type';
+                  select.id = 'id_milestone_type';
+                  select.required = true;
+
+                  data.options.forEach(opt => {
+                      const option = document.createElement('option');
+                      option.value = opt.id;
+                      option.textContent = opt.name;
+                      if (opt.id === data.initial) {
+                          option.selected = true;
+                      }
+                      select.appendChild(option);
+                  });
+
+                  wrapper.innerHTML = '';
+                  wrapper.appendChild(select);
+              });
+      }
+
+      if (appLabelField) {
+          appLabelField.addEventListener('change', function () {
+              fetchMilestoneOptions(this.value);
+          });
+
+          // Trigger once on page load
+          if (appLabelField.value) {
+              fetchMilestoneOptions(appLabelField.value);
+          }
+      }
+    });
+  </script>
 {% endblock %}
