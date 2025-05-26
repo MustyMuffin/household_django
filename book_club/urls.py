@@ -6,7 +6,6 @@ app_name = 'book_club'
 urlpatterns = [
     # Auth URLs
     path('', include('django.contrib.auth.urls')),
-
     # Book views
     path('', views.books_by_category, name='books_by_category'),
     path('books/', views.books, name='books'),

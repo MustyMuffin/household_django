@@ -25,9 +25,9 @@ urlpatterns = [
     path('', include('household_main.urls')),
     path('chores/', include('chores.urls')),
     path('book_club/', include('book_club.urls')),
+    path('gaming/', include('gaming.urls')),
     path('scheduling/', include('scheduling.urls')),
     path('', include('cms.urls')),
-    path('achievements/', include('gaming.urls')),
 ]
 
 if settings.DEBUG:

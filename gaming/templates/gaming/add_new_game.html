@@ -1,0 +1,12 @@
+{% extends "household_main/base.html" %}
+
+{% block content %}
+  <h2>👾 Add a New Game</h2>
+
+  <form action="{% url 'gaming:add_new_game' %}" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Add Game</button>
+  </form>
+
+{% endblock content %}

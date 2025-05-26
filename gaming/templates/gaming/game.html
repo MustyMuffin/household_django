@@ -1,0 +1,26 @@
+{% extends 'household_main/base.html' %}
+
+{% block page_header %}
+  <h1>{{ game.name }}</h1>
+{% endblock page_header %}
+
+{% block content %}
+
+  <p>
+    <a href="{% url 'gaming:new_game_entry' game.id %}">Add new entry</a>
+  </p>
+
+  {% for game_entry in game_entries %}
+    <div class="card mb-3">
+      <!-- Card header with timestamp and edit link -->
+      <h4 class="card-header">
+        {{ game_entry.date_added|date:'M d, Y H:i' }}
+      </h4>
+      <!-- Card body with entry text -->
+      <div class="card-body">{{ game_entry.user|linebreaks }}</div>
+    </div>
+  {% empty %}
+    <p>You haven't read this game yet. Get to it.</p>
+  {% endfor %}
+
+{% endblock content %}

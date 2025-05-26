@@ -6,6 +6,7 @@ from accounts.models import UserStats, XPLog, UserBadge, XPSettings, Badge
 from accounts.xp_utils import XPManager
 from book_club.models import BooksRead, BookEntry, Book
 from chores.models import EarnedWage, ChoreEntry, Chore
+from gaming.models import GamesPlayed, GameEntry, Game
 from django.contrib.auth import get_user_model
 from .forms import ProfilePictureForm
 from django.contrib.auth import login
@@ -59,6 +60,15 @@ def user_profile(request, username):
                 "next_level_xp": stats.reading_next_level_xp,
                 "progress_percent": stats.reading_progress_percent,
                 "xp_to_next": stats.reading_xp_to_next_level,
+                "color": "success"
+            },
+            {
+                "label": "Gaming Level",
+                "level": stats.gaming_level,
+                "xp": stats.gaming_xp,
+                "next_level_xp": stats.gaming_next_level_xp,
+                "progress_percent": stats.gaming_progress_percent,
+                "xp_to_next": stats.gaming_xp_to_next_level,
                 "color": "success"
             }
         ]
@@ -237,6 +247,12 @@ def activity_feed(request):
     book_entries = [
         {'type': 'book', 'user': entry.user, 'timestamp': entry.date_added, 'info': f"Read book: {entry.book.text}", 'xp': 0}
         for entry in book_entries
+    ]
+
+    game_entries = [
+        {'type': 'game', 'user': entry.user, 'timestamp': entry.date_added, 'info': f"Beat game: {entry.game.name}",
+         'xp': 0}
+        for entry in game_entries
     ]
 
     chore_entries = [

@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'scheduling',
     'chores',
     'book_club',
+    'gaming',
 
     #Added for signals
    # 'chores.apps.ChoresConfig',

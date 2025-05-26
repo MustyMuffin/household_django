@@ -1,4 +1,4 @@
-from accounts.models import XPTable, ChoreXPTable, ReadingXPTable
+from accounts.models import XPTable, ChoreXPTable, ReadingXPTable, GamingXPTable
 
 
 class XPManager:
@@ -17,6 +17,11 @@ class XPManager:
             "model": ReadingXPTable,
             "level_field": "reading_level",
             "xp_field": "reading_xp_required"
+        },
+        "gaming": {
+            "model": GamingXPTable,
+            "level_field": "gaming_level",
+            "xp_field": "gaming_xp_required"
         },
     }
 

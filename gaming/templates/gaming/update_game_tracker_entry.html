@@ -4,7 +4,7 @@
 <div class="container mt-4">
   <div class="card">
     <div class="card-header">
-      <h4>📝 Update Progress for {{ book }}</h4>
+      <h4>🎮 Update Progress for {{ game }}</h4>
     </div>
     <div class="card-body">
       <form method="post">
@@ -14,9 +14,9 @@
           {{ form.text|add_class:"form-control" }}
         </div>
         <div class="mb-3">
-          <label for="wordSlider" class="form-label">Words Completed</label>
-          <input type="range" class="form-range" id="wordSlider" min="0" max="{{ book.words }}" value="{{ form.words_completed.value }}" step="1">
-          {{ form.words_completed }}
+          <label for="hourSlider" class="form-label">Hours Completed</label>
+          <input type="range" class="form-range" id="hourSlider" min="0" max="{{ game.hours }}" value="{{ form.hours_completed.value }}" step="1">
+          {{ form.hours_completed }}
         </div>
         <button type="submit" class="btn btn-primary">💾 Update</button>
       </form>
@@ -25,14 +25,14 @@
 </div>
 
     <div class="container mt-3">
-            <form action="{% url 'book_club:new_book_entry' book.id %}" method='post'>
+            <form action="{% url 'gaming:new_game_entry' game.id %}" method='post'>
                 {% csrf_token %}
                 <button name='submit' class="btn btn-sm btn-block btn-outline-primary">Completed?</button>
             </form>
     </div>
 <script>
-  const slider = document.getElementById("wordSlider");
-  const hiddenInput = document.getElementById("id_words_completed");
+  const slider = document.getElementById("hourSlider");
+  const hiddenInput = document.getElementById("id_hours_completed");
 
   slider.addEventListener("input", function () {
     hiddenInput.value = this.value;

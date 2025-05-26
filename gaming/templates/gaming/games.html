@@ -1,0 +1,21 @@
+{% extends 'household_main/base.html' %}
+
+{% block page_header %}
+  <h1>👾 Games</h1>
+{% endblock page_header %}
+
+{% block content %}
+
+  <ul class="list-group border-bottom pb-2 mb-4">
+    {% for game in games %}
+      <li class="list-group-item border-0">
+        <a href="{% url 'gaming:game' game.id %}">
+          {{ game.text }}</a>
+          <div class="card-body">{{ game.hours|linebreaks }}</div>
+      </li>
+    {% empty %}
+      <li class="list-group-item border-0">No games have been added yet.</li>
+    {% endfor %}
+  </ul>
+
+{% endblock content %}
