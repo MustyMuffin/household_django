@@ -30,7 +30,7 @@ class GameEntry(models.Model):
     class Meta:
         verbose_name_plural = 'game_entries'
 
-class GamesPlayed(models.Model):
+class GamesBeaten(models.Model):
     """For tracking games played"""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     game_name = models.CharField(max_length=20, default="Doom")

@@ -1,0 +1,14 @@
+
+<div class="form-row field-milestone_type">
+  <div>
+    <label for="id_milestone_type" class="required">Gaming Milestone:</label>
+    <select name="milestone_type" class="vSelect" required id="id_milestone_type">
+      {% for game in games %}
+        <option value="{{ game.id }}" {% if game.id|stringformat:"s" == initial %}selected{% endif %}>
+            {{ game.name }}
+        </option>
+      {% endfor %}
+    </select>
+    <p class="help">Select a specific game tracker as the milestone</p>
+  </div>
+</div>

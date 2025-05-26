@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -95,6 +97,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.user_xp_data',
                 'accounts.context_processors.user_profile_picture',
+                "accounts.context_processors.privileged_status",
                 'sekizai.context_processors.sekizai',
                 'scheduling.context_processors.unread_notifications',
             ],
@@ -182,3 +185,5 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/1'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERYBEAT_SCHEDULER = 'django_celery_beat.schedulers.DatabaseScheduler'
+
+GOOGLE_BOOKS_API_KEY = config("GOOGLE_BOOKS_API_KEY")

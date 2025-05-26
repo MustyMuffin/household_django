@@ -9,7 +9,7 @@ urlpatterns = [
     # Book views
     path('', views.books_by_category, name='books_by_category'),
     path('books/', views.books, name='books'),
-    path('books/<int:book_id>/', views.book, name='book'),
+    path('books/<int:book_id>/', views.book_detail, name='book_detail'),
     path('book_backlog/', views.book_backlog, name='book_backlog'),
 
     # Book entries and trackers

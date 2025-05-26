@@ -6,7 +6,7 @@ from accounts.models import UserStats, XPLog, UserBadge, XPSettings, Badge
 from accounts.xp_utils import XPManager
 from book_club.models import BooksRead, BookEntry, Book
 from chores.models import EarnedWage, ChoreEntry, Chore
-from gaming.models import GamesPlayed, GameEntry, Game
+from gaming.models import GamesBeaten, GameEntry, Game
 from django.contrib.auth import get_user_model
 from .forms import ProfilePictureForm
 from django.contrib.auth import login
@@ -192,6 +192,19 @@ def book_club_progress(badge, user):
 
     return 0
 
+@BadgeProgressProvider.register("gaming")
+def gaming_progress(badge, user):
+    milestone_type = badge.milestone_type
+
+    if milestone_type == "gaming":
+        return GamesBeaten.objects.filter(user=user).count()
+
+    elif milestone_type == "hours_played":
+        hours = UserStats.objects.filter(user=user).first()
+        return hours.hours_played if hours else 0
+
+    return 0
+
 class MilestoneTypeOptionsView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
 
@@ -224,7 +237,16 @@ def get_milestone_options(request):
             "options": [
                 {"id": "books_read", "name": "Books Read"},
                 {"id": "words_read", "name": "Words Read"},
-                # {"id": "specific_book", "name": "Specific Book"},
+            ],
+            "initial": initial
+        }
+        return JsonResponse(data)
+
+    elif app == "gaming":
+        data = {
+            "options": [
+                {"id": "games_beaten", "name": "Games Beaten"},
+                {"id": "hours_played", "name": "Hours Played"},
             ],
             "initial": initial
         }

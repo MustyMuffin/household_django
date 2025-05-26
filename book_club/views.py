@@ -10,9 +10,23 @@ from .forms import BookEntryForm, BookForm, BookProgressTrackerForm
 from .models import Book, BookProgressTracker
 from accounts.models import UserStats
 from django.contrib.auth.decorators import user_passes_test
+from .api_combined import fetch_and_cache_metadata
 
 def is_privileged(user):
     return user.groups.filter(name='Privileged').exists()
+
+def book_detail(request, book_id):
+    """Show a single book and all its entries, with external metadata."""
+    book = get_object_or_404(Book, id=book_id)
+    book_entries = book.bookentry_set.order_by('-date_added')
+    metadata = fetch_and_cache_metadata(book)
+
+    context = {
+        'book': book,
+        'book_entries': book_entries,
+        'metadata': metadata,
+    }
+    return render(request, 'book_club/book.html', context)
 
 def books_by_category(request):
     # Group books by their category
@@ -32,13 +46,6 @@ def books(request):
     books = Book.objects.order_by('text')
     context = {'books': books}
     return render(request, 'book_club/books.html', context)
-
-def book(request, book_id):
-    """Show a single book and all its entries."""
-    book = Book.objects.get(id=book_id)
-    book_entries = book.bookentry_set.order_by('-date_added')
-    context = {'book': book, 'book_entries': book_entries}
-    return render(request, 'book_club/book.html', context)
 
 def log_words(user, words, book, request):
     words_entry, _ = UserStats.objects.get_or_create(user=user)

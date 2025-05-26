@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from .models import Game, GameEntry, GamesPlayed, GameCategory
+from .models import Game, GameEntry, GamesBeaten, GameCategory
 
 admin.site.register(GameCategory)
 admin.site.register(Game)
 admin.site.register(GameEntry)
-admin.site.register(GamesPlayed)
+admin.site.register(GamesBeaten)

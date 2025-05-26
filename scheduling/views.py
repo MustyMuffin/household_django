@@ -208,6 +208,11 @@ def all_notifications_view(request):
     })
 
 @login_required
+def clear_all_notifications(request):
+    Notification.objects.filter(user=request.user, read=False).update(read=True)
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+@login_required
 def todo_preview_view(request, user_id):
     upcoming = now() + timedelta(days=7)
     todos = ScheduledItem.objects.filter(

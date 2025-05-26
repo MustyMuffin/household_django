@@ -5,7 +5,7 @@
 {% endblock page_header %}
 
 {% block content %}
-  <div class="accordion" id="bookCategories">
+  <div class="accordion mb-5" id="gameCategories">
     {% for category, games in games_by_category.items %}
       <div class="accordion-item">
         <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
@@ -31,9 +31,16 @@
     {% endfor %}
   </div>
 
-      <a class="btn btn-lg btn-block btn-outline-primary" href="{% url 'gaming:game_backlog' %}" role="button">🎮 Games Currently In Progress</a>
+        <div class="d-grid gap-3 col-6 mx-auto mb-5">
+          <a class="btn btn-lg btn-outline-primary" href="{% url 'gaming:game_backlog' %}" role="button">
+            🎮 Games Currently In Progress
+          </a>
 
-        {% if can_add_game %}
-            <a href="{% url 'gaming:add_new_game' %}" class="btn btn-outline-primary">Add New game</a>
-        {% endif %}
+          {% if can_add_game %}
+            <a href="{% url 'gaming:add_new_game' %}" class="btn btn-lg btn-outline-primary">
+              ➕ Add New Game
+            </a>
+          {% endif %}
+        </div>
+    
 {% endblock content %}

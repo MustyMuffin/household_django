@@ -43,3 +43,16 @@ class BookProgressTracker(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
     words_completed = models.IntegerField(default=0)
     text = models.CharField(max_length=100, default="Chapter 1")
+
+class BookMetadata(models.Model):
+    book = models.OneToOneField('Book', on_delete=models.CASCADE, related_name='metadata')
+    source = models.CharField(max_length=50)
+    title = models.CharField(max_length=255, blank=True)
+    authors = models.JSONField(blank=True, default=list)
+    description = models.TextField(blank=True)
+    thumbnail_url = models.URLField(blank=True)
+    external_url = models.URLField(blank=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Metadata for {self.book.title} from {self.source}"

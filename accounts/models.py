@@ -129,6 +129,9 @@ class UserStats(models.Model):
     reading_level = models.PositiveIntegerField(default=1)
     gaming_level = models.PositiveIntegerField(default=1)
 
+    def __str__(self):
+        return f"{self.user.username}'s Stats"
+
     def update_levels(self):
         """Updates stored level fields based on XP."""
         from .xp_utils import XPManager

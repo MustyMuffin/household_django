@@ -65,13 +65,13 @@ def log_hours(user, hours, game, request):
     result = award_xp(
         user=user,
         source_object=hours,
-        reason=f"📘 Progress in '{game.name}'",
+        reason=f"💾 Progress in '{game.name}'",
         source_type="game_partial",
         request=request,
     )
 
     if result.get('xp_awarded'):
-        messages.success(request, f"✅ You earned {result['xp_awarded']} XP for progress!")
+        messages.success(request, f"✅ You earned {result['xp_awarded']} XP for game progress!")
 
     update_badges_for_games(user=user, game=game, hours_increment=hours, request=request)
 

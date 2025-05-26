@@ -10,6 +10,20 @@
     <a href="{% url 'book_club:new_book_entry' book.id %}">Add new entry</a>
   </p>
 
+        {% if metadata %}
+          <h3>Info from {{ metadata.source|title }}</h3>
+          <p><strong>{{ metadata.title }}</strong> by {{ metadata.authors|join:", " }}</p>
+          {% if metadata.thumbnail_url %}
+            <img src="{{ metadata.thumbnail_url }}" alt="{{ metadata.title }}">
+          {% endif %}
+          {% if metadata.description %}
+            <p>{{ metadata.description }}</p>
+          {% endif %}
+          <p><a href="{{ metadata.external_url }}" target="_blank">View more</a></p>
+        {% else %}
+          <p>No external metadata available.</p>
+        {% endif %}
+
   {% for book_entry in book_entries %}
     <div class="card mb-3">
       <!-- Card header with timestamp and edit link -->
