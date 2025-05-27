@@ -7,7 +7,7 @@
       <ul class="list-group">
         {% for entry in in_progress_books %}
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ entry.book_name.text }} – {{ entry.words_completed }} / {{ entry.book_name.words }} words
+            {{ entry.book_name.title }} – {{ entry.words_completed }} / {{ entry.book_name.words }} words
             <a href="{% url 'book_club:new_book_tracker_entry' entry.book_name.id %}" class="btn btn-sm btn-primary">Update Progress</a>
           </li>
         {% endfor %}

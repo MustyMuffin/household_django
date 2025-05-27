@@ -12,7 +12,7 @@ class BookCategory(models.Model):
 
 class Book(models.Model):
     """A book the user is logging."""
-    text = models.CharField(max_length=100)
+    title = models.CharField(max_length=100)
     words = models.IntegerField(default=0)
     date_added = models.DateTimeField(auto_now_add=True)
     book_category = models.ForeignKey(BookCategory, on_delete=models.SET_NULL, null=True, blank=True)
@@ -21,7 +21,7 @@ class Book(models.Model):
 
     def __str__(self):
         """Return a string representation of the model."""
-        return self.text
+        return self.title
 
 class BookEntry(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, null=True, blank=True)

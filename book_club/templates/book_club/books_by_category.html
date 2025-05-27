@@ -19,7 +19,7 @@
             <ul class="list-group list-group-flush">
               {% for book in books %}
                 <li class="list-group-item">
-                  <a href="{% url 'book_club:book_detail' book.id %}">{{ book.text }}</a>
+                  <a href="{% url 'book_club:book_detail' book.id %}">{{ book.title }}</a>
                   <span class="text-muted float-end">{{ book.words|intcomma }}</span>
                 </li>
               {% endfor %}
@@ -34,7 +34,7 @@
 
         <div class="d-grid gap-3 col-6 mx-auto mb-5">
           <a class="btn btn-lg btn-outline-primary" href="{% url 'book_club:book_backlog' %}" role="button">
-            📚 Books Currently In Progress
+            🕮 Books Currently In Progress
           </a>
 
           {% if can_add_book %}

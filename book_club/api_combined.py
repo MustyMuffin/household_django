@@ -8,7 +8,7 @@ def fetch_and_cache_metadata(book):
         return book.metadata
 
     # Try Google Books
-    data = fetch_google_books(book.text)
+    data = fetch_google_books(book.title)
     if data:
         return BookMetadata.objects.create(
             book=book,
@@ -22,7 +22,7 @@ def fetch_and_cache_metadata(book):
         )
 
     # Fallback to Open Library
-    data = fetch_openlibrary_data(book.text)
+    data = fetch_openlibrary_data(book.title)
     if data:
         return BookMetadata.objects.create(
             book=book,

@@ -9,6 +9,7 @@ from django.shortcuts import render
 
 from .forms import NoteForm, EntryForm
 from .models import Note, Entry
+from gaming.models import GamesBeaten
 
 
 @login_required
@@ -20,7 +21,9 @@ def index(request):
     words_read_entry = UserStats.objects.filter(user=user).first()
     total_words_read = words_read_entry.words_read if words_read_entry else 0
 
-    # games_beaten_list = GamesPlayed.objects.filter(user=user).order_by('-date_added')
+    games_beaten_list = GamesBeaten.objects.filter(user=user).order_by('-date_added')
+    hours_played_entry = UserStats.objects.filter(user=user).first()
+    total_hours_played = hours_played_entry.hours_played if hours_played_entry else 0
 
     books_leaderboard = UserStats.objects.select_related('user').order_by('-words_read')
     earnings_leaderboard = EarnedWage.objects.select_related('user').order_by('-earnedLifetime')
@@ -54,6 +57,8 @@ def index(request):
     context = {
         'books_read_list': books_read_list,
         'total_words_read': total_words_read,
+        'games_beaten_list': games_beaten_list,
+        'total_hours_played': total_hours_played,
         'wage_earned': wage_earned,
         'lifetime_earned': lifetime_earned,
         'books_leaderboard': books_leaderboard,

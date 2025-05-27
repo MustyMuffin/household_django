@@ -80,7 +80,7 @@ def books_by_category(request):
 
 def books(request):
     """Show all Books."""
-    books = Book.objects.order_by('text')
+    books = Book.objects.order_by('title')
     context = {'books': books}
     return render(request, 'book_club/books.html', context)
 
@@ -92,7 +92,7 @@ def log_words(user, words, book, request):
     result = award_xp(
         user=user,
         source_object=words,
-        reason=f"📘 Progress in '{book.text}'",
+        reason=f"📘 Progress in '{book.title}'",
         source_type="book_partial",
         request=request,
     )
@@ -116,7 +116,7 @@ def new_book_entry(request, book_id):
             tracker.delete()
             log_words(request.user, remaining_words, book, request)
         else:
-            award_xp(request.user, source_object=book, reason=f"Logged book: {book.text}", source_type="book", request=request)
+            award_xp(request.user, source_object=book, reason=f"Logged book: {book.title}", source_type="book", request=request)
 
         form.instance.book = book
         form.instance.user = request.user
@@ -203,7 +203,7 @@ def add_new_book(request):
         word_count = int(request.POST.get("words") or 0)
 
         # ✅ THEN check for duplicates
-        if Book.objects.filter(text__iexact=title).exists():
+        if Book.objects.filter(title__iexact=title).exists():
             categories = BookCategory.objects.all().order_by("name")
             return render(request, "book_club/add_new_book.html", {
                 "categories": categories,
@@ -223,7 +223,7 @@ def add_new_book(request):
 
         # ✅ Create and save the book
         book = Book.objects.create(
-            text=title,
+            title=title,
             words=word_count,
             book_category=book_category,
         )
