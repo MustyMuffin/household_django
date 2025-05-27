@@ -1,4 +1,4 @@
-import requests
+import requests, json
 from urllib.parse import quote
 from django.conf import settings
 
@@ -16,10 +16,14 @@ def fetch_google_books(title):
         return None
 
     volume = data["items"][0]["volumeInfo"]
+
+    # print("DEBUG: Google API response =", json.dumps(data, indent=2))
+
     return {
         "title": volume.get("title"),
         "authors": volume.get("authors", []),
         "description": volume.get("description", ""),
         "thumbnail": volume.get("imageLinks", {}).get("thumbnail"),
         "preview_link": volume.get("previewLink"),
+        "pages": volume.get("pageCount", None),
     }

@@ -16,6 +16,8 @@ class Book(models.Model):
     words = models.IntegerField(default=0)
     date_added = models.DateTimeField(auto_now_add=True)
     book_category = models.ForeignKey(BookCategory, on_delete=models.SET_NULL, null=True, blank=True)
+    pages = models.IntegerField(null=True, blank=True)
+    series = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         """Return a string representation of the model."""
@@ -53,6 +55,7 @@ class BookMetadata(models.Model):
     thumbnail_url = models.URLField(blank=True)
     external_url = models.URLField(blank=True)
     last_updated = models.DateTimeField(auto_now=True)
+    pages = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"Metadata for {self.book.title} from {self.source}"

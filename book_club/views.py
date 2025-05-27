@@ -7,13 +7,50 @@ from book_club.utils import update_badges_for_books
 from accounts.badge_helpers import check_and_award_badges
 from accounts.xp_helpers import award_xp
 from .forms import BookEntryForm, BookForm, BookProgressTrackerForm
-from .models import Book, BookProgressTracker
+from .models import Book, BookProgressTracker, BookCategory
 from accounts.models import UserStats
 from django.contrib.auth.decorators import user_passes_test
 from .api_combined import fetch_and_cache_metadata
+from django.http import JsonResponse
+from .api_combined import fetch_external_metadata_by_title
 
 def is_privileged(user):
     return user.groups.filter(name='Privileged').exists()
+
+def fetch_book_data_api(request):
+    q = request.GET.get('q')
+    if not q:
+        return JsonResponse({'error': 'Missing query'}, status=400)
+
+    data = fetch_external_metadata_by_title(q)
+    if not data:
+        return JsonResponse({'error': 'No book found'}, status=404)
+
+    pages = int(data.get("pages", 0))
+
+    print("pages =", pages)
+
+    # Handle estimated word count from pages (if present)
+    try:
+        pages = int(data.get("pages", 0))
+        estimated_words = pages * 275 if pages > 0 else None
+        print("DEBUG = estimated_words = ", estimated_words)
+    except (ValueError, TypeError):
+        estimated_words = None
+        print("DEBUG = estimated_words =", estimated_words)
+
+    # Safely return full response
+    return JsonResponse({
+        "title": data.get("title", ""),
+        "authors": data.get("authors", []),
+        "description": data.get("description", ""),
+        "thumbnail_url": data.get("thumbnail_url") or data.get("thumbnail") or "",
+        "external_url": data.get("external_url", ""),
+        "source": data.get("source", ""),
+        "pages": int(data.get("pages", 0)),
+        "estimated_words": estimated_words,
+    })
+
 
 def book_detail(request, book_id):
     """Show a single book and all its entries, with external metadata."""
@@ -155,16 +192,50 @@ def book_backlog(request):
         'in_progress_books': in_progress_books
     })
 
-
 @user_passes_test(is_privileged)
 def add_new_book(request):
-    """Add a new book (privileged users only)."""
-    if request.method == 'POST':
-        form = BookForm(data=request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('book_club:books_by_category')
-    else:
-        form = BookForm()
+    if request.method == "POST":
+        # ✅ FIRST get the form values
+        title = request.POST.get("title")
+        author = request.POST.get("author")
+        description = request.POST.get("description", "")
+        cover_url = request.POST.get("cover_url", "")
+        word_count = int(request.POST.get("words") or 0)
 
-    return render(request, 'book_club/add_new_book.html', {'form': form})
+        # ✅ THEN check for duplicates
+        if Book.objects.filter(text__iexact=title).exists():
+            categories = BookCategory.objects.all().order_by("name")
+            return render(request, "book_club/add_new_book.html", {
+                "categories": categories,
+                "error": f'A book titled "{title}" already exists.',
+                "prefill": request.POST,
+            })
+
+        # ✅ Handle category logic
+        selected_cat_id = request.POST.get("book_category")
+        new_category_name = request.POST.get("new_category_name", "").strip()
+        book_category = None
+
+        if selected_cat_id == "new" and new_category_name:
+            book_category, _ = BookCategory.objects.get_or_create(name=new_category_name)
+        elif selected_cat_id:
+            book_category = BookCategory.objects.filter(id=selected_cat_id).first()
+
+        # ✅ Create and save the book
+        book = Book.objects.create(
+            text=title,
+            words=word_count,
+            book_category=book_category,
+        )
+
+        # ✅ Attach external metadata
+        fetch_and_cache_metadata(book)
+
+        return redirect("book_club:book_detail", book_id=book.id)
+
+    # GET request: show empty form
+    categories = BookCategory.objects.all().order_by("name")
+    return render(request, "book_club/add_new_book.html", {
+        "categories": categories,
+    })
+

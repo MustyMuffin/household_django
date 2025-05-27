@@ -19,4 +19,5 @@ urlpatterns = [
 
     # Add new book (Privileged users only)
     path('add_new_book/', views.add_new_book, name='add_new_book'),
+    path('api/fetch_book_data/', views.fetch_book_data_api, name='fetch_book_data_api'),
 ]
