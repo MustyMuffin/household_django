@@ -51,7 +51,7 @@ def fetch_game_data_igdb(title):
     query = f'''
         search "{title}";
         fields name,summary,cover.url,aggregated_rating,first_release_date;
-        limit 5;
+        limit 20;
     '''
     response = requests.post(IGDB_BASE, headers=headers, data=query)
 

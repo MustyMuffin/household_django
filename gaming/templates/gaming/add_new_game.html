@@ -3,7 +3,7 @@
 {% block content %}
   <h2>👾 Add a New Game</h2>
 
-  <!-- Search Form -->
+  <!-- 🔍 Search Form -->
   <form id="search-form" class="mb-4">
     <label for="game-title-search">Search Game:</label>
     <input type="text" id="game-title-search" class="form-control" required>
@@ -11,95 +11,121 @@
     <label for="api-select" class="mt-2">Select Source:</label>
     <select id="api-select" class="form-control">
         <option value="igdb">IGDB</option>
-{#        <option value="steam">Steam</option>#}
-{#        <option value="trueachievements">TrueAchievements</option>#}
-{#        <option value="retroachievements">RetroAchievements</option>#}
     </select>
 
     <button type="submit" class="btn btn-primary mt-3">Search</button>
   </form>
 
-  <!-- Search Results -->
-  <div id="game-results" class="mt-4"></div>
+  <!-- 🔎 Search Results -->
+  <div id="game-results" class="mt-4 border rounded p-2" style="max-height: 300px; overflow-y: auto;"></div>
 
-  <!-- Hidden Submission Form -->
+  <!-- 🕹 Hidden Add Game Form -->
   <form id="add-game-form" method="post" action="{% url 'gaming:add_new_game' %}" style="display: none;">
-  {% csrf_token %}
-  <input type="hidden" name="title" id="game-title">
-  <input type="hidden" name="description" id="game-description">
-  <input type="hidden" name="image_url" id="game-image-url">
-  <input type="hidden" name="source" id="game-source">
-  <input type="hidden" name="external_id" id="game-id">
-  <input type="hidden" name="hours" id="game-hours">
+    {% csrf_token %}
+    <input type="hidden" name="title" id="game-title">
+    <input type="hidden" name="description" id="game-description">
+    <input type="hidden" name="image_url" id="game-image-url">
+    <input type="hidden" name="source" id="game-source">
+    <input type="hidden" name="external_id" id="game-id">
+    <input type="hidden" name="hours" id="game-hours">
 
+    <div class="mb-3">
+      <label for="category_id" class="form-label">Category</label>
+      <select class="form-select" id="category_id" name="category_id">
+        <option value="">-- Select Existing Category --</option>
+        {% for category in categories %}
+          <option value="{{ category.id }}">{{ category.name }}</option>
+        {% endfor %}
+        <option value="new">+ Create New Category</option>
+      </select>
+    </div>
 
-  <label for="game-category">Select Category:</label>
-  <select name="category_id" id="game-category" class="form-control mt-2">
-    {% for cat in categories %}
-      <option value="{{ cat.id }}">{{ cat.name }}</option>
-    {% endfor %}
-  </select>
+    <div class="mb-3" id="new-category-wrapper" style="display: none;">
+      <label for="new_category_name" class="form-label">New Category Name</label>
+      <input type="text" class="form-control" id="new_category_name" name="new_category_name">
+    </div>
 
+    <button type="submit" class="btn btn-success">➕ Add Game</button>
+  </form>
 
-  <button type="submit" class="btn btn-success mt-3">➕ Confirm and Add Game</button>
-</form>
+  <style>
+    .game-result {
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
 
-  <!-- JavaScript -->
+    .game-result.selected-result {
+      background-color: #d1e7dd;
+      border: 1px solid #0f5132;
+      border-radius: 5px;
+    }
+  </style>
+
   <script>
-    const searchForm = document.getElementById("search-form");
-    const resultsContainer = document.getElementById("game-results");
-    const addGameForm = document.getElementById("add-game-form");
+    document.addEventListener("DOMContentLoaded", function () {
+      const searchForm = document.getElementById("search-form");
+      const resultsContainer = document.getElementById("game-results");
+      const addGameForm = document.getElementById("add-game-form");
+      const categorySelect = document.getElementById("category_id");
+      const newCategoryWrapper = document.getElementById("new-category-wrapper");
 
-    searchForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      resultsContainer.innerHTML = "🔎 Searching...";
-      addGameForm.style.display = "none";
+      categorySelect.addEventListener("change", function () {
+        newCategoryWrapper.style.display = this.value === "new" ? "block" : "none";
+      });
 
-      const title = document.getElementById("game-title-search").value;
-      const source = document.getElementById("api-select").value;
+      searchForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        resultsContainer.innerHTML = "🔎 Searching...";
+        addGameForm.style.display = "none";
 
-      try {
-        const res = await fetch(`/gaming/api/fetch_game_data/?q=${encodeURIComponent(title)}&source=${source}`);
-        const data = await res.json();
+        const title = document.getElementById("game-title-search").value;
+        const source = document.getElementById("api-select").value;
 
-        if (data.results && Array.isArray(data.results) && data.results.length > 0) {
-          resultsContainer.innerHTML = "";
-          data.results.forEach(game => {
-            const card = document.createElement("div");
-            card.className = "card mb-2 p-2";
-            card.style.cursor = "pointer";
-            card.onclick = () => selectGame(game);
+        try {
+          const res = await fetch(`/gaming/api/fetch_game_data/?q=${encodeURIComponent(title)}&source=${source}`);
+          const data = await res.json();
 
-            card.innerHTML = `
-              <div class="d-flex align-items-center">
-                <img src="${game.image || ''}" alt="${game.title}" style="height: 50px; margin-right: 10px;">
-                <div>
-                  <strong>${game.title}</strong><br>
-                  <small>${game.description || ''}</small>
+          if (data.results?.length > 0) {
+            resultsContainer.innerHTML = "";
+            data.results.forEach(game => {
+              const card = document.createElement("div");
+              card.className = "game-result p-2 mb-2 border";
+              card.onclick = () => selectGame(game, card);
+
+              card.innerHTML = `
+                <div class="d-flex align-items-center">
+                  <img src="${game.image || ''}" alt="${game.title}" style="height: 50px; margin-right: 10px;">
+                  <div>
+                    <strong>${game.title}</strong><br>
+                    <small>${game.description || ''}</small>
+                  </div>
                 </div>
-              </div>
-            `;
-            resultsContainer.appendChild(card);
-          });
-        } else {
-          resultsContainer.innerHTML = "<p>No results found.</p>";
+              `;
+              resultsContainer.appendChild(card);
+            });
+          } else {
+            resultsContainer.innerHTML = "<p>No results found.</p>";
+          }
+        } catch (err) {
+          console.error("Search error:", err);
+          resultsContainer.innerHTML = "<p class='text-danger'>Error fetching results.</p>";
         }
-      } catch (err) {
-        console.error("Search error:", err);
-        resultsContainer.innerHTML = "<p class='text-danger'>Error fetching results.</p>";
+      });
+
+      function selectGame(game, cardElement) {
+        document.querySelectorAll(".game-result").forEach(el => el.classList.remove("selected-result"));
+        cardElement.classList.add("selected-result");
+
+        document.getElementById("game-title").value = game.title || "";
+        document.getElementById("game-description").value = game.description || "";
+        document.getElementById("game-image-url").value = game.image || "";
+        document.getElementById("game-id").value = game.retro_id || game.id || "";
+        document.getElementById("game-source").value = game.source || "";
+        document.getElementById("game-hours").value = game.hours || 0;
+
+        addGameForm.style.display = "block";
+        window.scrollTo({ top: addGameForm.offsetTop, behavior: "smooth" });
       }
     });
-
-    function selectGame(game) {
-      document.getElementById("game-title").value = game.title || "";
-      document.getElementById("game-description").value = game.description || "";
-      document.getElementById("game-image-url").value = game.image || "";
-      document.getElementById("game-id").value = game.retro_id || game.id || "";
-      document.getElementById("game-source").value = game.source || "";
-      document.getElementById("game-hours").value = game.hours || 0;
-
-      addGameForm.style.display = "block";
-      window.scrollTo({ top: addGameForm.offsetTop, behavior: "smooth" });
-    }
   </script>
-{% endblock content %}
+{% endblock %}

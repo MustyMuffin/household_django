@@ -246,9 +246,13 @@ def add_new_game(request):
     if request.method == "POST":
         title = request.POST.get("title")
         category_id = request.POST.get("category_id")
+        new_category_name = request.POST.get("new_category_name")
         image = request.POST.get("image_url")
 
-        category = GameCategory.objects.filter(id=category_id).first()
+        if new_category_name:
+            category, _ = GameCategory.objects.get_or_create(name=new_category_name)
+        else:
+            category = GameCategory.objects.filter(id=category_id).first()
 
         game = Game.objects.create(
             name=title,
@@ -262,6 +266,7 @@ def add_new_game(request):
         return redirect("gaming:game_detail", game_id=game.id)
 
     return render(request, "gaming/add_new_game.html", {"categories": categories})
+
 
 @login_required
 def game_detail(request, game_id):

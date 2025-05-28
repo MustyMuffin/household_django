@@ -9,3 +9,5 @@ django-cms
 celery[redis]
 django-celery-beat
 whitenoise
+howlongtobeatpy
+python-decouple
