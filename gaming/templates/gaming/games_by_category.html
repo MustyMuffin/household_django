@@ -18,7 +18,7 @@
             <ul class="list-group list-group-flush">
               {% for game in games %}
                 <li class="list-group-item">
-                  <a href="{% url 'gaming:game' game.id %}">{{ game.name }}</a>
+                  <a href="{% url 'gaming:game_detail' game.id %}">{{ game.name }}</a>
                   <span class="text-muted float-end">{{ game.hours }}</span>
                 </li>
               {% endfor %}
@@ -42,5 +42,5 @@
             </a>
           {% endif %}
         </div>
-    
+
 {% endblock content %}

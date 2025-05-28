@@ -3,10 +3,103 @@
 {% block content %}
   <h2>👾 Add a New Game</h2>
 
-  <form action="{% url 'gaming:add_new_game' %}" method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Add Game</button>
+  <!-- Search Form -->
+  <form id="search-form" class="mb-4">
+    <label for="game-title-search">Search Game:</label>
+    <input type="text" id="game-title-search" class="form-control" required>
+
+    <label for="api-select" class="mt-2">Select Source:</label>
+    <select id="api-select" class="form-control">
+        <option value="igdb">IGDB</option>
+        <option value="steam">Steam</option>
+        <option value="trueachievements">TrueAchievements</option>
+        <option value="retroachievements">RetroAchievements</option>
+    </select>
+
+    <button type="submit" class="btn btn-primary mt-3">Search</button>
   </form>
 
+  <!-- Search Results -->
+  <div id="game-results" class="mt-4"></div>
+
+  <!-- Hidden Submission Form -->
+  <form id="add-game-form" method="post" action="{% url 'gaming:add_new_game' %}" style="display: none;">
+  {% csrf_token %}
+  <input type="hidden" name="title" id="game-title">
+  <input type="hidden" name="description" id="game-description">
+  <input type="hidden" name="image_url" id="game-image-url">
+  <input type="hidden" name="source" id="game-source">
+  <input type="hidden" name="external_id" id="game-id">
+  <input type="hidden" name="hours" id="game-hours">
+
+
+  <label for="game-category">Select Category:</label>
+  <select name="category_id" id="game-category" class="form-control mt-2">
+    {% for cat in categories %}
+      <option value="{{ cat.id }}">{{ cat.name }}</option>
+    {% endfor %}
+  </select>
+
+
+  <button type="submit" class="btn btn-success mt-3">➕ Confirm and Add Game</button>
+</form>
+
+  <!-- JavaScript -->
+  <script>
+    const searchForm = document.getElementById("search-form");
+    const resultsContainer = document.getElementById("game-results");
+    const addGameForm = document.getElementById("add-game-form");
+
+    searchForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      resultsContainer.innerHTML = "🔎 Searching...";
+      addGameForm.style.display = "none";
+
+      const title = document.getElementById("game-title-search").value;
+      const source = document.getElementById("api-select").value;
+
+      try {
+        const res = await fetch(`/gaming/api/fetch_game_data/?q=${encodeURIComponent(title)}&source=${source}`);
+        const data = await res.json();
+
+        if (data.results && Array.isArray(data.results) && data.results.length > 0) {
+          resultsContainer.innerHTML = "";
+          data.results.forEach(game => {
+            const card = document.createElement("div");
+            card.className = "card mb-2 p-2";
+            card.style.cursor = "pointer";
+            card.onclick = () => selectGame(game);
+
+            card.innerHTML = `
+              <div class="d-flex align-items-center">
+                <img src="${game.image || ''}" alt="${game.title}" style="height: 50px; margin-right: 10px;">
+                <div>
+                  <strong>${game.title}</strong><br>
+                  <small>${game.description || ''}</small>
+                </div>
+              </div>
+            `;
+            resultsContainer.appendChild(card);
+          });
+        } else {
+          resultsContainer.innerHTML = "<p>No results found.</p>";
+        }
+      } catch (err) {
+        console.error("Search error:", err);
+        resultsContainer.innerHTML = "<p class='text-danger'>Error fetching results.</p>";
+      }
+    });
+
+    function selectGame(game) {
+      document.getElementById("game-title").value = game.title || "";
+      document.getElementById("game-description").value = game.description || "";
+      document.getElementById("game-image-url").value = game.image || "";
+      document.getElementById("game-id").value = game.retro_id || game.id || "";
+      document.getElementById("game-source").value = game.source || "";
+      document.getElementById("game-hours").value = game.hours || 0;
+
+      addGameForm.style.display = "block";
+      window.scrollTo({ top: addGameForm.offsetTop, behavior: "smooth" });
+    }
+  </script>
 {% endblock content %}

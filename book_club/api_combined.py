@@ -39,7 +39,7 @@ def fetch_and_cache_metadata(book):
 
 def fetch_external_metadata_by_title(title):
     """Fetch metadata based on title, without requiring a Book instance."""
-    existing_book = Book.objects.filter(text=title).first()
+    existing_book = Book.objects.filter(title=title).first()
     if existing_book and hasattr(existing_book, 'metadata'):
         return {
             "source": existing_book.metadata.source,

@@ -34,13 +34,17 @@ def award_xp(user, source_object=None, reason="", source_type="chore", override_
             xp_awarded = int(Decimal(source_object) * xp_settings.xp_per_word)
             userstats.reading_xp += xp_awarded
 
-        elif source_type == "game" and source_object:
-            xp_awarded = int(Decimal(source_object.hours) * xp_settings.xp_per_hour_gamed)
-            userstats.gaming_xp += xp_awarded
-
         elif source_type == "game_partial" and source_object:
-            xp_awarded = int(Decimal(source_object) * xp_settings.xp_per_hour_gamed)
-            userstats.gaming_xp += xp_awarded
+            try:
+                hours_played = Decimal(source_object)
+                print("DEBUG:hours_played = ", hours_played)
+                xp_awarded = int(hours_played * xp_settings.xp_per_hour_gamed) if hours_played > 0 else 0
+                print("DEBUG xp_awarded = ", xp_awarded)
+
+                userstats.gaming_xp += xp_awarded
+            except (TypeError, ValueError, InvalidOperation):
+                print("EXCEPT DEBUG xp_awarded = ", xp_awarded)
+                xp_awarded = 0
 
         elif source_type == "finished_book":
             xp_awarded = xp_settings.xp_per_book

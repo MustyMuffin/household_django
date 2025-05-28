@@ -116,6 +116,8 @@ class XPSettings(models.Model):
 class UserStats(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     profile_picture = models.ImageField(upload_to="profile_pics/", blank=True,)
+    ra_username = models.CharField(max_length=50, blank=True, null=True)
+    xbl_username = models.CharField(max_length=50, blank=True, null=True)
 
     overall_xp = models.PositiveIntegerField(default=0)
     chore_xp = models.PositiveIntegerField(default=0)

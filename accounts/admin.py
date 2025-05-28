@@ -6,11 +6,15 @@ from .forms import BadgeMilestoneForm
 from .models import (UserStats, XPLog, XPSettings, Badge,
                      UserBadge, XPTable)
 
-admin.site.register(UserStats)
 admin.site.register(XPLog)
 # admin.site.register(XPTable)
 # admin.site.register(ChoreXPTable)
 # admin.site.register(ReadingXPTable)
+
+@admin.register(UserStats)
+class UserStatsAdmin(admin.ModelAdmin):
+    list_display = ("user", "ra_username")
+    search_fields = ("user__username", "ra_username")
 
 @admin.register(XPSettings)
 class XPSettingsAdmin(admin.ModelAdmin):

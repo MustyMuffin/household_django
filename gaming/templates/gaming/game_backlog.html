@@ -7,8 +7,8 @@
       <ul class="list-group">
         {% for entry in in_progress_games %}
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ entry.game_name.name }} – {{ entry.hours_completed }} / {{ entry.game_name.hours }} hours
-            <a href="{% url 'gaming:new_game_tracker_entry' entry.game_name.id %}" class="btn btn-sm btn-primary">💾 Update Progress</a>
+            {{ entry.game.name }} – {{ entry.hours_played }} hours
+            <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-primary">💾 Update Progress</a>
           </li>
         {% endfor %}
       </ul>

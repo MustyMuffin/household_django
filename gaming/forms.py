@@ -1,13 +1,13 @@
 from django import forms
 
 
-from .models import Game, GameEntry, GameProgressTracker
+from .models import Game, GameEntry, GameProgress
 
 
 class GameForm(forms.ModelForm):
     class Meta:
         model = Game
-        fields = ['name', 'hours', 'game_category']
+        fields = ['name', 'game_category']
 
 
 class GameEntryForm(forms.ModelForm):
@@ -18,5 +18,5 @@ class GameEntryForm(forms.ModelForm):
 
 class GameProgressTrackerForm(forms.ModelForm):
     class Meta:
-        model = GameProgressTracker
-        fields = ['text', 'hours_completed']
+        model = GameProgress
+        fields = ['hours_played', 'beaten', 'note']
