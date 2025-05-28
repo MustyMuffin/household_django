@@ -11,13 +11,14 @@ from accounts.models import UserStats
 from accounts.xp_helpers import award_xp
 from gaming.api.howlongtobeat_fetcher import fetch_hltb_data
 from gaming.api_combined import fetch_game_data
-from gaming.forms import GameProgressTrackerForm
+from gaming.forms import GameProgressTrackerForm, CollectibleTypeForm
 from gaming.utils import update_badges_for_games
 from .forms import GameEntryForm, GameForm, GameProgressTrackerForm
 
 from .models import (Game, GamesBeaten, GameCategory,
                      IGDBGameCache, TrueAchievementsGameCache,
-                     GameProgress
+                     GameProgress, CollectibleType,
+                     UserCollectibleProgress
                     )
 
 
@@ -156,6 +157,28 @@ def log_game_progress(request, game_id):
                 if bonus_result.get("xp_awarded"):
                     messages.success(request, f"✅ Bonus XP: {bonus_result['xp_awarded']} for finishing the game!")
 
+            for collectible_type in game.collectible_types.all():
+                field_name = f"collectible_{collectible_type.id}"
+                if field_name in request.POST:
+                    try:
+                        collected = int(request.POST.get(field_name))
+                        progress, _ = UserCollectibleProgress.objects.get_or_create(
+                            user=request.user,
+                            collectible_type=collectible_type
+                        )
+                        progress.collected = collected
+                        progress.save()
+                    except (ValueError, TypeError):
+                        continue
+
+            check_and_award_badges(
+                user=request.user,
+                app_label="gaming",
+                milestone_type=f"game_completion_combo_{game.id}",
+                current_value=new_hours,
+                request=request,
+            )
+
             update_badges_for_games(user=request.user, game=game, hours_increment=delta, request=request)
 
             return redirect("gaming:games_by_category")
@@ -165,11 +188,17 @@ def log_game_progress(request, game_id):
     else:
         form = GameProgressTrackerForm(instance=progress_entry)
 
+    user_collectibles = {
+        c.collectible_type.id: c.collected for c in
+        UserCollectibleProgress.objects.filter(user=request.user, collectible_type__game=game)
+    }
+
     return render(request, "gaming/log_game_progress.html", {
         "form": form,
         "game": game,
         "is_update": bool(progress_entry),
         "already_beaten": already_beaten,
+        "user_collectibles": user_collectibles,
     })
 
 
@@ -237,8 +266,35 @@ def add_new_game(request):
 @login_required
 def game_detail(request, game_id):
     game = get_object_or_404(Game, id=game_id)
+    collectible_types = game.collectible_types.all()
 
-    # Try to find a cached metadata record
+    # Collect user progress for this game's collectibles
+    user_progress = {
+        progress.collectible_type.id: progress.collected
+        for progress in UserCollectibleProgress.objects.filter(
+            user=request.user,
+            collectible_type__in=collectible_types
+        )
+    }
+
+    # Handle collectible type creation (for privileged users)
+    collectible_form = CollectibleTypeForm()
+
+    if request.method == 'POST' and "add_collectible_type" in request.POST:
+        collectible_form = CollectibleTypeForm(request.POST)
+        if collectible_form.is_valid():
+            new_type = collectible_form.save(commit=False)
+            new_type.game = game
+            new_type.save()
+            messages.success(request, f"✅ Added collectible type: {new_type.name}")
+            return redirect("gaming:game_detail", game_id=game.id)
+        else:
+            messages.error(request, "❌ Error adding collectible type. Please check your input.")
+
+    # Detect whether user is in the 'Privileged' group or is a superuser
+    is_privileged = request.user.is_superuser or request.user.groups.filter(name="Privileged").exists()
+
+    # Load cached metadata from IGDB, TrueAchievements, or RetroAchievements
     cache = (
         IGDBGameCache.objects.filter(title=game.name).first()
         or TrueAchievementsGameCache.objects.filter(title=game.name).first()
@@ -247,18 +303,23 @@ def game_detail(request, game_id):
 
     achievements = []
     description = None
+
     if cache and cache.data:
         data = cache.data
         description = cache.description or data.get("description") or data.get("summary")
+
         if isinstance(data.get("achievements"), list):
             achievements = data["achievements"]
         elif isinstance(data.get("Achievements"), dict):
-            achievements = [v for k, v in data["Achievements"].items()]
+            achievements = list(data["Achievements"].values())
 
     return render(request, "gaming/game_detail.html", {
         "game": game,
         "description": description,
         "achievements": achievements,
+        "user_collectibles": user_progress,
+        "collectible_form": collectible_form,
+        "is_privileged": is_privileged,
     })
 
 def auto_fill_game_hours(game: Game):

@@ -57,13 +57,24 @@ class GamesBeaten(models.Model):
     game_name = models.CharField(max_length=20, default="Doom")
     date_added = models.DateTimeField(auto_now_add=True)
 
-# class GameProgressTracker(models.Model):
-#     """For tracking game progress and awarding xp for games still in progress."""
-#     user = models.ForeignKey(User, on_delete=models.CASCADE)
-#     game_name = models.ForeignKey(Game, on_delete=models.CASCADE)
-#     date_added = models.DateTimeField(auto_now_add=True)
-#     hours_completed = models.IntegerField(default=0)
-#     text = models.CharField(max_length=100, default="Chapter 1")
+class CollectibleType(models.Model):
+    """Defines a collectible type per game (e.g., 'Moons', 'Korok Seeds')."""
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='collectible_types')
+    name = models.CharField(max_length=100)
+    total_available = models.PositiveIntegerField(help_text="Total available in the game")
+
+    def __str__(self):
+        return f"{self.name} ({self.game.name})"
+
+
+class UserCollectibleProgress(models.Model):
+    """Tracks how many of each collectible type a user has found."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    collectible_type = models.ForeignKey(CollectibleType, on_delete=models.CASCADE)
+    collected = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ('user', 'collectible_type')
 
 class RetroGameCache(models.Model):
     retro_id = models.IntegerField(unique=True)

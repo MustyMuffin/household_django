@@ -1,4 +1,7 @@
 {% extends "household_main/base.html" %}
+{% load get_item_filter %}
+{% load gaming_extras %}
+
 
 {% block content %}
 <div class="container mt-4">
@@ -32,6 +35,33 @@
         <a href="{% url 'gaming:log_game_progress' game.id %}" class="btn btn-primary mt-3">
           🎮 Log Progress
         </a>
+
+        <h4>🧩 Collectibles</h4>
+        {% if game.collectible_types.all %}
+          <ul class="list-group">
+            {% for collectible in game.collectible_types.all %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ collectible.name }}
+                <span class="badge bg-primary rounded-pill">
+                  {{ user_collectibles|dict_get:collectible.id|default:0 }} / {{ collectible.total_available }}
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted">No collectibles defined for this game yet.</p>
+        {% endif %}
+
+        {% if is_privileged %}
+          <h4>Add New Collectible Type</h4>
+          <form method="post">
+            {% csrf_token %}
+            {{ collectible_form.as_p }}
+            <button type="submit" name="add_collectible_type" class="btn btn-outline-secondary">
+              ➕ Add Collectible Type
+            </button>
+          </form>
+        {% endif %}
 
     {% if description %}
       <hr>

@@ -2,12 +2,16 @@
 
 {% block content %}
   <div class="container mt-4">
-    <h2>👾 Game Backlog</h2>
+    <h2>👾 Games In Progress</h2>
     {% if in_progress_games %}
       <ul class="list-group">
         {% for entry in in_progress_games %}
           <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ entry.game.name }} – {{ entry.hours_played }} hours
+            <div>
+              <a href="{% url 'gaming:game_detail' entry.game.id %}">
+                {{ entry.game.name }}
+              </a> – {{ entry.hours_played }} hours
+            </div>
             <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-primary">💾 Update Progress</a>
           </li>
         {% endfor %}

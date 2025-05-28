@@ -22,6 +22,8 @@ from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
 
+
+
 @login_required
 def user_profile(request, username):
     user = get_object_or_404(User, username=username)
@@ -243,16 +245,25 @@ def get_milestone_options(request):
         return JsonResponse(data)
 
     elif app == "gaming":
-        data = {
-            "options": [
-                {"id": "games_beaten", "name": "Games Beaten"},
-                {"id": "hours_played", "name": "Hours Played"},
-            ],
-            "initial": initial
-        }
-        return JsonResponse(data)
+        # Base global gaming milestones
+        base_options = [
+            {"id": "games_beaten", "name": "Games Beaten"},
+            {"id": "hours_played", "name": "Hours Played"},
+        ]
 
-    return JsonResponse({"options": []})
+        # Dynamically add game-specific combo milestones
+        game_options = [
+            {"id": f"game_completion_combo_{game.id}", "name": f"🏆 Full Completion – {game.name}"}
+            for game in Game.objects.all()
+        ]
+
+        return JsonResponse({
+            "options": base_options + game_options,
+            "initial": initial
+        })
+
+    return JsonResponse({"options": [], "initial": initial})
+
 
 def activity_feed(request):
     show_all_users = True

@@ -1,4 +1,5 @@
 {% extends "household_main/base.html" %}
+{% load get_item_filter %}
 {% block content %}
 
 <h4>🎮 Track Progress for <strong>{{ game.name }}</strong></h4>
@@ -35,6 +36,13 @@
         <label for="id_note" class="form-label">📝 Notes (optional)</label>
         <textarea name="note" class="form-control" id="id_note" rows="2">{{ form.note.value }}</textarea>
     </div>
+
+    {% for type in game.collectible_types.all %}
+      <div class="mb-3">
+        <label for="id_collectible_{{ type.id }}">{{ type.name }} (out of {{ type.total_available }})</label>
+        <input type="number" name="collectible_{{ type.id }}" value="{{ user_collectibles|get_item:type.id }}" min="0" max="{{ type.total_available }}" class="form-control">
+      </div>
+    {% endfor %}
 
     <button type="submit" class="btn btn-success">
         💾 {% if is_update %}Update Progress{% else %}Log Hours Played{% endif %}
