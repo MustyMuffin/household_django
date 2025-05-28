@@ -14,7 +14,11 @@ from gaming.api_combined import fetch_game_data
 from gaming.forms import GameProgressTrackerForm
 from gaming.utils import update_badges_for_games
 from .forms import GameEntryForm, GameForm, GameProgressTrackerForm
-from .models import Game, RetroGameCache, GameCategory, IGDBGameCache, TrueAchievementsGameCache, GameProgress
+
+from .models import (Game, GamesBeaten, GameCategory,
+                     IGDBGameCache, TrueAchievementsGameCache,
+                     GameProgress
+                    )
 
 
 def is_privileged(user):
@@ -103,54 +107,55 @@ def log_game_progress(request, game_id):
 
     game = get_object_or_404(Game, id=game_id)
     progress_entry = GameProgress.objects.filter(user=request.user, game=game).first()
+    already_beaten = GamesBeaten.objects.filter(user=request.user, game_name=game.name).exists()
 
     if request.method == 'POST':
         print("📝 POST data:", request.POST.dict())
+
+        # Always capture old state before any modification
+        old_hours = progress_entry.hours_played if progress_entry else 0
+        previously_beaten = progress_entry.beaten if progress_entry else False
+
         form = GameProgressTrackerForm(request.POST, instance=progress_entry)
 
-        if request.method == 'POST':
-            print("📝 POST data:", request.POST.dict())
+        if form.is_valid():
+            new_hours = form.cleaned_data['hours_played']
+            beaten = form.cleaned_data.get('beaten', False)
+            note = form.cleaned_data.get('note', '')
 
-            old_hours = progress_entry.hours_played if progress_entry else 0
+            delta = new_hours - old_hours
+            print(f"📊 Old hours: {old_hours}, New hours: {new_hours}, Delta: {delta}")
 
-            form = GameProgressTrackerForm(request.POST, instance=progress_entry)
-
-            if form.is_valid():
-                new_hours = form.cleaned_data['hours_played']
-                beaten = form.cleaned_data.get('beaten', False)
-                note = form.cleaned_data.get('note', '')
-
-                if not progress_entry:
-                    progress_entry = form.save(commit=False)
-                    progress_entry.user = request.user
-                    progress_entry.game = game
-
-                delta = new_hours - old_hours
-                print(f"📊 Old hours: {old_hours}, New hours: {new_hours}, Delta: {delta}")
-                
+            if progress_entry:
                 progress_entry.hours_played = new_hours
                 progress_entry.beaten = beaten
                 progress_entry.note = note
-                progress_entry.save()
-                print("DEBUG: progress_entry.beaten=", progress_entry.beaten)
+            else:
+                progress_entry = form.save(commit=False)
+                progress_entry.user = request.user
+                progress_entry.game = game
+                progress_entry.beaten = beaten
+                progress_entry.note = note
 
-                if delta > 0:
-                    log_hours(request.user, delta, game, request)
-                    messages.success(request, f"💾 Logged {delta} new hours for '{game.name}'")
+            progress_entry.save()
+            print("DEBUG: progress_entry.beaten =", progress_entry.beaten)
 
-                if beaten and not previously_beaten:
-                    bonus_result = award_xp(
-                        request.user,
-                        source_object=game,
-                        reason="🎯 Completed game bonus",
-                        source_type="finished_game",
-                        request=request,
-                    )
-                    print(bonus_result)
-                    if bonus_result.get("xp_awarded"):
-                        messages.success(request, f"✅ Bonus XP: {bonus_result['xp_awarded']} for finishing the game!")
+            if delta > 0:
+                log_hours(request.user, delta, game, request)
+                messages.success(request, f"💾 Logged {delta} new hours for '{game.name}'")
 
-            # Always update badges
+            if beaten and not previously_beaten:
+                bonus_result = award_xp(
+                    user=request.user,
+                    source_object=game,
+                    reason="🎯 Completed game bonus",
+                    source_type="finished_game",
+                    request=request,
+                )
+                print("🎁 Bonus result:", bonus_result)
+                if bonus_result.get("xp_awarded"):
+                    messages.success(request, f"✅ Bonus XP: {bonus_result['xp_awarded']} for finishing the game!")
+
             update_badges_for_games(user=request.user, game=game, hours_increment=delta, request=request)
 
             return redirect("gaming:games_by_category")
@@ -164,6 +169,7 @@ def log_game_progress(request, game_id):
         "form": form,
         "game": game,
         "is_update": bool(progress_entry),
+        "already_beaten": already_beaten,
     })
 
 

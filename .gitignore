@@ -18,6 +18,7 @@ book_club/migrations/*
 accounts/migrations/*
 chores/migrations/*
 household_main/migrations/*
+gaming/migrations/*
 
 
 # Database & settings

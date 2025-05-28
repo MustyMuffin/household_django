@@ -16,7 +16,6 @@ from chores.utils import process_chore_completion
 from chores.forms import ChoreEntryForm, PartialPayoutForm
 from chores.models import Chore, EarnedWage, ChoreEntry, PayoutLog
 
-
 @BadgeProgressProvider.register("chores")
 def chore_progress(badge, user):
     milestone = badge.milestone_type

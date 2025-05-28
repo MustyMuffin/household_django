@@ -14,9 +14,20 @@
 
     <div class="form-check mb-3">
         <input class="form-check-input" type="checkbox" name="beaten" id="id_beaten"
-               {% if form.beaten.value %}checked{% endif %}>
-        <label class="form-check-label" for="id_beaten">
-            ✅ I completed this game
+               {% if form.beaten.value %}
+               checked
+               {% endif %}
+               {% if already_beaten %}
+               disabled
+               {% endif %}>
+        <label class="form-check-label
+                {% if already_beaten %}
+                text-muted
+                {% endif %}" for="id_beaten">
+                ✅ I completed this game
+                {% if already_beaten %}<span class="ms-2">
+                    (Already marked as completed)</span>
+                {% endif %}
         </label>
     </div>
 
