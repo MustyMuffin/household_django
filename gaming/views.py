@@ -10,15 +10,17 @@ from accounts.badge_helpers import check_and_award_badges
 from accounts.models import UserStats
 from accounts.xp_helpers import award_xp
 from gaming.api.howlongtobeat_fetcher import fetch_hltb_data
+from gaming.api.retroachievements import fetch_game_data_retro, fetch_achievements_for_game
 from gaming.api_combined import fetch_game_data
-from gaming.forms import GameProgressTrackerForm, CollectibleTypeForm
-from gaming.utils import update_badges_for_games
-from .forms import GameEntryForm, GameForm, GameProgressTrackerForm
+from gaming.utils import update_badges_for_games, get_game_links
+from .forms import GameEntryForm, GameForm, GameProgressTrackerForm, CollectibleTypeForm
+from difflib import get_close_matches
 
 from .models import (Game, GamesBeaten, GameCategory,
                      IGDBGameCache, TrueAchievementsGameCache,
                      GameProgress, CollectibleType,
-                     UserCollectibleProgress
+                     UserCollectibleProgress, GameLink, RetroGameCache,
+                     RetroGameEntry
                     )
 
 
@@ -29,7 +31,7 @@ def achievements_view(request):
     data = get_trueachievements_data()
     return render(request, "gaming/achievements.html", {"achievements": data})
 
-# Optional: Remove @login_required if you want to allow anonymous access
+
 def fetch_game_data_api(request):
     try:
         q = request.GET.get("q")
@@ -102,6 +104,7 @@ def game(request, game_id):
     context = {'game': game, 'game_entries': game_entries}
     return render(request, 'gaming/game.html', context)
 
+
 @login_required
 def log_game_progress(request, game_id):
     print("✅ Entered log_game_progress view")
@@ -113,7 +116,6 @@ def log_game_progress(request, game_id):
     if request.method == 'POST':
         print("📝 POST data:", request.POST.dict())
 
-        # Always capture old state before any modification
         old_hours = progress_entry.hours_played if progress_entry else 0
         previously_beaten = progress_entry.beaten if progress_entry else False
 
@@ -127,6 +129,8 @@ def log_game_progress(request, game_id):
             delta = new_hours - old_hours
             print(f"📊 Old hours: {old_hours}, New hours: {new_hours}, Delta: {delta}")
 
+            was_new_entry = not progress_entry  # Track if this is a new GameProgress
+
             if progress_entry:
                 progress_entry.hours_played = new_hours
                 progress_entry.beaten = beaten
@@ -139,7 +143,11 @@ def log_game_progress(request, game_id):
                 progress_entry.note = note
 
             progress_entry.save()
-            print("DEBUG: progress_entry.beaten =", progress_entry.beaten)
+
+            # # ✅ New logic — populate achievements for new tracking
+            # if was_new_entry and game.retro_game:
+            #     populate_user_achievements(request.user, progress_entry)
+            #     print("🎯 User achievements populated for new progress entry.")
 
             if delta > 0:
                 log_hours(request.user, delta, game, request)
@@ -231,12 +239,13 @@ def log_hours(user, hours_played, game, request=None):
 def game_backlog(request):
     in_progress_games = GameProgress.objects.select_related('game').filter(
         user=request.user,
-        hours_played__gt=0,
-    ).exclude(hours_played__gte=F('game__hours_completionist'))
+        beaten=False
+    )
 
     return render(request, 'gaming/game_backlog.html', {
         'in_progress_games': in_progress_games
     })
+
 
 @login_required
 @user_passes_test(is_privileged)
@@ -244,29 +253,43 @@ def add_new_game(request):
     categories = GameCategory.objects.all()
 
     if request.method == "POST":
-        title = request.POST.get("title")
+        title = request.POST.get("title", "").strip()
         category_id = request.POST.get("category_id")
-        new_category_name = request.POST.get("new_category_name")
-        image = request.POST.get("image_url")
+        new_category_name = request.POST.get("new_category_name", "").strip()
+        image = request.POST.get("image_url", "").strip()
+        selected_sources = request.POST.getlist("sources")
+        use_retro = "use_retro" in request.POST
+        retro_console = request.POST.get("retro_console")
 
+        # Get or create category
         if new_category_name:
             category, _ = GameCategory.objects.get_or_create(name=new_category_name)
         else:
             category = GameCategory.objects.filter(id=category_id).first()
 
+        if not category:
+            messages.error(request, "❌ Please select or create a category.")
+            return render(request, "gaming/add_new_game.html", {
+                "categories": categories,
+                "preserve_title": title,
+                "preserve_image": image,
+                "preserve_sources": selected_sources,
+            })
+
+        # Create game entry
         game = Game.objects.create(
             name=title,
             game_category=category,
             image_url=image,
         )
 
+        # Fetch HLTB metadata (always)
         auto_fill_game_hours(game)
 
-        messages.success(request, f"🎮 Game '{game.name}' added!")
+        messages.success(request, f"🎮 Game '{game.name}' added with {len(selected_sources)} achievement links!")
         return redirect("gaming:game_detail", game_id=game.id)
 
     return render(request, "gaming/add_new_game.html", {"categories": categories})
-
 
 @login_required
 def game_detail(request, game_id):
@@ -299,33 +322,75 @@ def game_detail(request, game_id):
     # Detect whether user is in the 'Privileged' group or is a superuser
     is_privileged = request.user.is_superuser or request.user.groups.filter(name="Privileged").exists()
 
-    # Load cached metadata from IGDB, TrueAchievements, or RetroAchievements
-    cache = (
-        IGDBGameCache.objects.filter(title=game.name).first()
-        or TrueAchievementsGameCache.objects.filter(title=game.name).first()
-        or RetroGameCache.objects.filter(title=game.name).first()
-    )
+    # Achievement links
+    achievement_links = game.links.all()
 
-    achievements = []
+    # # Description and achievements from RetroGameCache (legacy)
+    # cache = RetroGameCache.objects.filter(title=game.name).first()
+
+    # achievements = []
     description = None
+    #
+    # if cache:
+    #     if isinstance(cache.achievements, list) and cache.achievements:
+    #         achievements = cache.achievements
+    #
+    #     data = cache.data or {}
+    #     description = cache.description or data.get("description") or data.get("summary")
+    #
+    #     if not achievements:
+    #         if isinstance(data.get("achievements"), list):
+    #             achievements = data["achievements"]
+    #         elif isinstance(data.get("Achievements"), dict):
+    #             achievements = list(data["Achievements"].values())
 
-    if cache and cache.data:
-        data = cache.data
-        description = cache.description or data.get("description") or data.get("summary")
+    # RetroAchievements pairing suggestion logic
+    matches = []
+    if not game.retro_game:
+        all_titles = list(RetroGameEntry.objects.values_list('title', flat=True))
+        close_titles = get_close_matches(game.name, all_titles, n=20, cutoff=0.6)
+        matches = RetroGameEntry.objects.filter(title__in=close_titles)
 
-        if isinstance(data.get("achievements"), list):
-            achievements = data["achievements"]
-        elif isinstance(data.get("Achievements"), dict):
-            achievements = list(data["Achievements"].values())
+    if request.method == "POST" and "pair_ra_game" in request.POST:
+        selected_id = request.POST.get("retro_id")
+        if selected_id:
+            match = RetroGameEntry.objects.filter(id=selected_id).first()
+            if match:
+                game.retro_game = match
+                game.save()
+                messages.success(request, f"🕹️ Paired with RA game: {match.title}")
+
+                # 🎯 Add RetroAchievements direct link
+                links = get_game_links(game.name, retro_id=match.retro_id)
+                print ("DEBUG: links =", links)
+
+                if "retroachievements" in links:
+                    GameLink.objects.get_or_create(
+                        game=game,
+                        platform="retroachievements",
+                        defaults={"url": links["retroachievements"]}
+                    )
+
+                # Optionally fetch achievements in future
+                # try:
+                #     fetch_achievements_for_game(game=game, retro_id=match.retro_id)
+                #     messages.success(request, "🏆 Achievements fetched and stored successfully.")
+                # except Exception as e:
+                #     print(f"❌ Failed to fetch RA achievements: {e}")
+                #     messages.warning(request, "⚠️ Couldn't fetch achievements from RA at this time.")
+
+        return redirect("gaming:game_detail", game_id=game.id)
 
     return render(request, "gaming/game_detail.html", {
         "game": game,
         "description": description,
-        "achievements": achievements,
+        "achievement_links": achievement_links,
         "user_collectibles": user_progress,
         "collectible_form": collectible_form,
         "is_privileged": is_privileged,
+        "ra_matches": matches,
     })
+
 
 def auto_fill_game_hours(game: Game):
     data = fetch_hltb_data(game.name)
@@ -335,3 +400,9 @@ def auto_fill_game_hours(game: Game):
         game.hours_completionist = data["hours_completionist"]
         game.save()
         print(f"📊 Updated hours for {game.name}")
+
+def find_retro_matches(title, limit=5):
+    all_titles = list(RetroGameEntry.objects.values_list('title', flat=True))
+    close_titles = difflib.get_close_matches(title, all_titles, n=limit, cutoff=0.6)
+
+    return RetroGameEntry.objects.filter(title__in=close_titles)

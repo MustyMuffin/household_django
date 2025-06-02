@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.contrib.postgres.fields import JSONField
 from django.db.models import JSONField
+from django.conf import settings
 
 class GameCategory(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -22,6 +23,8 @@ class Game(models.Model):
     hours_completionist = models.IntegerField(default=0)
     date_added = models.DateTimeField(auto_now_add=True)
     game_category = models.ForeignKey(GameCategory, on_delete=models.SET_NULL, null=True, blank=True)
+    achievements_url = models.URLField(blank=True, null=True)
+    retro_game = models.ForeignKey("RetroGameEntry", null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
         """Return a string representation of the model."""
@@ -82,6 +85,7 @@ class RetroGameCache(models.Model):
     console = models.CharField(max_length=100)
     image_url = models.URLField(blank=True)
     data = models.JSONField()
+    achievements = models.JSONField(default=list)
     last_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -106,5 +110,54 @@ class IGDBGameCache(models.Model):
     image_url = models.URLField(blank=True)
     description = models.TextField(blank=True)
     data = models.JSONField()
+
+class GameLink(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="links")
+    platform = models.CharField(max_length=50)
+    url = models.URLField()
+
+class RetroConsole(models.Model):
+    console_id = models.IntegerField(unique=True)
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name} (ID: {self.console_id})"
+
+class RetroGameEntry(models.Model):
+    retro_id = models.IntegerField(unique=True)
+    title = models.CharField(max_length=255)
+    console_id = models.IntegerField()
+    console_name = models.CharField(max_length=100)
+    image_url = models.URLField(blank=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.console_name})"
+
+
+class UserGameAchievement(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    game_progress = models.ForeignKey(GameProgress, on_delete=models.CASCADE)
+
+    retro_id = models.IntegerField()
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    points = models.IntegerField(default=0)
+    unlocked = models.BooleanField(default=False)
+    unlocked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ("user", "game", "retro_id", "title")
+        verbose_name = "Game Achievement"
+        verbose_name_plural = "Game Achievements"
+        indexes = [
+            models.Index(fields=["user", "game"]),
+            models.Index(fields=["retro_id"]),
+            models.Index(fields=["unlocked"]),
+        ]
+
+    def __str__(self):
+        return f"{self.title} ({self.game.name})"
 
 

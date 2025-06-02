@@ -68,17 +68,74 @@
       <p>{{ description }}</p>
     {% endif %}
 
-    {% if achievements %}
-      <hr>
-      <h5>🏆 Achievements</h5>
-      <ul>
-        {% for achievement in achievements %}
-          <li>{{ achievement.name }} — {{ achievement.description }}</li>
-        {% empty %}
-          <li>No achievements listed.</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+        <ul>
+          {% for link in achievement_links %}
+            <li>
+              {% if link.platform == "trueachievements" %}
+                🏆 TrueAchievements
+              {% elif link.platform == "steam" %}
+                💻 Steam
+              {% elif link.platform == "retroachievements" %}
+                🕹️ RetroAchievements
+              {% elif link.platform == "playstation" %}
+                🎮 PlayStation
+              {% else %}
+                ❓ Unknown platform
+              {% endif %}
+              <a href="{{ link.url }}" target="_blank">{{ link.platform|capfirst }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+
+        {% if is_privileged %}
+          {% if not game.retro_game and ra_matches %}
+            <hr>
+            <h5>🕹️ Pair with RetroAchievements</h5>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="pair_ra_game" value="1">
+              <div class="mb-3">
+                <label for="retro_id">Select Closest Match:</label>
+                <select name="retro_id" class="form-select">
+                  {% for match in ra_matches %}
+                    <option value="{{ match.id }}">{{ match.title }} ({{ match.console_name }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button type="submit" class="btn btn-outline-success">Pair Game</button>
+            </form>
+          {% elif game.retro_game %}
+            <hr>
+            <h5>🎯 Paired with RetroAchievements</h5>
+            <p><strong>{{ game.retro_game.title }}</strong> — {{ game.retro_game.console_name }}</p>
+          {% endif %}
+        {% endif %}
+
+        {% if achievements %}
+          <hr>
+          <h4>🏆 RetroAchievements</h4>
+          <div class="accordion" id="achievementsAccordion">
+            {% for achievement in achievements %}
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                          data-bs-target="#collapse-{{ forloop.counter }}" aria-expanded="false"
+                          aria-controls="collapse-{{ forloop.counter }}">
+                    {{ achievement.Title }}
+                  </button>
+                </h2>
+                <div id="collapse-{{ forloop.counter }}" class="accordion-collapse collapse"
+                     aria-labelledby="heading-{{ forloop.counter }}" data-bs-parent="#achievementsAccordion">
+                  <div class="accordion-body">
+                    <img src="{{ achievement.BadgeURL }}" alt="Badge" class="img-fluid mb-2" style="max-height: 64px;">
+                    <p><strong>Points:</strong> {{ achievement.Points }}</p>
+                    <p>{{ achievement.Description }}</p>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
   </div>
 </div>
 {% endblock %}

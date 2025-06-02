@@ -45,7 +45,18 @@
       <input type="text" class="form-control" id="new_category_name" name="new_category_name">
     </div>
 
+      <label class="mt-3">Achievement Link Sources:</label><br>
+      <input type="checkbox" name="sources" value="trueachievements"
+        {% if 'trueachievements' in preserve_sources %}checked{% endif %}> TrueAchievements<br>
+      <input type="checkbox" name="sources" value="steam"
+        {% if 'steam' in preserve_sources %}checked{% endif %}> Steam<br>
+{#      <input type="checkbox" name="sources" value="retroachievements"#}
+{#        {% if 'retroachievements' in preserve_sources %}checked{% endif %}> RetroAchievements<br>#}
+      <input type="checkbox" name="sources" value="playstation"
+        {% if 'playstation' in preserve_sources %}checked{% endif %}> PlayStation<br>
+
     <button type="submit" class="btn btn-success">➕ Add Game</button>
+
   </form>
 
   <style>
@@ -68,6 +79,8 @@
       const addGameForm = document.getElementById("add-game-form");
       const categorySelect = document.getElementById("category_id");
       const newCategoryWrapper = document.getElementById("new-category-wrapper");
+
+
 
       categorySelect.addEventListener("change", function () {
         newCategoryWrapper.style.display = this.value === "new" ? "block" : "none";
