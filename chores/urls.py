@@ -11,7 +11,7 @@ urlpatterns = [
     # Detail page for a single chore.
     path('chores/<int:chore_id>/', views.chore, name='chore'),
     # # # Page for adding a new chore.
-    # path('new_chore/', views.new_chore, name='new_chore'),
+    path('add_new_chore/', views.add_new_chore, name='add_new_chore'),
     # Page for adding a new entry.
     path('new_chore_entry/<int:chore_id>/', views.new_chore_entry, name='new_chore_entry'),
     # Path for seeing payout

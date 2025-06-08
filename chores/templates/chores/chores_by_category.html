@@ -1,4 +1,5 @@
 {% extends 'household_main/base.html' %}
+{% load is_privileged %}
 
 {% block page_header %}
   <h1>🧹 Chores</h1>
@@ -31,8 +32,12 @@
     {% endfor %}
   </div>
 
-  <div class="mt-4">
-    <a class="btn btn-primary" href="{% url 'chores:payout' %}">Go to Payout</a>
-  </div>
+
+    <div class="mt-4 d-flex gap-2">
+        {% if user|is_privileged %}
+    <a class="btn btn-success" href="{% url 'chores:add_new_chore' %}">➕ Add New Chore</a>
+        {% endif %}
+    <a class="btn btn-primary" href="{% url 'chores:payout' %}">💰 Go to Payout</a>
+    </div>
 {% endblock content %}
 
