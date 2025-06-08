@@ -123,6 +123,7 @@ class UserStats(models.Model):
     chore_xp = models.PositiveIntegerField(default=0)
     reading_xp = models.PositiveIntegerField(default=0)
     words_read = models.PositiveIntegerField(default=0)
+    reading_wpm = models.PositiveIntegerField(default=0)
     gaming_xp = models.PositiveIntegerField(default=0)
     hours_played = models.PositiveIntegerField(default=0)
 

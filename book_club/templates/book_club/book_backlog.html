@@ -1,4 +1,5 @@
 {% extends "household_main/base.html" %}
+{% load get_item_filter %}
 
 {% block content %}
   <div class="container mt-4">
@@ -6,10 +7,27 @@
     {% if in_progress_books %}
       <ul class="list-group">
         {% for entry in in_progress_books %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ entry.book_name.title }} – {{ entry.words_completed }} / {{ entry.book_name.words }} words
-            <a href="{% url 'book_club:new_book_tracker_entry' entry.book_name.id %}" class="btn btn-sm btn-primary">Update Progress</a>
+          {% with time_data=reading_times|get_item:entry.book_name.id %}
+          <li class="list-group-item d-flex justify-content-between align-items-start flex-column flex-md-row">
+            <div>
+                <strong>
+                  <a href="{% url 'book_club:book_detail' entry.book_name.id %}">
+                    {{ entry.book_name.title }}
+                  </a>
+                </strong><br>
+              {{ entry.words_completed }} / {{ entry.book_name.words }} words
+              {% if time_data %}
+                <div class="text-muted mt-1">
+                  ⏱️ Est. Total: {{ time_data.total_human }}) |
+                  Remaining: {{ time_data.remaining_human }})
+                </div>
+              {% endif %}
+            </div>
+            <div class="mt-2 mt-md-0">
+              <a href="{% url 'book_club:new_book_tracker_entry' entry.book_name.id %}" class="btn btn-sm btn-primary">Update Progress</a>
+            </div>
           </li>
+          {% endwith %}
         {% endfor %}
       </ul>
     {% else %}
@@ -17,3 +35,4 @@
     {% endif %}
   </div>
 {% endblock %}
+

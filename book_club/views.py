@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import user_passes_test
 from .api_combined import fetch_and_cache_metadata
 from django.http import JsonResponse
 from .api_combined import fetch_external_metadata_by_title
+from .utils import calculate_reading_times
 
 def is_privileged(user):
     return user.groups.filter(name='Privileged').exists()
@@ -188,8 +189,16 @@ def book_backlog(request):
         words_completed__gt=0,
     ).exclude(words_completed__gte=F('book_name__words'))
 
+    reading_times = {}
+
+    for entry in in_progress_books:
+        result = calculate_reading_times(request.user, entry.book_name, words_completed=entry.words_completed)
+        if isinstance(result, dict) and "total_minutes" in result:
+            reading_times[entry.book_name.id] = result
+
     return render(request, 'book_club/book_backlog.html', {
-        'in_progress_books': in_progress_books
+        'in_progress_books': in_progress_books,
+        'reading_times': reading_times
     })
 
 @user_passes_test(is_privileged)

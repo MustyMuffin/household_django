@@ -1,4 +1,4 @@
-from accounts.models import XPTable, ChoreXPTable, ReadingXPTable, GamingXPTable
+from .models import XPTable, ChoreXPTable, ReadingXPTable, GamingXPTable
 
 
 class XPManager:
@@ -71,7 +71,7 @@ class XPManager:
     @classmethod
     def resync_all_user_levels(cls):
         """Recalculate and persist levels for all users."""
-        from accounts.models import UserStats
+        from .models import UserStats
 
         for stats in UserStats.objects.all():
             stats.update_levels()
