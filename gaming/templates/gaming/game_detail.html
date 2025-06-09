@@ -32,36 +32,70 @@
       </div>
     </div>
 
-        <a href="{% url 'gaming:log_game_progress' game.id %}" class="btn btn-primary mt-3">
-          🎮 Log Progress
-        </a>
+          <div class="d-flex justify-content-between align-items-start mt-3">
+          {% if progress %}
+            <div class="small text-muted">
+              <p class="mb-1">🕒 Hours Played: {{ progress.hours_played }}</p>
+              <p class="mb-1">
+                {% if progress.beaten %}
+                  ✅ Game Beaten
+                {% else %}
+                  ❌ Not Beaten
+                {% endif %}
+              </p>
+              {% if progress.note %}
+                <p class="mb-1">📝 Note: <em>{{ progress.note }}</em></p>
+              {% endif %}
+              <p class="mb-0 text-muted">📅 Last Log: {{ progress.logged_at|date:"M d, Y H:i" }}</p>
+            </div>
+          {% endif %}
 
-        <h4>🧩 Collectibles</h4>
-        {% if game.collectible_types.all %}
-          <ul class="list-group">
-            {% for collectible in game.collectible_types.all %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                {{ collectible.name }}
-                <span class="badge bg-primary rounded-pill">
-                  {{ user_collectibles|dict_get:collectible.id|default:0 }} / {{ collectible.total_available }}
-                </span>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="text-muted">No collectibles defined for this game yet.</p>
-        {% endif %}
+          <a href="{% url 'gaming:log_game_progress' game.id %}" class="btn btn-sm btn-primary ms-3">
+            🎮 Log Progress
+          </a>
+        </div>
+
+        <div class="mt-4">
+          <h5 class="fw-semibold small">🧩 Collectibles</h5>
+
+          {% if game.collectible_types.all %}
+            <ul class="list-group list-group-flush small">
+              {% for collectible in game.collectible_types.all %}
+                <li class="list-group-item py-1 px-2 d-flex justify-content-between align-items-center">
+                  <span>{{ collectible.name }}</span>
+                  <span class="badge bg-primary rounded-pill">
+                    {{ user_collectibles|dict_get:collectible.id|default:0 }} / {{ collectible.total_available }}
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted small mb-2">No collectibles defined for this game yet.</p>
+          {% endif %}
+        </div>
 
         {% if is_privileged %}
-          <h4>Add New Collectible Type</h4>
-          <form method="post">
-            {% csrf_token %}
-            {{ collectible_form.as_p }}
-            <button type="submit" name="add_collectible_type" class="btn btn-outline-secondary">
-              ➕ Add Collectible Type
-            </button>
-          </form>
+          <div class="mt-3">
+            <!-- Toggle Button -->
+            <h6 class="small fw-semibold">
+              <a class="text-decoration-none" data-bs-toggle="collapse" href="#addCollectibleForm" role="button" aria-expanded="false" aria-controls="addCollectibleForm">
+                ➕ Add Collectible
+              </a>
+            </h6>
+
+            <!-- Collapsible Form -->
+            <div class="collapse" id="addCollectibleForm">
+              <form method="post" class="d-flex flex-column gap-2 mt-2">
+                {% csrf_token %}
+                {{ collectible_form.as_p }}
+                <button type="submit" name="add_collectible_type" class="btn btn-sm btn-outline-secondary w-auto align-self-start">
+                  ➕ Add
+                </button>
+              </form>
+            </div>
+          </div>
         {% endif %}
+
 
     {% if description %}
       <hr>
@@ -70,24 +104,47 @@
 
         <ul>
           {% for link in achievement_links %}
-            <li>
-              {% if link.platform == "trueachievements" %}
-                🏆 TrueAchievements
-              {% elif link.platform == "steam" %}
-                💻 Steam
-              {% elif link.platform == "retroachievements" %}
-                🕹️ RetroAchievements
-              {% elif link.platform == "playstation" %}
-                🎮 PlayStation
-              {% else %}
-                ❓ Unknown platform
+            <li class="d-flex justify-content-between align-items-center">
+              <div>
+                {% if link.platform == "trueachievements" %}
+                  🏆 TrueAchievements
+                {% elif link.platform == "steam" %}
+                  💻 Steam
+                {% elif link.platform == "retroachievements" %}
+                  🕹️ RetroAchievements
+                {% elif link.platform == "playstation" %}
+                  🎮 PlayStation
+                {% else %}
+                  ❓ Unknown platform
+                {% endif %}
+                <a href="{{ link.url }}" target="_blank">{{ link.platform|capfirst }}</a>
+              </div>
+              {% if is_privileged %}
+                <form method="post" action="{% url 'gaming:remove_game_link' game.id link.id %}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger ms-2">Remove</button>
+                </form>
               {% endif %}
-              <a href="{{ link.url }}" target="_blank">{{ link.platform|capfirst }}</a>
             </li>
           {% endfor %}
         </ul>
 
-        {% if is_privileged %}
+       {% if is_privileged %}
+      <div class="mt-4">
+        <form method="post" action="{% url 'gaming:add_link_source' game.id %}" class="d-flex align-items-center gap-2">
+          {% csrf_token %}
+          <select name="source" class="form-select form-select-sm w-auto">
+            <option disabled selected>Choose source...</option>
+            <option value="trueachievements">🏆 TrueAchievements</option>
+            <option value="steam">💻 Steam</option>
+            <option value="playstation">🎮 PlayStation</option>
+            <option value="retroachievements">🕹️ RetroAchievements</option>
+          </select>
+          <button type="submit" class="btn btn-sm btn-outline-secondary">➕ Add Link</button>
+        </form>
+      </div>
+    {% endif %}
+
           {% if not game.retro_game and ra_matches %}
             <hr>
             <h5>🕹️ Pair with RetroAchievements</h5>
@@ -104,12 +161,23 @@
               </div>
               <button type="submit" class="btn btn-outline-success">Pair Game</button>
             </form>
-          {% elif game.retro_game %}
-            <hr>
-            <h5>🎯 Paired with RetroAchievements</h5>
-            <p><strong>{{ game.retro_game.title }}</strong> — {{ game.retro_game.console_name }}</p>
-          {% endif %}
-        {% endif %}
+
+            {% elif game.retro_game %}
+              <hr>
+              <h5>🎯 Paired with RetroAchievements</h5>
+              <p><strong>{{ game.retro_game.title }}</strong> — {{ game.retro_game.console_name }}</p>
+
+              <div class="d-flex gap-2">
+                <form method="post" action="{% url 'gaming:unpair_retro_game' game.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm w-100">Unpair</button>
+                </form>
+
+                <a href="{% url 'gaming:retro_pairing' game.id %}" class="btn btn-outline-primary btn-sm w-100">
+                  Re-pair
+                </a>
+              </div>
+            {% endif %}
 
         {% if achievements %}
           <hr>

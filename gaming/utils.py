@@ -11,17 +11,19 @@ def slugify_title(title):
     slug = re.sub(r"[^a-zA-Z0-9]+", "-", title.strip()).lower().strip("-")
     return slug
 
-def get_game_links(title, retro_id):
+def get_game_links(title, retro_id=None):
     slug = slugify_title(title)
     query = quote_plus(title.strip())
 
     links = {
         "trueachievements": f"https://www.trueachievements.com/game/{slug}/achievements",
         "steam": f"https://store.steampowered.com/search/?term={query}",
-        "playstation": f"https://www.playstationtrophies.org/search/?cx=partner-pub-3426976301179043%3A1869282366&cof=FORID%3A10&ie=UTF-8&q={query}",
+        "playstation": f"https://psnprofiles.com/search/games?q={query}",
     }
 
-    if retro_id:
+    print("DEBUG: Retro_ID =", retro_id)
+
+    if retro_id and str(retro_id).isdigit():
         links["retroachievements"] = f"https://retroachievements.org/game/{retro_id}"
         print("DEBUG: With RetroID triggered:", links)
     else:

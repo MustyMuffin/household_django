@@ -1,4 +1,6 @@
 from collections import defaultdict
+from difflib import get_close_matches
+from difflib import get_close_matches
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
@@ -6,6 +8,8 @@ from django.core.cache import cache
 from django.db.models import F
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from urllib.parse import quote_plus
+
 from accounts.badge_helpers import check_and_award_badges
 from accounts.models import UserStats
 from accounts.xp_helpers import award_xp
@@ -14,15 +18,13 @@ from gaming.api.retroachievements import fetch_game_data_retro, fetch_achievemen
 from gaming.api_combined import fetch_game_data
 from gaming.utils import update_badges_for_games, get_game_links
 from .forms import GameEntryForm, GameForm, GameProgressTrackerForm, CollectibleTypeForm
-from difflib import get_close_matches
-
+from .models import Game, GameCategory, GameLink, RetroGameEntry
 from .models import (Game, GamesBeaten, GameCategory,
                      IGDBGameCache, TrueAchievementsGameCache,
                      GameProgress, CollectibleType,
                      UserCollectibleProgress, GameLink, RetroGameCache,
                      RetroGameEntry
-                    )
-
+                     )
 
 def is_privileged(user):
     return user.groups.filter(name='Privileged').exists()
@@ -96,13 +98,6 @@ def games(request):
     games = game.objects.order_by('text')
     context = {'games': games}
     return render(request, 'gaming/games.html', context)
-
-def game(request, game_id):
-    """Show a single game and all its entries."""
-    game = Game.objects.get(id=game_id)
-    game_entries = game.gameentry_set.order_by('-date_added')
-    context = {'game': game, 'game_entries': game_entries}
-    return render(request, 'gaming/game.html', context)
 
 
 @login_required
@@ -238,14 +233,12 @@ def log_hours(user, hours_played, game, request=None):
 @login_required
 def game_backlog(request):
     in_progress_games = GameProgress.objects.select_related('game').filter(
-        user=request.user,
-        beaten=False
+        user=request.user
     )
 
     return render(request, 'gaming/game_backlog.html', {
         'in_progress_games': in_progress_games
     })
-
 
 @login_required
 @user_passes_test(is_privileged)
@@ -254,18 +247,23 @@ def add_new_game(request):
 
     if request.method == "POST":
         title = request.POST.get("title", "").strip()
-        category_id = request.POST.get("category_id")
+        category_id = request.POST.get("category_id", "").strip()
         new_category_name = request.POST.get("new_category_name", "").strip()
         image = request.POST.get("image_url", "").strip()
         selected_sources = request.POST.getlist("sources")
-        use_retro = "use_retro" in request.POST
-        retro_console = request.POST.get("retro_console")
+        print("Debug: selected_sources:", selected_sources)
 
-        # Get or create category
+        # ✅ Auto-toggle use_retro based on source selection
+        use_retro = "retroachievements" in selected_sources
+        print("Debug: use_retro:", use_retro)
+
+        # ✅ Determine category
         if new_category_name:
             category, _ = GameCategory.objects.get_or_create(name=new_category_name)
-        else:
+        elif category_id.isdigit():
             category = GameCategory.objects.filter(id=category_id).first()
+        else:
+            category = None
 
         if not category:
             messages.error(request, "❌ Please select or create a category.")
@@ -274,29 +272,132 @@ def add_new_game(request):
                 "preserve_title": title,
                 "preserve_image": image,
                 "preserve_sources": selected_sources,
+                "preserve_category_id": category_id,
+                "preserve_new_category_name": new_category_name,
             })
 
-        # Create game entry
+        # ✅ Create game
         game = Game.objects.create(
             name=title,
             game_category=category,
             image_url=image,
         )
 
-        # Fetch HLTB metadata (always)
+        request.session["selected_sources"] = selected_sources
+
+        # ✅ Fill hours HowLongToBeat
         auto_fill_game_hours(game)
 
+        # ✅ RetroAchievements pairing step
+        if use_retro and not game.retro_game:
+            all_titles = list(RetroGameEntry.objects.values_list("title", flat=True))
+            close_titles = get_close_matches(game.name, all_titles, n=20, cutoff=0.6)
+            matches = RetroGameEntry.objects.filter(title__in=close_titles)
+
+            messages.info(request, "Please pair your game with a RetroAchievements entry.")
+            request.session["selected_sources"] = selected_sources
+            request.session["retro_matches"] = [m.id for m in matches]  # optional
+            return redirect("gaming:retro_pairing", game_id=game.id)
+
+        # ✅ Redirect if no pairing required
         messages.success(request, f"🎮 Game '{game.name}' added with {len(selected_sources)} achievement links!")
-        return redirect("gaming:game_detail", game_id=game.id)
+        return redirect("gaming:generate_game_links", game_id=game.id)
 
     return render(request, "gaming/add_new_game.html", {"categories": categories})
+
+@login_required
+def retro_pairing(request, game_id):
+    game = get_object_or_404(Game, id=game_id)
+
+    # Always fetch fresh matches based on current game's name
+    all_titles = list(RetroGameEntry.objects.values_list("title", flat=True))
+    close_titles = get_close_matches(game.name, all_titles, n=20, cutoff=0.6)
+    matches = RetroGameEntry.objects.filter(title__in=close_titles)
+
+    selected_sources = request.session.get("selected_sources", [])
+
+    if request.method == "POST" and "pair_ra_game" in request.POST:
+        selected_id = request.POST.get("retro_id")
+        manual_id = request.POST.get("manual_retro_id", "").strip()
+        final_id = manual_id if manual_id else selected_id
+
+        match = RetroGameEntry.objects.filter(id=final_id).first()
+        if match:
+            game.retro_game = match
+            game.save()
+
+            # Add RA link with updated retro_id
+            links = get_game_links(game.name, retro_id=match.retro_id)
+            if "retroachievements" in links:
+                GameLink.objects.get_or_create(
+                    game=game,
+                    platform="retroachievements",
+                    defaults={"url": links["retroachievements"]}
+                )
+
+        return redirect("gaming:generate_game_links", game_id=game.id)
+
+    # GET request: show recomputed matches only
+    return render(request, "gaming/retro_pairing.html", {
+        "game": game,
+        "matches": matches,
+        "selected_sources": selected_sources,
+    })
+
+
+@login_required
+@user_passes_test(is_privileged)
+def unpair_retro_game(request, game_id):
+    game = get_object_or_404(Game, id=game_id)
+
+    if request.method == "POST":
+        game.retro_game = None
+        game.save()
+
+        # Optionally delete the existing RA link
+        GameLink.objects.filter(game=game, platform="retroachievements").delete()
+
+        messages.success(request, "❌ Unpaired RetroAchievements game.")
+
+    return redirect("gaming:game_detail", game_id=game.id)
+
+@login_required
+@user_passes_test(is_privileged)
+def generate_game_links(request, game_id):
+    game = get_object_or_404(Game, id=game_id)
+    selected_sources = request.session.get("selected_sources", [])
+    print("DEBUG (generate_game_links): selected_sources =", selected_sources)
+
+    if not selected_sources:
+        messages.warning(request, "⚠️ No sources selected for link generation.")
+        return redirect("gaming:game_detail", game_id=game.id)
+
+    links = get_game_links(game.name, retro_id=game.retro_game.retro_id if game.retro_game else None)
+
+    created_or_updated = 0
+    for source in selected_sources:
+        if source in links:
+            link_obj, created = GameLink.objects.update_or_create(
+                game=game,
+                platform=source,
+                defaults={"url": links[source]}
+            )
+            print("DEBUG (generate_game_links): Created or updated link for", source)
+            if created or link_obj.url != links[source]:
+                created_or_updated += 1
+
+            messages.success(request, f"Achievement links created or updated!")
+
+    return redirect("gaming:game_detail", game_id=game.id)
+
 
 @login_required
 def game_detail(request, game_id):
     game = get_object_or_404(Game, id=game_id)
     collectible_types = game.collectible_types.all()
+    latest_progress = GameProgress.objects.filter(game=game, user=request.user).first()
 
-    # Collect user progress for this game's collectibles
+    # User's collectible progress
     user_progress = {
         progress.collectible_type.id: progress.collected
         for progress in UserCollectibleProgress.objects.filter(
@@ -305,9 +406,8 @@ def game_detail(request, game_id):
         )
     }
 
-    # Handle collectible type creation (for privileged users)
+    # Handle collectible type creation
     collectible_form = CollectibleTypeForm()
-
     if request.method == 'POST' and "add_collectible_type" in request.POST:
         collectible_form = CollectibleTypeForm(request.POST)
         if collectible_form.is_valid():
@@ -319,78 +419,37 @@ def game_detail(request, game_id):
         else:
             messages.error(request, "❌ Error adding collectible type. Please check your input.")
 
-    # Detect whether user is in the 'Privileged' group or is a superuser
+    # Privilege check
     is_privileged = request.user.is_superuser or request.user.groups.filter(name="Privileged").exists()
 
     # Achievement links
     achievement_links = game.links.all()
 
-    # # Description and achievements from RetroGameCache (legacy)
-    # cache = RetroGameCache.objects.filter(title=game.name).first()
-
-    # achievements = []
-    description = None
-    #
-    # if cache:
-    #     if isinstance(cache.achievements, list) and cache.achievements:
-    #         achievements = cache.achievements
-    #
-    #     data = cache.data or {}
-    #     description = cache.description or data.get("description") or data.get("summary")
-    #
-    #     if not achievements:
-    #         if isinstance(data.get("achievements"), list):
-    #             achievements = data["achievements"]
-    #         elif isinstance(data.get("Achievements"), dict):
-    #             achievements = list(data["Achievements"].values())
-
-    # RetroAchievements pairing suggestion logic
-    matches = []
-    if not game.retro_game:
-        all_titles = list(RetroGameEntry.objects.values_list('title', flat=True))
-        close_titles = get_close_matches(game.name, all_titles, n=20, cutoff=0.6)
-        matches = RetroGameEntry.objects.filter(title__in=close_titles)
-
-    if request.method == "POST" and "pair_ra_game" in request.POST:
-        selected_id = request.POST.get("retro_id")
-        if selected_id:
-            match = RetroGameEntry.objects.filter(id=selected_id).first()
-            if match:
-                game.retro_game = match
-                game.save()
-                messages.success(request, f"🕹️ Paired with RA game: {match.title}")
-
-                # 🎯 Add RetroAchievements direct link
-                links = get_game_links(game.name, retro_id=match.retro_id)
-                print ("DEBUG: links =", links)
-
-                if "retroachievements" in links:
-                    GameLink.objects.get_or_create(
-                        game=game,
-                        platform="retroachievements",
-                        defaults={"url": links["retroachievements"]}
-                    )
-
-                # Optionally fetch achievements in future
-                # try:
-                #     fetch_achievements_for_game(game=game, retro_id=match.retro_id)
-                #     messages.success(request, "🏆 Achievements fetched and stored successfully.")
-                # except Exception as e:
-                #     print(f"❌ Failed to fetch RA achievements: {e}")
-                #     messages.warning(request, "⚠️ Couldn't fetch achievements from RA at this time.")
-
-        return redirect("gaming:game_detail", game_id=game.id)
-
     return render(request, "gaming/game_detail.html", {
         "game": game,
-        "description": description,
+        "description": None,
         "achievement_links": achievement_links,
         "user_collectibles": user_progress,
         "collectible_form": collectible_form,
         "is_privileged": is_privileged,
-        "ra_matches": matches,
+        "progress": latest_progress,
     })
 
+@login_required
+@user_passes_test(is_privileged)
+def add_link_source(request, game_id):
+    game = get_object_or_404(Game, id=game_id)
+    source = request.POST.get("source")
+
+    if source == "retroachievements":
+        # Save selected source and redirect to pairing
+        request.session["selected_sources"] = ["retroachievements"]
+        messages.info(request, "🕹️ Please pair your game with a RetroAchievements entry.")
+        return redirect("gaming:retro_pairing", game_id=game.id)
+
+    # Generate normal links
+    request.session["selected_sources"] = [source]
+    return redirect("gaming:generate_game_links", game_id=game.id)
 
 def auto_fill_game_hours(game: Game):
     data = fetch_hltb_data(game.name)
@@ -406,3 +465,14 @@ def find_retro_matches(title, limit=5):
     close_titles = difflib.get_close_matches(title, all_titles, n=limit, cutoff=0.6)
 
     return RetroGameEntry.objects.filter(title__in=close_titles)
+
+@login_required
+@user_passes_test(is_privileged)
+def remove_game_link(request, game_id, link_id):
+    game = get_object_or_404(Game, id=game_id)
+    link = get_object_or_404(GameLink, id=link_id, game=game)
+
+    link.delete()
+    messages.success(request, f"🗑️ Removed link for {link.platform.capitalize()}.")
+
+    return redirect("gaming:game_detail", game_id=game.id)

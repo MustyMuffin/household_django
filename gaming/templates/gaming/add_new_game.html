@@ -50,12 +50,12 @@
         {% if 'trueachievements' in preserve_sources %}checked{% endif %}> TrueAchievements<br>
       <input type="checkbox" name="sources" value="steam"
         {% if 'steam' in preserve_sources %}checked{% endif %}> Steam<br>
-{#      <input type="checkbox" name="sources" value="retroachievements"#}
-{#        {% if 'retroachievements' in preserve_sources %}checked{% endif %}> RetroAchievements<br>#}
+      <input type="checkbox" name="sources" value="retroachievements"
+        {% if 'retroachievements' in preserve_sources %}checked{% endif %}> RetroAchievements<br>
       <input type="checkbox" name="sources" value="playstation"
         {% if 'playstation' in preserve_sources %}checked{% endif %}> PlayStation<br>
 
-    <button type="submit" class="btn btn-success">➕ Add Game</button>
+      <button type="submit" class="btn btn-success" disabled>➕ Add Game</button>
 
   </form>
 
@@ -72,73 +72,101 @@
     }
   </style>
 
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const searchForm = document.getElementById("search-form");
-      const resultsContainer = document.getElementById("game-results");
-      const addGameForm = document.getElementById("add-game-form");
-      const categorySelect = document.getElementById("category_id");
-      const newCategoryWrapper = document.getElementById("new-category-wrapper");
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const searchForm = document.getElementById("search-form");
+    const resultsContainer = document.getElementById("game-results");
+    const addGameForm = document.getElementById("add-game-form");
+    const categorySelect = document.getElementById("category_id");
+    const newCategoryWrapper = document.getElementById("new-category-wrapper");
+    const newCategoryInput = document.getElementById("new_category_name");
+    const submitButton = addGameForm.querySelector("button[type='submit']");
 
+    function toggleNewCategoryField() {
+      const isNew = categorySelect.value === "new";
+      newCategoryWrapper.style.display = isNew ? "block" : "none";
+      if (!isNew) {
+        newCategoryInput.value = "";
+      }
+    }
 
+    function validateSubmitButton() {
+      const categoryVal = categorySelect.value;
+      const newCatVal = newCategoryInput.value.trim();
 
-      categorySelect.addEventListener("change", function () {
-        newCategoryWrapper.style.display = this.value === "new" ? "block" : "none";
-      });
+      const isExistingSelected = categoryVal !== "" && categoryVal !== "new";
+      const isNewValid = categoryVal === "new" && newCatVal.length > 0;
 
-      searchForm.addEventListener("submit", async function (e) {
-        e.preventDefault();
-        resultsContainer.innerHTML = "🔎 Searching...";
-        addGameForm.style.display = "none";
+      submitButton.disabled = !(isExistingSelected || isNewValid);
+    }
 
-        const title = document.getElementById("game-title-search").value;
-        const source = document.getElementById("api-select").value;
+    categorySelect.addEventListener("change", () => {
+      toggleNewCategoryField();
+      validateSubmitButton();
+    });
 
-        try {
-          const res = await fetch(`/gaming/api/fetch_game_data/?q=${encodeURIComponent(title)}&source=${source}`);
-          const data = await res.json();
+    newCategoryInput.addEventListener("input", validateSubmitButton);
 
-          if (data.results?.length > 0) {
-            resultsContainer.innerHTML = "";
-            data.results.forEach(game => {
-              const card = document.createElement("div");
-              card.className = "game-result p-2 mb-2 border";
-              card.onclick = () => selectGame(game, card);
+    // Initial check
+    toggleNewCategoryField();
+    validateSubmitButton();
 
-              card.innerHTML = `
-                <div class="d-flex align-items-center">
-                  <img src="${game.image || ''}" alt="${game.title}" style="height: 50px; margin-right: 10px;">
-                  <div>
-                    <strong>${game.title}</strong><br>
-                    <small>${game.description || ''}</small>
-                  </div>
+    searchForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      resultsContainer.innerHTML = "🔎 Searching...";
+      addGameForm.style.display = "none";
+
+      const title = document.getElementById("game-title-search").value;
+      const source = document.getElementById("api-select").value;
+
+      try {
+        const res = await fetch(`/gaming/api/fetch_game_data/?q=${encodeURIComponent(title)}&source=${source}`);
+        const data = await res.json();
+
+        if (data.results?.length > 0) {
+          resultsContainer.innerHTML = "";
+          data.results.forEach(game => {
+            const card = document.createElement("div");
+            card.className = "game-result p-2 mb-2 border";
+            card.onclick = () => selectGame(game, card);
+
+            card.innerHTML = `
+              <div class="d-flex align-items-center">
+                <img src="${game.image || ''}" alt="${game.title}" style="height: 50px; margin-right: 10px;">
+                <div>
+                  <strong>${game.title}</strong><br>
+                  <small>${game.description || ''}</small>
                 </div>
-              `;
-              resultsContainer.appendChild(card);
-            });
-          } else {
-            resultsContainer.innerHTML = "<p>No results found.</p>";
-          }
-        } catch (err) {
-          console.error("Search error:", err);
-          resultsContainer.innerHTML = "<p class='text-danger'>Error fetching results.</p>";
+              </div>
+            `;
+            resultsContainer.appendChild(card);
+          });
+        } else {
+          resultsContainer.innerHTML = "<p>No results found.</p>";
         }
-      });
-
-      function selectGame(game, cardElement) {
-        document.querySelectorAll(".game-result").forEach(el => el.classList.remove("selected-result"));
-        cardElement.classList.add("selected-result");
-
-        document.getElementById("game-title").value = game.title || "";
-        document.getElementById("game-description").value = game.description || "";
-        document.getElementById("game-image-url").value = game.image || "";
-        document.getElementById("game-id").value = game.retro_id || game.id || "";
-        document.getElementById("game-source").value = game.source || "";
-        document.getElementById("game-hours").value = game.hours || 0;
-
-        addGameForm.style.display = "block";
-        window.scrollTo({ top: addGameForm.offsetTop, behavior: "smooth" });
+      } catch (err) {
+        console.error("Search error:", err);
+        resultsContainer.innerHTML = "<p class='text-danger'>Error fetching results.</p>";
       }
     });
-  </script>
+
+    function selectGame(game, cardElement) {
+      document.querySelectorAll(".game-result").forEach(el => el.classList.remove("selected-result"));
+      cardElement.classList.add("selected-result");
+
+      document.getElementById("game-title").value = game.title || "";
+      document.getElementById("game-description").value = game.description || "";
+      document.getElementById("game-image-url").value = game.image || "";
+      document.getElementById("game-id").value = game.retro_id || game.id || "";
+      document.getElementById("game-source").value = game.source || "";
+      document.getElementById("game-hours").value = game.hours || 0;
+
+      addGameForm.style.display = "block";
+      window.scrollTo({ top: addGameForm.offsetTop, behavior: "smooth" });
+
+      validateSubmitButton(); // ensure re-validation
+    }
+  });
+</script>
+
 {% endblock %}
