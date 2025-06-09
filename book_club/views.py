@@ -58,11 +58,16 @@ def book_detail(request, book_id):
     book = get_object_or_404(Book, id=book_id)
     book_entries = book.bookentry_set.order_by('-date_added')
     metadata = fetch_and_cache_metadata(book)
+    tracker = BookProgressTracker.objects.filter(user=request.user, book_name=book).first()
+    has_progress = tracker and tracker.words_completed > 0
 
     context = {
         'book': book,
         'book_entries': book_entries,
         'metadata': metadata,
+        "tracker": tracker,
+        "has_progress": has_progress,
+
     }
     return render(request, 'book_club/book.html', context)
 
@@ -189,6 +194,12 @@ def book_backlog(request):
         words_completed__gt=0,
     ).exclude(words_completed__gte=F('book_name__words'))
 
+    want_to_read_books = BookProgressTracker.objects.select_related('book_name').filter(
+        user=request.user,
+        words_completed=0,
+        want_to_read=True
+    )
+
     reading_times = {}
 
     for entry in in_progress_books:
@@ -198,7 +209,8 @@ def book_backlog(request):
 
     return render(request, 'book_club/book_backlog.html', {
         'in_progress_books': in_progress_books,
-        'reading_times': reading_times
+        'reading_times': reading_times,
+        'want_to_read_books': want_to_read_books,
     })
 
 @user_passes_test(is_privileged)
@@ -248,3 +260,11 @@ def add_new_book(request):
         "categories": categories,
     })
 
+@login_required
+def toggle_want_to_read(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+    tracker, created = BookProgressTracker.objects.get_or_create(user=request.user, book_name=book)
+    tracker.want_to_read = not tracker.want_to_read
+    tracker.save()
+
+    return redirect('book_club:book_detail', book_id=book.id)

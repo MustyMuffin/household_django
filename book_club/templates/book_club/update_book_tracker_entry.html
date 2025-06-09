@@ -15,8 +15,24 @@
         </div>
         <div class="mb-3">
           <label for="wordSlider" class="form-label">Words Completed</label>
-          <input type="range" class="form-range" id="wordSlider" min="0" max="{{ book.words }}" value="{{ form.words_completed.value }}" step="1">
-          {{ form.words_completed }}
+            <div class="mb-3">
+
+              <input
+                type="range"
+                class="form-range"
+                id="wordSlider"
+                name="slider"
+                min="0"
+                max="{{ book.words }}"
+                value="{{ form.words_completed.value|default_if_none:0 }}"
+                step="1"
+              >
+
+              <small class="text-muted">Words: <span id="sliderValue">{{ form.words_completed.value|default_if_none:0 }}</span></small>
+
+              {{ form.words_completed|add_class:"d-none"|attr:"id:id_words_completed" }}
+            </div>
+
         </div>
         <button type="submit" class="btn btn-primary">🕮 Update</button>
       </form>
@@ -30,14 +46,21 @@
                 <button name='submit' class="btn btn-sm btn-block btn-outline-primary">Completed?</button>
             </form>
     </div>
-<script>
-  const slider = document.getElementById("wordSlider");
-  const hiddenInput = document.getElementById("id_words_completed");
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const slider = document.getElementById("wordSlider");
+        const hiddenInput = document.getElementById("id_words_completed");
+        const sliderValue = document.getElementById("sliderValue");
 
-  slider.addEventListener("input", function () {
-    hiddenInput.value = this.value;
-  });
+        if (slider && hiddenInput && sliderValue) {
+          hiddenInput.value = slider.value;
+          sliderValue.textContent = slider.value;
 
-  hiddenInput.value = slider.value;
-</script>
+          slider.addEventListener("input", function () {
+            hiddenInput.value = this.value;
+            sliderValue.textContent = this.value;
+          });
+        }
+      });
+    </script>
 {% endblock %}

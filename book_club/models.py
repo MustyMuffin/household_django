@@ -45,6 +45,7 @@ class BookProgressTracker(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
     words_completed = models.IntegerField(default=0)
     text = models.CharField(max_length=100, default="Chapter 1")
+    want_to_read = models.BooleanField(default=False)
 
 class BookMetadata(models.Model):
     book = models.OneToOneField('Book', on_delete=models.CASCADE, related_name='metadata')

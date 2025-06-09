@@ -1,39 +1,62 @@
 {% extends 'household_main/base.html' %}
 
 {% block page_header %}
-  <h1>{{ book.text }}</h1>
+  <h1 class="mb-4">{{ book.text }}</h1>
 {% endblock page_header %}
 
 {% block content %}
-        {% if metadata %}
-          <p><strong>{{ metadata.title }}</strong> by {{ metadata.authors|join:", " }}</p>
-          {% if metadata.thumbnail_url %}
-            <img src="{{ metadata.thumbnail_url }}" alt="{{ metadata.title }}">
-          {% endif %}
-          {% if metadata.description %}
-            <p>{{ metadata.description }}</p>
-          {% endif %}
-          <p><a href="{{ metadata.external_url }}" target="_blank">View more</a></p>
-
-            <h6>Info from {{ metadata.source|title }}</h6>
-        {% else %}
-          <p>No external metadata available.</p>
+  {% if metadata %}
+    <div class="row mb-4">
+      <div class="col-md-3 text-center">
+        {% if metadata.thumbnail_url %}
+          <img src="{{ metadata.thumbnail_url }}" alt="{{ metadata.title }}" class="img-fluid rounded shadow-sm">
         {% endif %}
+      </div>
+      <div class="col-md-9">
+        <h3>{{ metadata.title }}</h3>
+        <p class="text-muted mb-1">by {{ metadata.authors|join:", " }}</p>
+        {% if metadata.description %}
+          <p>{{ metadata.description }}</p>
+        {% endif %}
+        <p>
+          <a href="{{ metadata.external_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+            🔗 View More
+          </a>
+        </p>
+        <small class="text-muted">Info from {{ metadata.source|title }}</small>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-muted">No external metadata available.</p>
+  {% endif %}
 
-    <p>
-    <a href="{% url 'book_club:new_book_entry' book.id %}">Add new entry</a>
+  <p>
+    <a href="{% url 'book_club:new_book_entry' book.id %}" class="btn btn-success btn-sm mb-3">
+      ➕ Add New Entry
+    </a>
   </p>
+    {% if tracker and not has_progress and not tracker.want_to_read %}
+      <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
+        {% csrf_token %}
+        <button class="btn btn-outline-warning btn-sm">📘 Mark as Want to Read</button>
+      </form>
+    {% elif tracker and tracker.want_to_read and not has_progress %}
+      <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
+        {% csrf_token %}
+        <button class="btn btn-warning btn-sm">📘 Remove from Want to Read</button>
+      </form>
+    {% endif %}
+
   {% for book_entry in book_entries %}
     <div class="card mb-3">
-      <!-- Card header with timestamp and edit link -->
-      <h4 class="card-header">
-        {{ book_entry.date_added|date:'M d, Y H:i' }}
-      </h4>
-      <!-- Card body with entry text -->
-      <div class="card-body">{{ book_entry.user|linebreaks }}</div>
+      <div class="card-header">
+        <strong>{{ book_entry.date_added|date:'M d, Y H:i' }}</strong>
+      </div>
+      <div class="card-body">
+        {{ book_entry.user|linebreaks }}
+      </div>
     </div>
   {% empty %}
-    <p>You haven't read this book yet. Get to it.</p>
+    <p class="text-muted">You haven't read this book yet. Get to it.</p>
   {% endfor %}
-
 {% endblock content %}
