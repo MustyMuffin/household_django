@@ -47,6 +47,35 @@
   <p class="text-muted mt-3">You have no books in progress.</p>
 {% endif %}
 
+{% if finished_books %}
+  <hr class="my-4">
+  <h4 class="mb-3">✅ Finished Books</h4>
+  <div class="row g-2 justify-content-center">
+    {% for entry in finished_books %}
+      <div class="col-6 col-md-3 col-lg-2">
+        <div class="card h-100 shadow-sm border-0 small mx-auto" style="max-width: 140px;">
+          {% if entry.book_name.metadata.thumbnail_url %}
+            <div class="text-center p-1">
+              <img src="{{ entry.book_name.metadata.thumbnail_url }}"
+                   class="img-fluid rounded"
+                   alt="Cover for {{ entry.book_name.title }}"
+                   style="max-height: 120px; object-fit: contain;">
+            </div>
+          {% endif %}
+          <div class="card-body p-2 d-flex flex-column">
+            <div class="fw-semibold mb-1 text-center" style="font-size: 0.85rem;">
+              <a href="{% url 'book_club:book_detail' entry.book_name.id %}" class="text-decoration-none">
+                {{ entry.book_name.title|truncatewords:5 }}
+              </a>
+            </div>
+            <div class="text-success text-center small">🎉 Completed</div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
 
 {% if want_to_read_books %}
   <hr class="my-4">

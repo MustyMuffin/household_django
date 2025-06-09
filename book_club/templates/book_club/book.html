@@ -35,12 +35,17 @@
       ➕ Add New Entry
     </a>
   </p>
-    {% if tracker and not has_progress and not tracker.want_to_read %}
+    {% if not tracker %}
       <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
         {% csrf_token %}
         <button class="btn btn-outline-warning btn-sm">📘 Mark as Want to Read</button>
       </form>
-    {% elif tracker and tracker.want_to_read and not has_progress %}
+    {% elif not has_progress and not tracker.want_to_read %}
+      <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
+        {% csrf_token %}
+        <button class="btn btn-outline-warning btn-sm">📘 Mark as Want to Read</button>
+      </form>
+    {% elif tracker.want_to_read and not has_progress %}
       <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
         {% csrf_token %}
         <button class="btn btn-warning btn-sm">📘 Remove from Want to Read</button>

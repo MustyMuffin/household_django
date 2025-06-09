@@ -14,8 +14,8 @@ urlpatterns = [
 
     # Book entries and trackers
     path('new_book_entry/<int:book_id>/', views.new_book_entry, name='new_book_entry'),
-    path('new_book_tracker_entry/<int:book_id>/', views.new_book_tracker_entry, name='new_book_tracker_entry'),
-    path('update_book_tracker_entry/<int:pk>/', views.update_book_tracker_entry, name='update_book_tracker_entry'),
+    path('book/track/<int:book_id>/', views.book_tracker_entry, name='new_book_tracker_entry'),
+    path('book/update/<int:pk>/', views.book_tracker_entry, name='update_book_tracker_entry'),
     path('toggle_want_to_read/<int:book_id>/', views.toggle_want_to_read, name='toggle_want_to_read'),
 
 

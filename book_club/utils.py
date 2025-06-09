@@ -9,7 +9,7 @@ def update_badges_for_books(user, book, words_increment, request=None):
     if tracker and tracker.words_completed < book.words:
         return
 
-    BooksRead.objects.get_or_create(user=user, book_name=book.title)
+    BooksRead.objects.get_or_create(user=user, book_name=book)
 
     books_read_total = BooksRead.objects.filter(user=user).count()
 

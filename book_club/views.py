@@ -7,7 +7,7 @@ from book_club.utils import update_badges_for_books
 from accounts.badge_helpers import check_and_award_badges
 from accounts.xp_helpers import award_xp
 from .forms import BookEntryForm, BookForm, BookProgressTrackerForm
-from .models import Book, BookProgressTracker, BookCategory
+from .models import Book, BookProgressTracker, BookCategory, BooksRead
 from accounts.models import UserStats
 from django.contrib.auth.decorators import user_passes_test
 from .api_combined import fetch_and_cache_metadata
@@ -59,7 +59,11 @@ def book_detail(request, book_id):
     book_entries = book.bookentry_set.order_by('-date_added')
     metadata = fetch_and_cache_metadata(book)
     tracker = BookProgressTracker.objects.filter(user=request.user, book_name=book).first()
-    has_progress = tracker and tracker.words_completed > 0
+    has_progress = tracker and tracker.words_completed and tracker.words_completed > 0
+    want_to_read = tracker.want_to_read if tracker else False
+
+    finished_books = BooksRead.objects.filter(user=request.user)
+    print("DEBUG = finished_books = ", finished_books)
 
     context = {
         'book': book,
@@ -67,7 +71,8 @@ def book_detail(request, book_id):
         'metadata': metadata,
         "tracker": tracker,
         "has_progress": has_progress,
-
+        'want_to_read': want_to_read,
+        "finished_books": finished_books,
     }
     return render(request, 'book_club/book.html', context)
 
@@ -141,50 +146,52 @@ def new_book_entry(request, book_id):
 
 
 @login_required
-def new_book_tracker_entry(request, book_id):
-    book = get_object_or_404(Book, id=book_id)
-    existing_entry = BookProgressTracker.objects.filter(user=request.user, book_name=book).first()
-
-    if existing_entry and request.method != 'POST':
-        messages.warning(request, "You've already logged progress for this book.")
-        return redirect('book_club:update_book_tracker_entry', pk=existing_entry.pk)
-
-    form = BookProgressTrackerForm(request.POST or None)
+def book_tracker_entry(request, book_id=None, pk=None):
+    # Determine mode: new or update
+    if pk:
+        entry = get_object_or_404(BookProgressTracker, pk=pk, user=request.user)
+        book = entry.book_name
+        form = BookProgressTrackerForm(request.POST or None, instance=entry)
+        mode = 'update'
+        old_words = entry.words_completed
+    else:
+        book = get_object_or_404(Book, id=book_id)
+        existing_entry = BookProgressTracker.objects.filter(user=request.user, book_name=book).first()
+        if existing_entry and request.method != 'POST':
+            messages.warning(request, "You've already logged progress for this book.")
+            return redirect('book_club:update_book_tracker_entry', pk=existing_entry.pk)
+        form = BookProgressTrackerForm(request.POST or None)
+        mode = 'new'
 
     if request.method == 'POST' and form.is_valid():
         words = int(form.cleaned_data['words_completed'])
+        if mode == 'new':
+            form.instance.book_name = book
+            form.instance.user = request.user
+            form.instance.words_completed = words
+            form.save()
+            log_words(request.user, words, book, request)
+        else:
+            progress = words - old_words
+            form.save()
+            if progress > 0:
+                log_words(request.user, progress, book, request)
+            messages.success(request, f"✅ Updated progress for '{book}'")
 
-        form.instance.book_name = book
-        form.instance.user = request.user
-        form.instance.words_completed = words
-        form.save()
-
-        log_words(request.user, words, book, request)
         return redirect('book_club:books_by_category')
 
-    return render(request, 'book_club/new_book_tracker_entry.html', {'form': form, 'book': book})
+    words_value = (
+        form.cleaned_data.get("words_completed")
+        if form.is_bound
+        else form.initial.get("words_completed", 0)
+    )
 
-
-@login_required
-def update_book_tracker_entry(request, pk):
-    entry = get_object_or_404(BookProgressTracker, pk=pk, user=request.user)
-    book = entry.book_name
-    old_words = entry.words_completed
-
-    form = BookProgressTrackerForm(request.POST or None, instance=entry)
-
-    if request.method == 'POST' and form.is_valid():
-        new_words = form.cleaned_data['words_completed']
-        progress = new_words - old_words
-        form.save()
-
-        if progress > 0:
-            log_words(request.user, progress, book, request)
-
-        messages.success(request, f"✅ Updated progress for '{book}'")
-        return redirect('book_club:books_by_category')
-
-    return render(request, 'book_club/update_book_tracker_entry.html', {'form': form, 'book': book})
+    return render(request, "book_club/book_tracker_entry.html", {
+        "form": form,
+        "book": book,
+        "mode": mode,
+        "words_value": words_value,
+    })
 
 
 @login_required
@@ -207,10 +214,14 @@ def book_backlog(request):
         if isinstance(result, dict) and "total_minutes" in result:
             reading_times[entry.book_name.id] = result
 
+    finished_books = BooksRead.objects.filter(user=request.user)
+    print("DEBUG = finished_books = ", finished_books)
+
     return render(request, 'book_club/book_backlog.html', {
         'in_progress_books': in_progress_books,
         'reading_times': reading_times,
         'want_to_read_books': want_to_read_books,
+        'finished_books': finished_books,
     })
 
 @user_passes_test(is_privileged)

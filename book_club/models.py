@@ -35,8 +35,11 @@ class BookEntry(models.Model):
 class BooksRead(models.Model):
     """For tracking books read"""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    book_name = models.CharField(max_length=20, default="BoomWhacker")
+    book_name = models.ForeignKey(Book, on_delete=models.CASCADE)
     date_added = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'book_name')
 
 class BookProgressTracker(models.Model):
     """For tracking book progress and awarding xp for books still in progress."""
