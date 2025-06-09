@@ -19,7 +19,7 @@ class GameEntryForm(forms.ModelForm):
 class GameProgressTrackerForm(forms.ModelForm):
     class Meta:
         model = GameProgress
-        fields = ['hours_played', 'beaten', 'note']
+        fields = ['hours_played', 'beaten', 'mastered', 'note']
 
 class CollectibleTypeForm(forms.ModelForm):
     class Meta:

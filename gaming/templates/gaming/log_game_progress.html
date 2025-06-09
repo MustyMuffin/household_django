@@ -32,6 +32,25 @@
         </label>
     </div>
 
+    <div class="form-check mb-3">
+  <input class="form-check-input" type="checkbox" name="mastered" id="id_mastered"
+         {% if form.mastered.value %}
+         checked
+         {% endif %}
+         {% if already_mastered %}
+         disabled
+         {% endif %}>
+  <label class="form-check-label
+          {% if already_mastered %}
+          text-muted
+          {% endif %}" for="id_mastered">
+          🏆 I mastered this game
+          {% if already_mastered %}
+            <span class="ms-2">(Already marked as mastered)</span>
+          {% endif %}
+  </label>
+</div>
+
     <div class="mb-3">
         <label for="id_note" class="form-label">📝 Notes (optional)</label>
         <textarea name="note" class="form-control" id="id_note" rows="2">{{ form.note.value }}</textarea>

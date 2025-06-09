@@ -35,6 +35,7 @@ class GameProgress(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="progress_logs")
     hours_played = models.DecimalField(max_digits=5, decimal_places=2)
     beaten = models.BooleanField(default=False)
+    mastered = models.BooleanField(default=False)
     note = models.TextField(blank=True, null=True)
     logged_at = models.DateTimeField(auto_now_add=True)
 

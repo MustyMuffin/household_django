@@ -123,6 +123,7 @@ def log_game_progress(request, game_id):
 
             delta = new_hours - old_hours
             print(f"📊 Old hours: {old_hours}, New hours: {new_hours}, Delta: {delta}")
+            print("DEBUG beaten:", beaten)
 
             was_new_entry = not progress_entry  # Track if this is a new GameProgress
 
@@ -196,11 +197,16 @@ def log_game_progress(request, game_id):
         UserCollectibleProgress.objects.filter(user=request.user, collectible_type__game=game)
     }
 
+    already_mastered = GameProgress.objects.filter(
+        user=request.user, game=game, mastered=True
+    ).exists()
+
     return render(request, "gaming/log_game_progress.html", {
         "form": form,
         "game": game,
         "is_update": bool(progress_entry),
         "already_beaten": already_beaten,
+        "already_mastered": already_mastered,
         "user_collectibles": user_collectibles,
     })
 
@@ -233,11 +239,19 @@ def log_hours(user, hours_played, game, request=None):
 @login_required
 def game_backlog(request):
     in_progress_games = GameProgress.objects.select_related('game').filter(
-        user=request.user
+        user=request.user, beaten=False,
+    )
+    beaten_games = GameProgress.objects.select_related('game').filter(
+        user=request.user, beaten=True,
+    )
+    mastered_games = GameProgress.objects.select_related('game').filter(
+        user=request.user, mastered=True,
     )
 
     return render(request, 'gaming/game_backlog.html', {
-        'in_progress_games': in_progress_games
+        'in_progress_games': in_progress_games,
+        'beaten_games': beaten_games,
+        'mastered_games': mastered_games,
     })
 
 @login_required
