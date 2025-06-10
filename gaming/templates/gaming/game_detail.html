@@ -1,0 +1,216 @@
+{% extends "household_main/base.html" %}
+{% load get_item_filter %}
+{% load gaming_extras %}
+
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card p-3 shadow rounded-3">
+    <div class="d-flex align-items-center">
+      {% if game.image_url %}
+        <img src="{{ game.image_url }}" alt="{{ game.name }}" style="height: 100px; margin-right: 20px;">
+      {% endif %}
+      <div>
+        <h2>{{ game.name }}</h2>
+        {% if game.game_category %}
+          <p>🎮 Category: <strong>{{ game.game_category.name }}</strong></p>
+        {% endif %}
+
+        <h5 class="mt-3">🕒 Time to Beat Estimates</h5>
+      <ul class="list-group mb-3">
+        <li class="list-group-item">
+          <strong>Main Story:</strong> {{ game.hours_main_story }} hours
+        </li>
+        <li class="list-group-item">
+          <strong>Main + Extra:</strong> {{ game.hours_main_extra }} hours
+        </li>
+        <li class="list-group-item">
+          <strong>Completionist:</strong> {{ game.hours_completionist }} hours
+        </li>
+      </ul>
+
+      </div>
+    </div>
+
+          <div class="d-flex justify-content-between align-items-start mt-3">
+          {% if progress %}
+            <div class="small text-muted">
+              <p class="mb-1">🕒 Hours Played: {{ progress.hours_played }}</p>
+              <p class="mb-1">
+                {% if progress.beaten %}
+                  ✅ Game Beaten
+                {% else %}
+                  ❌ Not Beaten
+                {% endif %}
+              </p>
+                <p class="mb-1">
+                {% if progress.mastered %}
+                  🏆 Game Mastered
+                {% else %}
+                  ❌ Not Mastered
+                {% endif %}
+              </p>
+              {% if progress.note %}
+                <p class="mb-1">📝 Note: <em>{{ progress.note }}</em></p>
+              {% endif %}
+              <p class="mb-0 text-muted">📅 Last Log: {{ progress.logged_at|date:"M d, Y H:i" }}</p>
+            </div>
+          {% endif %}
+
+          <a href="{% url 'gaming:log_game_progress' game.id %}" class="btn btn-sm btn-primary ms-3">
+            🎮 Log Progress
+          </a>
+        </div>
+
+        <div class="mt-4">
+          <h5 class="fw-semibold small">🧩 Collectibles</h5>
+
+          {% if game.collectible_types.all %}
+            <ul class="list-group list-group-flush small">
+              {% for collectible in game.collectible_types.all %}
+                <li class="list-group-item py-1 px-2 d-flex justify-content-between align-items-center">
+                  <span>{{ collectible.name }}</span>
+                  <span class="badge bg-primary rounded-pill">
+                    {{ user_collectibles|dict_get:collectible.id|default:0 }} / {{ collectible.total_available }}
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted small mb-2">No collectibles defined for this game yet.</p>
+          {% endif %}
+        </div>
+
+        {% if is_privileged %}
+          <div class="mt-3">
+            <!-- Toggle Button -->
+            <h6 class="small fw-semibold">
+              <a class="text-decoration-none" data-bs-toggle="collapse" href="#addCollectibleForm" role="button" aria-expanded="false" aria-controls="addCollectibleForm">
+                ➕ Add Collectible
+              </a>
+            </h6>
+
+            <!-- Collapsible Form -->
+            <div class="collapse" id="addCollectibleForm">
+              <form method="post" class="d-flex flex-column gap-2 mt-2">
+                {% csrf_token %}
+                {{ collectible_form.as_p }}
+                <button type="submit" name="add_collectible_type" class="btn btn-sm btn-outline-secondary w-auto align-self-start">
+                  ➕ Add
+                </button>
+              </form>
+            </div>
+          </div>
+        {% endif %}
+
+
+    {% if description %}
+      <hr>
+      <p>{{ description }}</p>
+    {% endif %}
+
+        <ul>
+          {% for link in achievement_links %}
+            <li class="d-flex justify-content-between align-items-center">
+              <div>
+                {% if link.platform == "trueachievements" %}
+                  🏆 TrueAchievements
+                {% elif link.platform == "steam" %}
+                  💻 Steam
+                {% elif link.platform == "retroachievements" %}
+                  🕹️ RetroAchievements
+                {% elif link.platform == "playstation" %}
+                  🎮 PlayStation
+                {% else %}
+                  ❓ Unknown platform
+                {% endif %}
+                <a href="{{ link.url }}" target="_blank">{{ link.platform|capfirst }}</a>
+              </div>
+              {% if is_privileged %}
+                <form method="post" action="{% url 'gaming:remove_game_link' game.id link.id %}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-outline-danger ms-2">Remove</button>
+                </form>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+
+       {% if is_privileged %}
+      <div class="mt-4">
+        <form method="post" action="{% url 'gaming:add_link_source' game.id %}" class="d-flex align-items-center gap-2">
+          {% csrf_token %}
+          <select name="source" class="form-select form-select-sm w-auto">
+            <option disabled selected>Choose source...</option>
+            <option value="trueachievements">🏆 TrueAchievements</option>
+            <option value="steam">💻 Steam</option>
+            <option value="playstation">🎮 PlayStation</option>
+            <option value="retroachievements">🕹️ RetroAchievements</option>
+          </select>
+          <button type="submit" class="btn btn-sm btn-outline-secondary">➕ Add Link</button>
+        </form>
+      </div>
+    {% endif %}
+
+          {% if not game.retro_game and ra_matches %}
+            <hr>
+            <h5>🕹️ Pair with RetroAchievements</h5>
+            <form method="post">
+              {% csrf_token %}
+              <input type="hidden" name="pair_ra_game" value="1">
+              <div class="mb-3">
+                <label for="retro_id">Select Closest Match:</label>
+                <select name="retro_id" class="form-select">
+                  {% for match in ra_matches %}
+                    <option value="{{ match.id }}">{{ match.title }} ({{ match.console_name }})</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button type="submit" class="btn btn-outline-success">Pair Game</button>
+            </form>
+
+            {% elif game.retro_game %}
+              <hr>
+              <h5>🎯 Paired with RetroAchievements</h5>
+              <p><strong>{{ game.retro_game.title }}</strong> — {{ game.retro_game.console_name }}</p>
+
+              <div class="d-flex gap-2">
+                <form method="post" action="{% url 'gaming:unpair_retro_game' game.id %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm w-100">Unpair</button>
+                </form>
+
+                <a href="{% url 'gaming:retro_pairing' game.id %}" class="btn btn-outline-primary btn-sm w-100">
+                  Re-pair
+                </a>
+              </div>
+            {% endif %}
+
+        {% if achievements %}
+          <hr>
+          <h4>🏆 RetroAchievements</h4>
+          <div class="accordion" id="achievementsAccordion">
+            {% for achievement in achievements %}
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                          data-bs-target="#collapse-{{ forloop.counter }}" aria-expanded="false"
+                          aria-controls="collapse-{{ forloop.counter }}">
+                    {{ achievement.Title }}
+                  </button>
+                </h2>
+                <div id="collapse-{{ forloop.counter }}" class="accordion-collapse collapse"
+                     aria-labelledby="heading-{{ forloop.counter }}" data-bs-parent="#achievementsAccordion">
+                  <div class="accordion-body">
+                    <img src="{{ achievement.BadgeURL }}" alt="Badge" class="img-fluid mb-2" style="max-height: 64px;">
+                    <p><strong>Points:</strong> {{ achievement.Points }}</p>
+                    <p>{{ achievement.Description }}</p>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+  </div>
+</div>
+{% endblock %}

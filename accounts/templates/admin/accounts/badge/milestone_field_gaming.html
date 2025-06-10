@@ -1,0 +1,26 @@
+<div class="form-row field-milestone_type">
+  <div>
+    <label for="id_milestone_type" class="required">Gaming Milestone Type:</label>
+    <select name="milestone_type" class="vSelect" required id="id_milestone_type">
+      <option value="hours_played" {% if badge.milestone_type == "hours_played" %}selected{% endif %}>Hours Played</option>
+      <option value="games_beaten" {% if badge.milestone_type == "games_beaten" %}selected{% endif %}>Games Beaten</option>
+      <option value="all_collectibles" {% if badge.milestone_type == "all_collectibles" %}selected{% endif %}>All Collectibles</option>
+      <option value="game_completion_combo" {% if badge.milestone_type == "game_completion_combo" %}selected{% endif %}>Game Completion Combo</option>
+    </select>
+    <p class="help">Select the type of milestone this badge tracks.</p>
+  </div>
+</div>
+
+{% if badge.milestone_type == "game_completion_combo" %}
+  <div class="form-row field-game">
+    <label for="id_game" class="required">Select Game:</label>
+    <select name="game" id="id_game" required>
+      {% for game in games %}
+        <option value="{{ game.id }}" {% if badge.game and badge.game.id == game.id %}selected{% endif %}>
+          {{ game.name }}
+        </option>
+      {% endfor %}
+    </select>
+    <p class="help">This badge will be awarded when the user beats the game, logs all collectibles, and meets the required playtime.</p>
+  </div>
+{% endif %}

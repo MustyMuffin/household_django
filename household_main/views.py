@@ -9,6 +9,7 @@ from django.shortcuts import render
 
 from .forms import NoteForm, EntryForm
 from .models import Note, Entry
+from gaming.models import GamesBeaten
 
 
 @login_required
@@ -19,6 +20,10 @@ def index(request):
     books_read_list = BooksRead.objects.filter(user=user).order_by('-date_added')
     words_read_entry = UserStats.objects.filter(user=user).first()
     total_words_read = words_read_entry.words_read if words_read_entry else 0
+
+    games_beaten_list = GamesBeaten.objects.filter(user=user).order_by('-date_added')
+    hours_played_entry = UserStats.objects.filter(user=user).first()
+    total_hours_played = hours_played_entry.hours_played if hours_played_entry else 0
 
     books_leaderboard = UserStats.objects.select_related('user').order_by('-words_read')
     earnings_leaderboard = EarnedWage.objects.select_related('user').order_by('-earnedLifetime')
@@ -45,12 +50,15 @@ def index(request):
         overall = xp_context(stats.overall_xp, stats.overall_level, "overall")
         chore = xp_context(stats.chore_xp, stats.chore_level, "chore")
         reading = xp_context(stats.reading_xp, stats.reading_level, "reading")
+        gaming = xp_context(stats.gaming_xp, stats.gaming_level, "gaming")
     else:
         overall = chore = reading = xp_context(0, 1)
 
     context = {
         'books_read_list': books_read_list,
         'total_words_read': total_words_read,
+        'games_beaten_list': games_beaten_list,
+        'total_hours_played': total_hours_played,
         'wage_earned': wage_earned,
         'lifetime_earned': lifetime_earned,
         'books_leaderboard': books_leaderboard,
@@ -60,12 +68,14 @@ def index(request):
         **{f"overall_{k}": v for k, v in overall.items()},
         **{f"chore_{k}": v for k, v in chore.items()},
         **{f"reading_{k}": v for k, v in reading.items()},
+        **{f"gaming_{k}": v for k, v in gaming.items()},
 
         # Optional: for looping
         'xp_sections': [
-            {"label": "Your Overall Level Progress", "color": "info", **overall},
-            {"label": "Your Chore Level Progress", "color": "warning", **chore},
-            {"label": "Your Reading Level Progress", "color": "success", **reading},
+            {"label": "Overall Level", "color": "info", **overall},
+            {"label": "Chore Level", "color": "warning", **chore},
+            {"label": "Reading Level", "color": "success", **reading},
+            {"label": "Gaming Level", "color": "success", **gaming},
         ]
     }
 

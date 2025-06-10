@@ -15,6 +15,7 @@ def award_xp(user, source_object=None, reason="", source_type="chore", override_
     old_level = userstats.overall_level
     old_level_chores = userstats.chore_level
     old_level_reading = userstats.reading_level
+    old_level_gaming = userstats.gaming_level
 
     xp_settings = XPSettings.objects.first() or XPSettings(base=100, exponent=1.25)
 
@@ -33,19 +34,36 @@ def award_xp(user, source_object=None, reason="", source_type="chore", override_
             xp_awarded = int(Decimal(source_object) * xp_settings.xp_per_word)
             userstats.reading_xp += xp_awarded
 
+        elif source_type == "game_partial" and source_object:
+            try:
+                hours_played = Decimal(source_object)
+                print("DEBUG:hours_played = ", hours_played)
+                xp_awarded = int(hours_played * xp_settings.xp_per_hour_gamed) if hours_played > 0 else 0
+                print("DEBUG xp_awarded = ", xp_awarded)
+
+                userstats.gaming_xp += xp_awarded
+            except (TypeError, ValueError, InvalidOperation):
+                print("EXCEPT DEBUG xp_awarded = ", xp_awarded)
+                xp_awarded = 0
+
         elif source_type == "finished_book":
             xp_awarded = xp_settings.xp_per_book
             userstats.reading_xp += xp_awarded
 
+        elif source_type == "finished_game":
+            xp_awarded = xp_settings.xp_per_game_beaten
+            userstats.gaming_xp += xp_awarded
+
     userstats.overall_xp += xp_awarded
 
-    userstats.save(update_fields=["overall_xp", "chore_xp", "reading_xp"])
+    userstats.save(update_fields=["overall_xp", "chore_xp", "reading_xp", "gaming_xp"])
 
     userstats.update_levels()
 
     new_level = userstats.overall_level
     new_level_chores = userstats.chore_level
     new_level_reading = userstats.reading_level
+    new_level_gaming = userstats.gaming_level
 
     if request:
         from django.contrib import messages
@@ -72,6 +90,14 @@ def award_xp(user, source_object=None, reason="", source_type="chore", override_
                 url=reverse('accounts:user_profile', args=[user.username])
             )
 
+        if new_level_gaming > old_level_gaming:
+            messages.success(request, f"🎮 You reached Gaming Level {new_level_gaming}!")
+            Notification.objects.create(
+                user=user,
+                message=f"🎉 Level up! 🎮 You reached Gaming Level {new_level_gaming}.",
+                url=reverse('accounts:user_profile', args=[user.username])
+            )
+
     XPLog.objects.create(user=user, amount=xp_awarded, reason=reason)
 
     return {
@@ -85,4 +111,5 @@ def award_xp(user, source_object=None, reason="", source_type="chore", override_
         "old_level_reading": old_level_reading,
         "new_level_reading": userstats.reading_level,
         "reading_leveled_up": userstats.reading_level > old_level_reading,
+        "gaming_leveled_up": userstats.gaming_level > old_level_gaming,
     }

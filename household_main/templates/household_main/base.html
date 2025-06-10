@@ -76,6 +76,9 @@
         <li class="nav-item">
           <a class="nav-link" href="{% url 'book_club:books_by_category' %}">Books</a>
         </li>
+          <li class="nav-item">
+          <a class="nav-link" href="{% url 'gaming:games_by_category' %}">Games</a>
+        </li>
       </ul>
 
 
@@ -83,45 +86,69 @@
       <ul class="navbar-nav ms-auto mb-2 mb-md-0">
           <li class="nav-item">
           {% if user.is_authenticated %}
-          </li>
-              <div class="dropdown">
-              <button class="btn btn-sm btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                Notifications ({{ unread_count }})
-              </button>
-              <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
-                {% if unread_notifications %}
-                  {% for message in unread_notifications %}
+              <!-- 🔔 Notifications Dropdown -->
+              <div class="dropdown d-inline me-2">
+                <button class="btn btn-sm btn-info dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                  Notifications ({{ unread_count }})
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" style="min-width: 300px;">
+                  {% if unread_notifications %}
                     <li>
-                      <a class="dropdown-item fw-bold" href="{% url 'scheduling:read_notification' message.id %}">
-                        {{ message.message }}
+                      <a class="dropdown-item text-danger text-center fw-bold" href="{% url 'scheduling:clear_all_notifications' %}">
+                        🧹 Clear All
                       </a>
                     </li>
-                  {% endfor %}
-                {% else %}
-                  <li class="dropdown-item text-muted">No notifications</li>
-                {% endif %}
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-center" href="{% url 'scheduling:all_notifications' %}">See all</a></li>
-              </ul>
-            </div>
+                    <li><hr class="dropdown-divider"></li>
+                    {% for message in unread_notifications %}
+                      <li>
+                        <a class="dropdown-item fw-bold" href="{% url 'scheduling:read_notification' message.id %}">
+                          {{ message.message }}
+                        </a>
+                      </li>
+                    {% endfor %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <a class="dropdown-item text-center" href="{% url 'scheduling:all_notifications' %}">
+                        See all
+                      </a>
+                    </li>
+                  {% else %}
+                    <li class="dropdown-item text-muted text-center">No notifications</li>
+                  {% endif %}
+                </ul>
+              </div>
 
-          <li class="nav-item">
-            <form action="{% url 'accounts:logout' %}" method="post" class="d-inline">
-              {% csrf_token %}
-              <button name="submit" class="btn btn-outline-secondary btn-sm ms-2">
-                Log out
-              </button>
-            </form>
-          </li>
-        {% else %}
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'accounts:register' %}">Register</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{% url 'accounts:login' %}">Log in</a>
-          </li>
-        {% endif %}
-      </ul>
+              <!-- 🛠 Admin/User Dropdown -->
+              <div class="dropdown d-inline">
+                <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                  🧑 {{ user.username }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  {% if is_privileged %}
+                    <li><a class="dropdown-item" href="/admin/">🔐 Django Admin</a></li>
+                  {% endif %}
+                  <li><a class="dropdown-item" href="{% url 'accounts:user_profile' user.username %}">👤 Profile</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <form action="{% url 'accounts:logout' %}" method="post" class="px-3">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-sm btn-outline-secondary w-100">🚪 Log out</button>
+                    </form>
+                  </li>
+                </ul>
+              </div>
+
+            {% else %}
+              <!-- 👥 Guest Links -->
+              <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'accounts:register' %}">Register</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'accounts:login' %}">Log in</a>
+                </li>
+              </ul>
+            {% endif %}
 
     </div> <!-- /.collapse -->
   </div> <!-- /.container-fluid -->

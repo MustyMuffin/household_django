@@ -1,0 +1,27 @@
+{% extends 'household_main/base.html' %}
+
+{% block page_header %}
+  <h1>🧹 Add Chore</h1>
+{% endblock page_header %}
+
+{% block content %}
+<h2>Add New Chore</h2>
+<form method="post">
+  {% csrf_token %}
+  <div class="mb-3">
+    {{ form.text.label_tag }} {{ form.text }}
+  </div>
+  <div class="mb-3">
+    {{ form.wage.label_tag }} {{ form.wage }}
+  </div>
+  <div class="mb-3">
+    {{ form.selected_cat_id.label_tag }} {{ form.selected_cat_id }}
+  </div>
+  <div class="mb-3">
+    {{ form.new_category_name.label_tag }} {{ form.new_category_name }}
+    <small class="form-text text-muted">{{ form.new_category_name.help_text }}</small>
+  </div>
+  <button type="submit" class="btn btn-primary">Add Chore</button>
+</form>
+
+{% endblock content %}

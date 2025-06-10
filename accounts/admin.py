@@ -6,11 +6,15 @@ from .forms import BadgeMilestoneForm
 from .models import (UserStats, XPLog, XPSettings, Badge,
                      UserBadge, XPTable)
 
-admin.site.register(UserStats)
 admin.site.register(XPLog)
-admin.site.register(XPTable)
+# admin.site.register(XPTable)
 # admin.site.register(ChoreXPTable)
 # admin.site.register(ReadingXPTable)
+
+@admin.register(UserStats)
+class UserStatsAdmin(admin.ModelAdmin):
+    list_display = ("user", "ra_username")
+    search_fields = ("user__username", "ra_username")
 
 @admin.register(XPSettings)
 class XPSettingsAdmin(admin.ModelAdmin):
@@ -33,9 +37,6 @@ class BadgeAdmin(admin.ModelAdmin):
 
     form = BadgeMilestoneForm
 
-    class Media:
-        js = ('admin/js/badge_dynamic.js',)
-
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -46,6 +47,7 @@ class BadgeAdmin(admin.ModelAdmin):
             ),
         ]
         return custom_urls + urls
+
 
 def get_changeform_template(request, obj=None, **kwargs):
     return 'accounts/templates/admin/accounts/badge/change_form.html'

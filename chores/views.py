@@ -13,9 +13,54 @@ from accounts.badge_helpers import check_and_award_badges, BadgeProgressProvider
 from accounts.models import UserStats
 from accounts.xp_helpers import award_xp
 from chores.utils import process_chore_completion
-from chores.forms import ChoreEntryForm, PartialPayoutForm
-from chores.models import Chore, EarnedWage, ChoreEntry, PayoutLog
+from chores.forms import ChoreEntryForm, PartialPayoutForm, ChoreForm
+from chores.models import Chore, EarnedWage, ChoreEntry, PayoutLog, ChoreCategory
+from functools import wraps
 
+def is_privileged(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        user = request.user
+        if not user.is_authenticated or not user.groups.filter(name='Privileged').exists():
+            return redirect('not_authorized')  # Or use messages and redirect somewhere safe
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+@is_privileged
+@login_required
+def add_new_chore(request):
+    if request.method == "POST":
+        form = ChoreForm(request.POST)
+        if form.is_valid():
+            name = form.cleaned_data.get("text")
+            wage = form.cleaned_data.get("wage")
+
+            selected_cat_id = request.POST.get("selected_cat_id")
+            new_category_name = request.POST.get("new_category_name", "").strip()
+            category = None
+
+            if selected_cat_id == "new" and new_category_name:
+                category, _ = ChoreCategory.objects.get_or_create(name=new_category_name)
+            elif selected_cat_id:
+                category = ChoreCategory.objects.filter(id=selected_cat_id).first()
+
+            if not category:
+                messages.error(request, "Please select or create a valid category.")
+                return render(request, "chores/add_new_chore.html", {"form": form})
+
+            Chore.objects.create(
+                text=name,
+                wage=wage or Decimal("0.00"),
+                chore_category=category
+            )
+
+            messages.success(request, "✅ New chore added successfully.")
+            return redirect("chores:chores_by_category")
+
+    else:
+        form = ChoreForm()
+
+    return render(request, "chores/add_new_chore.html", {"form": form})
 
 @BadgeProgressProvider.register("chores")
 def chore_progress(badge, user):
@@ -171,3 +216,5 @@ def reset_earned_wage(request, user_id):
     earned.earnedSincePayout = 0
     earned.save()
     return redirect('chores:payout')
+
+

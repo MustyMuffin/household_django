@@ -5,7 +5,7 @@ from django.apps import apps
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import XPSettings, XPTable, ChoreXPTable, ReadingXPTable
+from .models import XPSettings, XPTable, ChoreXPTable, ReadingXPTable, GamingXPTable
 
 
 @receiver(post_save, sender=User)
@@ -28,7 +28,7 @@ def create_default_xp_settings(sender, **kwargs):
             XPSettings.objects.create(base=50, exponent=0.75)
             print("Default XPSettings created after migration.")
         else:
-            print("ℹXPSettings already exists. No action needed.")
+            print("XPSettings already exists. No action needed.")
     else:
         print("Skipped creating XPSettings: table does not exist yet.")
 
@@ -40,11 +40,14 @@ def generate_xp_tables(sender, instance, created, **kwargs):
     chore_curve = instance.chore_exponent
     reading_base = instance.reading_base
     reading_curve = instance.reading_exponent
+    gaming_base = instance.gaming_base
+    gaming_curve = instance.gaming_exponent
     max_level = 100
 
     XPTable.objects.all().delete()
     ChoreXPTable.objects.all().delete()
     ReadingXPTable.objects.all().delete()
+    GamingXPTable.objects.all().delete()
 
     with connection.cursor() as cursor:
         db_engine = connection.vendor
@@ -69,6 +72,11 @@ def generate_xp_tables(sender, instance, created, **kwargs):
 
     ReadingXPTable.objects.bulk_create([
         ReadingXPTable(reading_level=level, reading_xp_required=int(reading_base * (level ** reading_curve)))
+        for level in range(2, max_level + 1)
+    ])
+
+    GamingXPTable.objects.bulk_create([
+        GamingXPTable(gaming_level=level, gaming_xp_required=int(reading_base * (level ** gaming_curve)))
         for level in range(2, max_level + 1)
     ])
 

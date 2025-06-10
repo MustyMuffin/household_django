@@ -1,0 +1,36 @@
+{% extends "household_main/base.html" %}
+
+{% block content %}
+
+<h5>🕹️ Pair with RetroAchievements</h5>
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="pair_ra_game" value="1">
+
+    {% for source in selected_sources %}
+      <input type="hidden" name="selected_sources" value="{{ source }}">
+    {% endfor %}
+
+  <!-- Suggested Matches -->
+  <div class="mb-3">
+    <label for="retro_id">Select Closest Match:</label>
+    <select name="retro_id" class="form-select">
+      {% for match in matches %}
+        <option value="{{ match.id }}">{{ match.title }} ({{ match.console_name }})</option>
+      {% empty %}
+        <option disabled selected>No matches found</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- Manual ID Entry -->
+  <div class="mb-3">
+    <label for="manual_retro_id">Or enter RetroAchievements ID manually:</label>
+    <input type="text" name="manual_retro_id" class="form-control" placeholder="e.g. 12345">
+  </div>
+
+  <button type="submit" class="btn btn-outline-success">Pair Game</button>
+</form>
+
+
+{%  endblock content %}

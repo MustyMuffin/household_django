@@ -14,9 +14,13 @@ class XPSettings(models.Model):
     chore_exponent = models.FloatField(default=1.25)
     reading_base = models.PositiveIntegerField(default=100)
     reading_exponent = models.FloatField(default=1.25)
-    xp_per_word = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('0.002'))
-    xp_per_chore_wage = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('10.0'))
+    gaming_base = models.PositiveIntegerField(default=100)
+    gaming_exponent = models.FloatField(default=1.25)
+    xp_per_word = models.DecimalField(max_digits=10, decimal_places=4, default=Decimal('0.002'))
+    xp_per_chore_wage = models.DecimalField(max_digits=10, decimal_places=1, default=Decimal('10.0'))
     xp_per_book = models.IntegerField(default='50')
+    xp_per_hour_gamed = models.DecimalField(max_digits=10, decimal_places=1, default=Decimal('1.0'))
+    xp_per_game_beaten = models.DecimalField(max_digits=10, decimal_places=1, default=Decimal('20'))
     locked = models.BooleanField(default=False)
 
     def __str__(self):
@@ -31,9 +35,19 @@ class XPSettings(models.Model):
                 base=100, exponent=1.25,
                 chore_base=100, chore_exponent=1.25,
                 reading_base=100, reading_exponent=1.25,
-                xp_per_word=0.0, xp_per_chore_wage=0.0
+                gaming_base=100, gaming_exponent=1.25,
+                xp_per_word=0.0, xp_per_chore_wage=0.0,
+                xp_per_book=50, xp_per_hour_gamed=1.0,
+                xp_per_game_beaten=20,
+
             )
         return settings_obj
+
+    @classmethod
+    def get_xp_per_hour_gamed(cls):
+        if apps.is_installed('gaming'):
+            return cls.get_settings().xp_per_hour_gamed
+        return 0.0
 
     @classmethod
     def get_xp_per_word(cls):
@@ -54,13 +68,14 @@ class XPSettings(models.Model):
         is_new = not self.pk
         old_settings = XPSettings.objects.get(pk=self.pk) if not is_new else None
 
-        base_changed = exponent_changed = chore_changed = reading_changed = True
+        base_changed = exponent_changed = chore_changed = reading_changed = gaming_changed = True
 
         if old_settings:
             base_changed = self.base != old_settings.base
             exponent_changed = self.exponent != old_settings.exponent
             chore_changed = self.chore_base != old_settings.chore_base or self.chore_exponent != old_settings.chore_exponent
             reading_changed = self.reading_base != old_settings.reading_base or self.reading_exponent != old_settings.reading_exponent
+            gaming_changed = self.gaming_base != old_settings.gaming_base or self.gaming_exponent != old_settings.gaming_exponent
 
         super().save(*args, **kwargs)
 
@@ -88,21 +103,37 @@ class XPSettings(models.Model):
                 for level in range(2, 100)
             ])
 
-        if base_changed or chore_changed or reading_changed:
+        if gaming_changed:
+            GamingXPTable.objects.all().delete()
+            GamingXPTable.objects.bulk_create([
+                GamingXPTable(gaming_level=level, gaming_xp_required=int(self.gaming_base * (level ** self.gaming_exponent)))
+                for level in range(2, 100)
+            ])
+
+        if base_changed or chore_changed or reading_changed or gaming_changed:
             XPManager.resync_all_user_levels()
 
 class UserStats(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     profile_picture = models.ImageField(upload_to="profile_pics/", blank=True,)
+    ra_username = models.CharField(max_length=50, blank=True, null=True)
+    xbl_username = models.CharField(max_length=50, blank=True, null=True)
 
     overall_xp = models.PositiveIntegerField(default=0)
     chore_xp = models.PositiveIntegerField(default=0)
     reading_xp = models.PositiveIntegerField(default=0)
     words_read = models.PositiveIntegerField(default=0)
+    reading_wpm = models.PositiveIntegerField(default=0)
+    gaming_xp = models.PositiveIntegerField(default=0)
+    hours_played = models.PositiveIntegerField(default=0)
 
     overall_level = models.PositiveIntegerField(default=1)
     chore_level = models.PositiveIntegerField(default=1)
     reading_level = models.PositiveIntegerField(default=1)
+    gaming_level = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.user.username}'s Stats"
 
     def update_levels(self):
         """Updates stored level fields based on XP."""
@@ -111,7 +142,8 @@ class UserStats(models.Model):
         self.overall_level = XPManager.level_info(self.overall_xp, kind="overall").get("level", 1)
         self.chore_level = XPManager.level_info(self.chore_xp, kind="chore").get("level", 1)
         self.reading_level = XPManager.level_info(self.reading_xp, kind="reading").get("level", 1)
-        self.save(update_fields=["overall_level", "chore_level", "reading_level"])
+        self.gaming_level = XPManager.level_info(self.gaming_xp, kind="gaming").get("level", 1)
+        self.save(update_fields=["overall_level", "chore_level", "reading_level", "gaming_level"])
 
     def _get_xp_data(self, xp_value, table_model, level_field, xp_field):
         """Returns dict of XP metadata for a given table and XP value."""
@@ -198,6 +230,27 @@ class UserStats(models.Model):
     def reading_xp_to_next_level(self):
         return self.reading_level_data["to_next"]
 
+    # --- Gaming XP ---
+    @property
+    def gaming_level_data(self):
+        return self._get_xp_data(self.gaming_xp, GamingXPTable, 'gaming_level', 'gaming_xp_required')
+
+    @property
+    def gaming_current_level_xp(self):
+        return self.gaming_level_data["current_xp"]
+
+    @property
+    def gaming_next_level_xp(self):
+        return self.gaming_level_data["next_xp"]
+
+    @property
+    def gaming_progress_percent(self):
+        return self.gaming_level_data["percent"]
+
+    @property
+    def gaming_xp_to_next_level(self):
+        return self.gaming_level_data["to_next"]
+
 
 class Badge(models.Model):
     name = models.CharField(max_length=100)
@@ -268,3 +321,13 @@ class ReadingXPTable(models.Model):
 
     def __str__(self):
         return f"Reading Level = {self.reading_level} – {self.reading_xp_required} XP"
+
+class GamingXPTable(models.Model):
+    gaming_level = models.PositiveIntegerField(unique=True)
+    gaming_xp_required = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ['gaming_level']
+
+    def __str__(self):
+        return f"Gaming Level = {self.gaming_level} – {self.gaming_xp_required} XP"

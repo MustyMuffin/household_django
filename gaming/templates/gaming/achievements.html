@@ -1,0 +1,16 @@
+<h1>TrueAchievements Results</h1>
+
+{% if achievements %}
+  <ul>
+    {% for item in achievements %}
+      <li>
+        <h3>{{ item.title }}</h3>
+        <p><strong>Game:</strong> {{ item.gameTitle }}</p>
+        <p><strong>Score:</strong> {{ item.score }}</p>
+        <p>{{ item.description }}</p>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No achievements found or failed to load.</p>
+{% endif %}

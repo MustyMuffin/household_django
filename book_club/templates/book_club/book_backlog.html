@@ -1,19 +1,111 @@
 {% extends "household_main/base.html" %}
+{% load get_item_filter %}
 
 {% block content %}
-  <div class="container mt-4">
-    <h2>📚 Book Backlog</h2>
-    {% if in_progress_books %}
-      <ul class="list-group">
-        {% for entry in in_progress_books %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ entry.book_name.text }} – {{ entry.words_completed }} / {{ entry.book_name.words }} words
-            <a href="{% url 'book_club:new_book_tracker_entry' entry.book_name.id %}" class="btn btn-sm btn-primary">Update Progress</a>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p class="text-muted mt-3">You have no books in progress.</p>
-    {% endif %}
+<div class="container mt-4">
+  <h2 class="mb-4">📚 Book Shelf</h2>
+
+{% if in_progress_books %}
+  <div class="row g-2 justify-content-center">
+    {% for entry in in_progress_books %}
+      {% with time_data=reading_times|get_item:entry.book_name.id %}
+      <div class="col-6 col-md-3 col-lg-2">
+        <div class="card h-100 shadow-sm border-0 small mx-auto" style="max-width: 140px;">
+          {% if entry.book_name.metadata.thumbnail_url %}
+            <div class="text-center p-1">
+              <img src="{{ entry.book_name.metadata.thumbnail_url }}"
+                   class="img-fluid rounded"
+                   alt="Cover for {{ entry.book_name.title }}"
+                   style="max-height: 120px; object-fit: contain;">
+            </div>
+          {% endif %}
+          <div class="card-body p-2 d-flex flex-column">
+            <div class="fw-semibold mb-1 text-center" style="font-size: 0.85rem;">
+              <a href="{% url 'book_club:book_detail' entry.book_name.id %}" class="text-decoration-none">
+                {{ entry.book_name.title|truncatewords:5 }}
+              </a>
+            </div>
+            <div class="text-muted text-center" style="font-size: 0.75rem;">
+              {{ entry.words_completed }} / {{ entry.book_name.words }}
+            </div>
+            {% if time_data %}
+              <div class="text-muted text-center small" style="font-size: 0.7rem;">
+                ⏱️ {{ time_data.remaining_human }} left
+              </div>
+            {% endif %}
+            <a href="{% url 'book_club:new_book_tracker_entry' entry.book_name.id %}"
+               class="btn btn-sm btn-outline-primary mt-auto w-100">
+              ➕ Update
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endwith %}
+    {% endfor %}
   </div>
+{% else %}
+  <p class="text-muted mt-3">You have no books in progress.</p>
+{% endif %}
+
+{% if finished_books %}
+  <hr class="my-4">
+  <h4 class="mb-3">✅ Finished Books</h4>
+  <div class="row g-2 justify-content-center">
+    {% for entry in finished_books %}
+      <div class="col-6 col-md-3 col-lg-2">
+        <div class="card h-100 shadow-sm border-0 small mx-auto" style="max-width: 140px;">
+          {% if entry.book_name.metadata.thumbnail_url %}
+            <div class="text-center p-1">
+              <img src="{{ entry.book_name.metadata.thumbnail_url }}"
+                   class="img-fluid rounded"
+                   alt="Cover for {{ entry.book_name.title }}"
+                   style="max-height: 120px; object-fit: contain;">
+            </div>
+          {% endif %}
+          <div class="card-body p-2 d-flex flex-column">
+            <div class="fw-semibold mb-1 text-center" style="font-size: 0.85rem;">
+              <a href="{% url 'book_club:book_detail' entry.book_name.id %}" class="text-decoration-none">
+                {{ entry.book_name.title|truncatewords:5 }}
+              </a>
+            </div>
+            <div class="text-success text-center small">🎉 Completed</div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
+{% if want_to_read_books %}
+  <hr class="my-4">
+  <h4 class="mb-3">📖 Want to Read</h4>
+  <div class="row g-2 justify-content-center">
+    {% for entry in want_to_read_books %}
+      <div class="col-6 col-md-3 col-lg-2">
+        <div class="card h-100 shadow-sm border-0 small mx-auto" style="max-width: 140px;">
+          {% if entry.book_name.metadata.thumbnail_url %}
+            <div class="text-center p-1">
+              <img src="{{ entry.book_name.metadata.thumbnail_url }}"
+                   class="img-fluid rounded"
+                   alt="Cover for {{ entry.book_name.title }}"
+                   style="max-height: 120px; object-fit: contain;">
+            </div>
+          {% endif %}
+          <div class="card-body p-2">
+            <div class="fw-semibold text-center" style="font-size: 0.85rem;">
+              <a href="{% url 'book_club:book_detail' entry.book_name.id %}" class="text-decoration-none">
+                {{ entry.book_name.title|truncatewords:5 }}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
+</div>
 {% endblock %}
+

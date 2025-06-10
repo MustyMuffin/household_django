@@ -2,11 +2,11 @@
 
 {% load humanize %}
 {% block page_header %}
-  <h1>Books</h1>
+  <h1>📚 Books</h1>
 {% endblock page_header %}
 
 {% block content %}
-  <div class="accordion" id="bookCategories">
+  <div class="accordion mb-5" id="bookCategories">
     {% for category, books in books_by_category.items %}
       <div class="accordion-item">
         <h2 class="accordion-header" id="heading-{{ forloop.counter }}">
@@ -19,7 +19,7 @@
             <ul class="list-group list-group-flush">
               {% for book in books %}
                 <li class="list-group-item">
-                  <a href="{% url 'book_club:book' book.id %}">{{ book.text }}</a>
+                  <a href="{% url 'book_club:book_detail' book.id %}">{{ book.title }}</a>
                   <span class="text-muted float-end">{{ book.words|intcomma }}</span>
                 </li>
               {% endfor %}
@@ -32,9 +32,15 @@
     {% endfor %}
   </div>
 
-      <a class="btn btn-lg btn-block btn-outline-primary" href="{% url 'book_club:book_backlog' %}" role="button">📚 Books Currently In Progress</a>
+        <div class="d-grid gap-3 col-6 mx-auto mb-5">
+          <a class="btn btn-lg btn-outline-primary" href="{% url 'book_club:book_backlog' %}" role="button">
+            🕮 Books Currently In Progress
+          </a>
 
-        {% if can_add_book %}
-            <a href="{% url 'book_club:add_new_book' %}" class="btn btn-outline-primary">Add New Book</a>
-        {% endif %}
+          {% if can_add_book %}
+            <a href="{% url 'book_club:add_new_book' %}" class="btn btn-lg btn-outline-primary">
+              ➕ Add New Book
+            </a>
+          {% endif %}
+        </div>
 {% endblock content %}

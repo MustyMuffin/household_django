@@ -1,5 +1,13 @@
 from accounts.models import UserStats, XPSettings
 from accounts.xp_utils import XPManager
+from django.contrib.auth.models import Group
+
+def privileged_status(request):
+    if request.user.is_authenticated:
+        return {
+            "is_privileged": request.user.groups.filter(name="Privileged").exists()
+        }
+    return {"is_privileged": False}
 
 def user_xp_data(request):
     if not request.user.is_authenticated:
@@ -30,6 +38,13 @@ def user_xp_data(request):
         'reading_next_level_xp': stats.reading_next_level_xp,
         'reading_xp_to_next': stats.reading_xp_to_next_level,
         'reading_progress_percent': stats.reading_progress_percent,
+
+        # Gaming
+        'gaming_xp': stats.gaming_xp,
+        'gaming_level': stats.gaming_level,
+        'gaming_next_level_xp': stats.gaming_next_level_xp,
+        'gaming_xp_to_next': stats.gaming_xp_to_next_level,
+        'gaming_progress_percent': stats.gaming_progress_percent,
     }
 
 def user_profile_picture(request):

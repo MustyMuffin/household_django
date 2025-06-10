@@ -1,0 +1,77 @@
+{% extends "household_main/base.html" %}
+{% load get_item_filter %}
+{% block content %}
+
+<h4>🎮 Track Progress for <strong>{{ game.name }}</strong></h4>
+
+<form action="" method="post" class="mb-4">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label for="id_hours_played" class="form-label">⏱️ Total Hours Played</label>
+        <input type="number" step="0.1" name="hours_played" class="form-control" id="id_hours_played"
+               value="{{ form.hours_played.value|default_if_none:'' }}" required>
+    </div>
+
+    <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" name="beaten" id="id_beaten"
+               {% if form.beaten.value %}
+               checked
+               {% endif %}
+               {% if already_beaten %}
+               disabled
+               {% endif %}>
+        <label class="form-check-label
+                {% if already_beaten %}
+                text-muted
+                {% endif %}" for="id_beaten">
+                ✅ I completed this game
+                {% if already_beaten %}<span class="ms-2">
+                    (Already marked as completed)</span>
+                {% endif %}
+        </label>
+    </div>
+
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" name="mastered" id="id_mastered"
+             {% if form.mastered.value %}
+             checked
+             {% endif %}
+             {% if already_mastered %}
+             disabled
+             {% endif %}>
+      <label class="form-check-label
+              {% if already_mastered %}
+              text-muted
+              {% endif %}" for="id_mastered">
+              🏆 I mastered this game
+              {% if already_mastered %}
+                <span class="ms-2">(Already marked as mastered)</span>
+              {% endif %}
+      </label>
+    </div>
+
+    <div class="mb-3">
+        <label for="id_note" class="form-label">📝 Notes (optional)</label>
+        <textarea name="note" class="form-control" id="id_note" rows="2">{{ form.note.value }}</textarea>
+    </div>
+
+    {% for type in game.collectible_types.all %}
+      <div class="mb-3">
+        <label for="id_collectible_{{ type.id }}">{{ type.name }} (out of {{ type.total_available }})</label>
+        <input type="number" name="collectible_{{ type.id }}" value="{{ user_collectibles|get_item:type.id }}" min="0" max="{{ type.total_available }}" class="form-control">
+      </div>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-success">
+        💾 {% if is_update %}Update Progress{% else %}Log Hours Played{% endif %}
+    </button>
+</form>
+
+{% if not is_update %}
+<hr>
+<p>📊 Still playing?</p>
+<p class="text-muted">Use this form again later to update your progress!</p>
+{% endif %}
+
+{% endblock content %}

@@ -6,6 +6,7 @@ from accounts.models import UserStats, XPLog, UserBadge, XPSettings, Badge
 from accounts.xp_utils import XPManager
 from book_club.models import BooksRead, BookEntry, Book
 from chores.models import EarnedWage, ChoreEntry, Chore
+from gaming.models import GamesBeaten, GameEntry, Game
 from django.contrib.auth import get_user_model
 from .forms import ProfilePictureForm
 from django.contrib.auth import login
@@ -20,6 +21,8 @@ from django.views import View
 from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
+
+
 
 @login_required
 def user_profile(request, username):
@@ -59,6 +62,15 @@ def user_profile(request, username):
                 "next_level_xp": stats.reading_next_level_xp,
                 "progress_percent": stats.reading_progress_percent,
                 "xp_to_next": stats.reading_xp_to_next_level,
+                "color": "success"
+            },
+            {
+                "label": "Gaming Level",
+                "level": stats.gaming_level,
+                "xp": stats.gaming_xp,
+                "next_level_xp": stats.gaming_next_level_xp,
+                "progress_percent": stats.gaming_progress_percent,
+                "xp_to_next": stats.gaming_xp_to_next_level,
                 "color": "success"
             }
         ]
@@ -182,6 +194,19 @@ def book_club_progress(badge, user):
 
     return 0
 
+@BadgeProgressProvider.register("gaming")
+def gaming_progress(badge, user):
+    milestone_type = badge.milestone_type
+
+    if milestone_type == "gaming":
+        return GamesBeaten.objects.filter(user=user).count()
+
+    elif milestone_type == "hours_played":
+        hours = UserStats.objects.filter(user=user).first()
+        return hours.hours_played if hours else 0
+
+    return 0
+
 class MilestoneTypeOptionsView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
 
@@ -214,13 +239,31 @@ def get_milestone_options(request):
             "options": [
                 {"id": "books_read", "name": "Books Read"},
                 {"id": "words_read", "name": "Words Read"},
-                # {"id": "specific_book", "name": "Specific Book"},
             ],
             "initial": initial
         }
         return JsonResponse(data)
 
-    return JsonResponse({"options": []})
+    elif app == "gaming":
+        # Base global gaming milestones
+        base_options = [
+            {"id": "games_beaten", "name": "Games Beaten"},
+            {"id": "hours_played", "name": "Hours Played"},
+        ]
+
+        # Dynamically add game-specific combo milestones
+        game_options = [
+            {"id": f"game_completion_combo_{game.id}", "name": f"🏆 Full Completion – {game.name}"}
+            for game in Game.objects.all()
+        ]
+
+        return JsonResponse({
+            "options": base_options + game_options,
+            "initial": initial
+        })
+
+    return JsonResponse({"options": [], "initial": initial})
+
 
 def activity_feed(request):
     show_all_users = True
@@ -237,6 +280,12 @@ def activity_feed(request):
     book_entries = [
         {'type': 'book', 'user': entry.user, 'timestamp': entry.date_added, 'info': f"Read book: {entry.book.text}", 'xp': 0}
         for entry in book_entries
+    ]
+
+    game_entries = [
+        {'type': 'game', 'user': entry.user, 'timestamp': entry.date_added, 'info': f"Beat game: {entry.game.name}",
+         'xp': 0}
+        for entry in game_entries
     ]
 
     chore_entries = [
