@@ -1,6 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+class BookSeries(models.Model):
+    series_name = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name_plural = 'series'
+
+    def __str__(self):
+        return self.series_name
+
 class BookCategory(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
@@ -17,7 +26,7 @@ class Book(models.Model):
     date_added = models.DateTimeField(auto_now_add=True)
     book_category = models.ForeignKey(BookCategory, on_delete=models.SET_NULL, null=True, blank=True)
     pages = models.IntegerField(null=True, blank=True)
-    series = models.CharField(max_length=100, null=True, blank=True)
+    series = models.ForeignKey(BookSeries, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
         """Return a string representation of the model."""

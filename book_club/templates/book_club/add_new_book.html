@@ -8,17 +8,16 @@
     <div class="alert alert-danger">{{ error }}</div>
   {% endif %}
 
-  <!-- Step 1: Search -->
+  <!-- 1: Search -->
   <form id="search-form" class="mb-4">
     <label for="book-title-search">Search Book Title:</label>
     <input type="text" id="book-title-search" class="form-control" placeholder="e.g. Project Hail Mary" required>
     <button type="submit" class="btn btn-primary mt-2">Search</button>
   </form>
 
-  <!-- Search Error -->
   <div id="search-error" class="alert alert-warning" style="display: none;"></div>
 
-  <!-- Step 2: Confirm & Submit -->
+  <!-- 2: Confirm & Submit -->
   <form id="add-book-form" method="post" action="{% url 'book_club:add_new_book' %}" style="display: {% if prefill %}block{% else %}none{% endif %};">
     {% csrf_token %}
     <input type="hidden" name="source" id="book-source" value="{{ prefill.source|default:'' }}">
@@ -34,6 +33,13 @@
 
     <label for="cover">Cover Image URL</label>
     <input type="url" name="cover_url" id="book-cover-url" class="form-control" value="{{ prefill.cover_url|default:'' }}">
+
+    <div></div></li><label for="pages">Page Count</label>
+    <input type="number" name="pages" id="book-pages" class="form-control"
+           min="0" step="1" value="{{ prefill.pages|default:'' }}">
+    <small class="form-text text-muted mb-2">
+      Page count is taken from Google Books API, your edition may vary. You can adjust manually in admin settings.
+    </small></div>
 
     <div></div></li><label for="words">Word Count</label>
     <input type="number" name="words" id="book-words" class="form-control"
@@ -57,6 +63,21 @@
       <input type="text" name="new_category_name" class="form-control" value="{{ prefill.new_category_name|default:'' }}">
     </div>
 
+      <div><label for="series">Book Series</label>
+        <select name="series_name" id="book-series-select" class="form-control">
+          <option value="">-- Select series --</option>
+          {% for series in series %}
+            <option value="{{ series.id }}" {% if prefill.series_name == series.id|stringformat:"s" %}selected{% endif %}>{{ series.series_name }}</option>
+          {% endfor %}
+          <option value="new" {% if prefill.series_name == "new" %}selected{% endif %}>Other / Create New</option>
+        </select>
+        </div>
+
+        <div id="new-series-input" class="mt-2" style="display: {% if prefill.series_name == "new" %}block{% else %}none{% endif %};">
+          <label for="new_series_name">New series Name</label>
+          <input type="text" name="new_series_name" class="form-control" value="{{ prefill.new_series_name|default:'' }}">
+        </div>
+
     <img id="book-cover-preview" src="{{ prefill.cover_url|default:'' }}" class="img-fluid mt-3 mb-3" style="display: {% if prefill.cover_url %}block{% else %}none{% endif %}; max-height: 250px;" />
 
     <button type="submit" class="btn btn-success mt-3">Confirm and Add Book</button>
@@ -65,6 +86,11 @@
   <script>
     document.getElementById("book-category-select").addEventListener("change", function () {
       const newCat = document.getElementById("new-category-input");
+      newCat.style.display = this.value === "new" ? "block" : "none";
+    });
+
+    document.getElementById("book-series-select").addEventListener("change", function () {
+      const newCat = document.getElementById("new-series-input");
       newCat.style.display = this.value === "new" ? "block" : "none";
     });
 
@@ -85,6 +111,7 @@
           document.getElementById('book-cover-url').value = data.thumbnail_url || '';
           document.getElementById('book-words').value = data.estimated_words || '';
           document.getElementById('book-source').value = data.source || '';
+          document.getElementById('book-pages').value = data.pages || '';
 
           if (data.thumbnail_url) {
             const preview = document.getElementById('book-cover-preview');

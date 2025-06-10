@@ -7,7 +7,7 @@ from book_club.utils import update_badges_for_books
 from accounts.badge_helpers import check_and_award_badges
 from accounts.xp_helpers import award_xp
 from .forms import BookEntryForm, BookForm, BookProgressTrackerForm
-from .models import Book, BookProgressTracker, BookCategory, BooksRead
+from .models import Book, BookProgressTracker, BookCategory, BooksRead, BookSeries
 from accounts.models import UserStats
 from django.contrib.auth.decorators import user_passes_test
 from .api_combined import fetch_and_cache_metadata
@@ -61,6 +61,9 @@ def book_detail(request, book_id):
     tracker = BookProgressTracker.objects.filter(user=request.user, book_name=book).first()
     has_progress = tracker and tracker.words_completed and tracker.words_completed > 0
     want_to_read = tracker.want_to_read if tracker else False
+    series = book.series
+    category_id = book.book_category_id
+    category = get_object_or_404(BookCategory, id=category_id)
 
     finished_books = BooksRead.objects.filter(user=request.user)
     print("DEBUG = finished_books = ", finished_books)
@@ -73,6 +76,8 @@ def book_detail(request, book_id):
         "has_progress": has_progress,
         'want_to_read': want_to_read,
         "finished_books": finished_books,
+        "series": series,
+        "category": category,
     }
     return render(request, 'book_club/book.html', context)
 
@@ -233,6 +238,7 @@ def add_new_book(request):
         description = request.POST.get("description", "")
         cover_url = request.POST.get("cover_url", "")
         word_count = int(request.POST.get("words") or 0)
+        pages = request.POST.get("pageCount")
 
         # ✅ THEN check for duplicates
         if Book.objects.filter(title__iexact=title).exists():
@@ -247,17 +253,32 @@ def add_new_book(request):
         selected_cat_id = request.POST.get("book_category")
         new_category_name = request.POST.get("new_category_name", "").strip()
         book_category = None
+        print("DEBUG = selected_cat_id = ", selected_cat_id)
 
         if selected_cat_id == "new" and new_category_name:
             book_category, _ = BookCategory.objects.get_or_create(name=new_category_name)
         elif selected_cat_id:
             book_category = BookCategory.objects.filter(id=selected_cat_id).first()
 
+        # ✅ Handle series logic
+        selected_series_id = request.POST.get("series_name")
+        new_series_name = request.POST.get("new_series_name", "").strip()
+        book_series = None
+        print("DEBUG = selected_series_id = ", selected_series_id)
+        print("DEBUG = new_series_name = ", new_series_name)
+
+        if selected_series_id == "new" and new_series_name:
+            book_series, _ = BookSeries.objects.get_or_create(series_name=new_series_name)
+        elif selected_series_id:
+            book_series = BookSeries.objects.filter(id=selected_series_id).first()
+
         # ✅ Create and save the book
         book = Book.objects.create(
             title=title,
             words=word_count,
             book_category=book_category,
+            pages = pages,
+            series=book_series,
         )
 
         # ✅ Attach external metadata
@@ -267,8 +288,12 @@ def add_new_book(request):
 
     # GET request: show empty form
     categories = BookCategory.objects.all().order_by("name")
+    series = BookSeries.objects.all().order_by("series_name")
+    print(categories)
+    print(series)
     return render(request, "book_club/add_new_book.html", {
         "categories": categories,
+        "series": series,
     })
 
 @login_required

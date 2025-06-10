@@ -1,7 +1,7 @@
 {% extends 'household_main/base.html' %}
 
 {% block page_header %}
-  <h1 class="mb-4">{{ book.text }}</h1>
+  <h1 class="mb-4">{{ book.name }}</h1>
 {% endblock page_header %}
 
 {% block content %}
@@ -14,6 +14,8 @@
       </div>
       <div class="col-md-9">
         <h3>{{ metadata.title }}</h3>
+        <p><small class="text-muted">Category: {{ category }}</small></p>
+        <p><small class="text-muted">Series: {{ series }}</small></p>
         <p class="text-muted mb-1">by {{ metadata.authors|join:", " }}</p>
         {% if metadata.description %}
           <p>{{ metadata.description }}</p>
@@ -30,27 +32,29 @@
     <p class="text-muted">No external metadata available.</p>
   {% endif %}
 
-  <p>
-    <a href="{% url 'book_club:new_book_entry' book.id %}" class="btn btn-success btn-sm mb-3">
-      ➕ Add New Entry
-    </a>
-  </p>
-    {% if not tracker %}
-      <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
-        {% csrf_token %}
-        <button class="btn btn-outline-warning btn-sm">📘 Mark as Want to Read</button>
-      </form>
-    {% elif not has_progress and not tracker.want_to_read %}
-      <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
-        {% csrf_token %}
-        <button class="btn btn-outline-warning btn-sm">📘 Mark as Want to Read</button>
-      </form>
-    {% elif tracker.want_to_read and not has_progress %}
-      <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
-        {% csrf_token %}
-        <button class="btn btn-warning btn-sm">📘 Remove from Want to Read</button>
-      </form>
-    {% endif %}
+<div class="d-flex align-items-center gap-2 mb-3">
+  <a href="{% url 'book_club:new_book_entry' book.id %}" class="btn btn-success btn-sm">
+    ➕ Add New Entry
+  </a>
+
+  {% if not tracker %}
+    <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-outline-warning btn-sm">📘 Mark as Want to Read</button>
+    </form>
+  {% elif not has_progress and not tracker.want_to_read %}
+    <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-outline-warning btn-sm">📘 Mark as Want to Read</button>
+    </form>
+  {% elif tracker.want_to_read and not has_progress %}
+    <form action="{% url 'book_club:toggle_want_to_read' book.id %}" method="post" class="d-inline">
+      {% csrf_token %}
+      <button class="btn btn-warning btn-sm">📘 Remove from Want to Read</button>
+    </form>
+  {% endif %}
+</div>
+
 
   {% for book_entry in book_entries %}
     <div class="card mb-3">

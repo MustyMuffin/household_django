@@ -7,7 +7,7 @@ from .models import Book, BookEntry, BookProgressTracker
 class BookForm(forms.ModelForm):
     class Meta:
         model = Book
-        fields = ['title', 'words', 'book_category']
+        fields = ['title', 'words', 'book_category', 'pages', 'series']
 
 
 class BookEntryForm(forms.ModelForm):

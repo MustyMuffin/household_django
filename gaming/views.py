@@ -200,6 +200,7 @@ def log_game_progress(request, game_id):
     already_mastered = GameProgress.objects.filter(
         user=request.user, game=game, mastered=True
     ).exists()
+    print ("debug: already_mastered:", already_mastered)
 
     return render(request, "gaming/log_game_progress.html", {
         "form": form,
@@ -239,13 +240,13 @@ def log_hours(user, hours_played, game, request=None):
 @login_required
 def game_backlog(request):
     in_progress_games = GameProgress.objects.select_related('game').filter(
-        user=request.user, beaten=False,
+        user=request.user, beaten=False, mastered=False,
     )
     beaten_games = GameProgress.objects.select_related('game').filter(
-        user=request.user, beaten=True,
+        user=request.user, beaten=True, mastered=False,
     )
     mastered_games = GameProgress.objects.select_related('game').filter(
-        user=request.user, mastered=True,
+        user=request.user, mastered=True, beaten=True,
     )
 
     return render(request, 'gaming/game_backlog.html', {

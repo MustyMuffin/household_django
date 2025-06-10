@@ -43,6 +43,13 @@
                   ❌ Not Beaten
                 {% endif %}
               </p>
+                <p class="mb-1">
+                {% if progress.mastered %}
+                  🏆 Game Mastered
+                {% else %}
+                  ❌ Not Mastered
+                {% endif %}
+              </p>
               {% if progress.note %}
                 <p class="mb-1">📝 Note: <em>{{ progress.note }}</em></p>
               {% endif %}

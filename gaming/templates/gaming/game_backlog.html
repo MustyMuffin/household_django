@@ -10,17 +10,23 @@
     {% if in_progress_games %}
       <ul class="list-group">
         {% for entry in in_progress_games %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-              <a href="{% url 'gaming:game_detail' entry.game.id %}">
-                {{ entry.game.name }}
-              </a> – {{ entry.hours_played }} hours
-              {% if entry.note %}
-                <div class="text-muted small">{{ entry.note|truncatewords:12 }}</div>
-              {% endif %}
-            </div>
-            <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-outline-primary">
-              💾 Update Progress
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center gap-2">
+                {% if entry.game.image_url %}
+                  <img src="{{ entry.game.image_url }}" alt="Thumbnail for {{ entry.game.name }}"
+                       class="rounded" style="height: 40px; width: 40px; object-fit: cover;">
+                {% endif %}
+                <div>
+                  <a href="{% url 'gaming:game_detail' entry.game.id %}">
+                    {{ entry.game.name }}
+                  </a> – {{ entry.hours_played }} hours
+                </div>
+              </div>
+              <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-outline-primary">
+                💾 Update Progress
+              </a>
+            </li>
+
             </a>
           </li>
         {% endfor %}
@@ -36,19 +42,22 @@
     {% if beaten_games %}
       <ul class="list-group">
         {% for entry in beaten_games %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div>
-              <a href="{% url 'gaming:game_detail' entry.game.id %}">
-                {{ entry.game.name }}
-              </a> – {{ entry.hours_played }} hours
-              {% if entry.note %}
-                <div class="text-muted small">{{ entry.note|truncatewords:12 }}</div>
-              {% endif %}
-            </div>
-            <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-outline-secondary">
-              📝 View Log
-            </a>
-          </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div class="d-flex align-items-center gap-2">
+                {% if entry.game.image_url %}
+                  <img src="{{ entry.game.image_url }}" alt="Thumbnail for {{ entry.game.name }}"
+                       class="rounded" style="height: 40px; width: 40px; object-fit: cover;">
+                {% endif %}
+                <div>
+                  <a href="{% url 'gaming:game_detail' entry.game.id %}">
+                    {{ entry.game.name }}
+                  </a> – {{ entry.hours_played }} hours
+                </div>
+              </div>
+              <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-outline-secondary">
+                📝 Write Review / Log More Progress
+              </a>
+            </li>
         {% endfor %}
       </ul>
     {% else %}
@@ -63,13 +72,16 @@
     <ul class="list-group">
       {% for entry in mastered_games %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-          <div>
-            <a href="{% url 'gaming:game_detail' entry.game.id %}">
-              {{ entry.game.name }}
-            </a> – {{ entry.hours_played }} hours
-            {% if entry.note %}
-              <div class="text-muted small">{{ entry.note|truncatewords:12 }}</div>
+          <div class="d-flex align-items-center gap-2">
+            {% if entry.game.image_url %}
+              <img src="{{ entry.game.image_url }}" alt="Thumbnail for {{ entry.game.name }}"
+                   class="rounded" style="height: 40px; width: 40px; object-fit: cover;">
             {% endif %}
+            <div>
+              <a href="{% url 'gaming:game_detail' entry.game.id %}">
+                {{ entry.game.name }}
+              </a> – {{ entry.hours_played }} hours
+            </div>
           </div>
           <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-outline-success">
             🧠 Review
