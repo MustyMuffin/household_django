@@ -21,6 +21,9 @@
                {% if already_beaten %}
                disabled
                {% endif %}>
+        {% if already_beaten %}
+          <input type="hidden" name="beaten" value="on">
+        {% endif %}
         <label class="form-check-label
                 {% if already_beaten %}
                 text-muted
@@ -40,6 +43,11 @@
              {% if already_mastered %}
              disabled
              {% endif %}>
+
+      {% if already_mastered %}
+        <input type="hidden" name="mastered" value="on">
+      {% endif %}
+
       <label class="form-check-label
               {% if already_mastered %}
               text-muted

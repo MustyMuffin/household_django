@@ -23,7 +23,7 @@ class Game(models.Model):
     hours_completionist = models.IntegerField(default=0)
     date_added = models.DateTimeField(auto_now_add=True)
     game_category = models.ForeignKey(GameCategory, on_delete=models.SET_NULL, null=True, blank=True)
-    achievements_url = models.URLField(blank=True, null=True)
+    achievements_url = models.URLField(max_length=200, blank=True, null=True)
     retro_game = models.ForeignKey("RetroGameEntry", null=True, blank=True, on_delete=models.SET_NULL)
 
     def __str__(self):
@@ -58,7 +58,13 @@ class GameEntry(models.Model):
 class GamesBeaten(models.Model):
     """For tracking games played"""
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    game_name = models.CharField(max_length=20, default="Doom")
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, null=True, blank=True)
+    date_added = models.DateTimeField(auto_now_add=True)
+
+class GamesMastered(models.Model):
+    """For tracking games played"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, null=True, blank=True)
     date_added = models.DateTimeField(auto_now_add=True)
 
 class CollectibleType(models.Model):

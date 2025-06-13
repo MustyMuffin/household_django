@@ -40,9 +40,6 @@ def update_badges_for_games(user, game, hours_increment, request=None):
     if not tracker or not tracker.beaten:
         return
 
-    # Log game as beaten
-    GamesBeaten.objects.get_or_create(user=user, game_name=game.name)
-
     # Badge checks
     games_beaten_total = GamesBeaten.objects.filter(user=user).count()
     hours_total = UserStats.objects.filter(user=user).first().hours_played

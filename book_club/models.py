@@ -65,7 +65,7 @@ class BookMetadata(models.Model):
     title = models.CharField(max_length=255, blank=True)
     authors = models.JSONField(blank=True, default=list)
     description = models.TextField(blank=True)
-    thumbnail_url = models.URLField(null=True, blank=True)
+    thumbnail_url = models.URLField(max_length=1000, null=True, blank=True)
     external_url = models.URLField(null=True, blank=True)
     last_updated = models.DateTimeField(auto_now=True)
     pages = models.IntegerField(null=True, blank=True, default=0)
