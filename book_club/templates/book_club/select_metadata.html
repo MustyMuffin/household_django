@@ -1,0 +1,130 @@
+{% extends "household_main/base.html" %}
+{% load static %}
+
+{% block content %}
+<h3>📚 Select Metadata for "{{ query }}"</h3>
+
+<div class="row">
+  {% for source, options in sources.items %}
+    <div class="col-md-6">
+      <h5 class="text-muted">{{ source|capfirst }} Results</h5>
+      {% for result in options %}
+        <div class="card mb-2 p-2">
+          <div class="d-flex gap-2">
+            {% if result.thumbnail %}
+              <img src="{{ result.thumbnail }}" alt="Cover" style="width: 50px; height: auto;">
+            {% endif %}
+            <div>
+              <strong>{{ result.title }}</strong><br>
+              <small>{{ result.authors|join:", " }}</small>
+            </div>
+          </div>
+          <button type="button"
+                  class="btn btn-sm btn-primary mt-2 select-btn"
+                  data-volume-id="{{ result.volume_id|default:'' }}"
+                  data-source="{{ source }}"
+                  data-title="{{ result.title|escapejs }}"
+                  data-authors="{{ result.authors|join:', '|escapejs }}"
+                  data-description="{{ result.description|default:''|escapejs }}"
+                  data-thumbnail="{{ result.thumbnail|default:''|escapejs }}"
+                  data-pages="{{ result.pageCount|default:'' }}">
+            Use This
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const editBookId = "{{ edit_book_id|default:'' }}".trim();
+
+  const getCookie = (name) => {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [key, value] = cookie.trim().split('=');
+      if (key === name) return decodeURIComponent(value);
+    }
+    return null;
+  };
+
+  const csrfToken = getCookie('csrftoken');
+
+  const createFormAndSubmit = (data, source) => {
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "{% url 'book_club:select_metadata' %}";
+
+    const makeInput = (name, value) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = name;
+      input.value = value || "";
+      return input;
+    };
+
+    const payload = {
+      title: data.title,
+      authors: Array.isArray(data.authors) ? data.authors : [data.authors],
+      description: data.description,
+      thumbnail_url: data.thumbnail || data.cover_url,
+      pages: data.pageCount || data.pages,
+      source: source,
+    };
+
+    form.appendChild(makeInput("csrfmiddlewaretoken", csrfToken));
+    form.appendChild(makeInput("selected_data", JSON.stringify(payload)));
+    if (editBookId) {
+      form.appendChild(makeInput("edit_book_id", editBookId));
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+  };
+
+  document.querySelectorAll(".select-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const source = button.dataset.source;
+      button.disabled = true;
+      button.textContent = "Loading...";
+
+      try {
+        if (source.toLowerCase() === "google") {
+          const volumeId = button.dataset.volumeId;
+          if (!volumeId) throw new Error("⚠️ No volume ID found!");
+
+          const response = await fetch(`/book_club/api/fetch_google_volume/${volumeId}/`);
+
+          const data = await response.json();
+
+          if (data.success) {
+            const bookData = data.book || data;
+            createFormAndSubmit(bookData, source);
+          } else {
+            throw new Error(`❌ Failed to fetch ${source} metadata.`);
+          }
+
+        } else if (source.toLowerCase() === "openlibrary") {
+          const bookData = {
+            title: button.dataset.title,
+            authors: button.dataset.authors,
+            description: button.dataset.description,
+            thumbnail: button.dataset.thumbnail,
+            pageCount: button.dataset.pages,
+          };
+          createFormAndSubmit(bookData, source);
+        } else {
+          throw new Error("Unsupported source.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert(err.message || "⚠️ An error occurred.");
+        button.disabled = false;
+        button.textContent = "Use This";
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

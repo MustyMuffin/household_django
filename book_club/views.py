@@ -1,55 +1,241 @@
+import json
+import re
 from collections import defaultdict
-from django.db.models import F
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
-from book_club.utils import update_badges_for_books
-from accounts.badge_helpers import check_and_award_badges
-from accounts.xp_helpers import award_xp
-from .forms import BookEntryForm, BookForm, BookProgressTrackerForm
-from .models import Book, BookProgressTracker, BookCategory, BooksRead, BookSeries
+from django.core.files.storage import default_storage
+from django.db.models import F
+from django.shortcuts import get_object_or_404, render
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.html import strip_tags
+from django.views.decorators.http import require_POST
+
 from accounts.models import UserStats
-from django.contrib.auth.decorators import user_passes_test
-from .api_combined import fetch_and_cache_metadata
-from django.http import JsonResponse
-from .api_combined import fetch_external_metadata_by_title
+from accounts.xp_helpers import award_xp
+from book_club.utils import update_badges_for_books
+from .api.api_combined import fetch_all_metadata_options
+from .forms import BookEntryForm, BookProgressTrackerForm
+from .models import Book, BookProgressTracker, BookCategory, BooksRead, BookSeries, BookMetadata
 from .utils import calculate_reading_times
+
 
 def is_privileged(user):
     return user.groups.filter(name='Privileged').exists()
 
-def fetch_book_data_api(request):
-    q = request.GET.get('q')
-    if not q:
-        return JsonResponse({'error': 'Missing query'}, status=400)
-
-    data = fetch_external_metadata_by_title(q)
-    if not data:
-        return JsonResponse({'error': 'No book found'}, status=404)
-
-    pages = int(data.get("pages", 0))
-
-    print("pages =", pages)
-
-    # Handle estimated word count from pages (if present)
+def clean_unicode_escapes(text):
+    """Clean Unicode escape sequences from text."""
+    if not text:
+        return text
     try:
-        pages = int(data.get("pages", 0))
-        estimated_words = pages * 275 if pages > 0 else None
-        print("DEBUG = estimated_words = ", estimated_words)
-    except (ValueError, TypeError):
-        estimated_words = None
-        print("DEBUG = estimated_words =", estimated_words)
+        return text.encode('utf-8').decode('unicode-escape')
+    except:
+        return text
 
-    # Safely return full response
-    return JsonResponse({
-        "title": data.get("title", ""),
-        "authors": data.get("authors", []),
-        "description": data.get("description", ""),
-        "thumbnail_url": data.get("thumbnail_url") or data.get("thumbnail") or "",
-        "external_url": data.get("external_url", ""),
-        "source": data.get("source", ""),
-        "pages": int(data.get("pages", 0)),
-        "estimated_words": estimated_words,
+@login_required
+def book_title_search(request, book_id=None):
+    query = request.GET.get("query", "").strip()
+    edit_book = get_object_or_404(Book, id=book_id) if book_id else None
+
+    print("Debug: edit_book_id", book_id)
+
+    context = {
+        "query": query,
+        "sources": {},  # To be populated later
+        "edit_book_id": edit_book.id if edit_book else "",
+        "edit_mode": bool(edit_book),
+        "edit_book_title": edit_book.title if edit_book else "",
+    }
+
+    return render(request, "book_club/book_title_search.html", context)
+
+from .utils import estimate_word_count_from_pages  # or wherever it’s defined
+
+@login_required
+def select_metadata_option(request):
+    if request.method == "POST":
+        selected_data = json.loads(request.POST.get("selected_data", "{}"))
+        edit_book_id = request.POST.get("edit_book_id")
+        cover_url = request.POST.get("cover_url")
+
+        pages = selected_data.get("pages") or 0
+        try:
+            pages = int(pages)
+        except (ValueError, TypeError):
+            pages = 0
+
+
+        word_estimate = estimate_word_count_from_pages(pages)
+
+        # Store selected metadata in session
+        request.session['prefill_book_data'] = {
+            "title": selected_data.get("title", ""),
+            "authors": selected_data.get("authors", []),
+            "description": selected_data.get("description", "").encode().decode('unicode_escape'),
+            "cover_url": selected_data.get("thumbnail_url", "").encode().decode('unicode_escape'),
+            "pages": pages,
+            "words": word_estimate,
+            "source": selected_data.get("source", "manual"),
+        }
+
+        if edit_book_id:
+            request.session['prefill_book_data']['edit_book_id'] = edit_book_id
+            return redirect("book_club:book_edit", book_id=edit_book_id)
+
+        return redirect("book_club:book_create")
+
+    # GET request: show metadata options
+    query = request.GET.get('query', '')
+    edit_book_id = request.GET.get('edit_book_id')
+    print("DEBUG edit_book_id in select_metadata_option", edit_book_id)
+
+    sources = {}
+    if query:
+        sources = fetch_all_metadata_options(query)
+        for source, items in sources.items():
+            for item in items:
+                item["json"] = json.dumps(item)
+
+    return render(request, "book_club/select_metadata.html", {
+        "query": query,
+        "sources": sources,
+        "edit_book_id": edit_book_id,
+    })
+
+
+@login_required
+def add_new_book(request, book_id=None):
+    book = get_object_or_404(Book, id=book_id) if book_id else None
+    edit_mode = bool(book)
+
+    if request.method == "POST":
+        # 🔄 Handle form submission
+        title = request.POST.get("title", "").strip()
+        author = request.POST.get("author", "").strip()
+        description = request.POST.get("description", "").strip()
+        pages = int(request.POST.get("pages") or 0)
+        words = int(request.POST.get("words") or estimate_word_count_from_pages(pages))
+
+        # Handle category, series, cover image
+        book_category, book_series, cover_url = process_book_associations(request)
+
+        if book:
+            book.title = title
+            book.authors = author
+            book.pages = pages
+            book.words = words
+            book.book_category = book_category
+            book.series = book_series
+
+            BookMetadata.objects.update_or_create(
+                book=book,
+                defaults={
+                    "source": request.POST.get("source", "manual"),
+                    "title": title,
+                    "authors": [author] if author else [],
+                    "description": description,
+                    "thumbnail_url": cover_url,
+                    "pages": pages
+                }
+            )
+        else:
+            book = Book.objects.create(
+                title=title,
+                pages=pages,
+                words=words,
+                book_category=book_category,
+                series=book_series,
+            )
+            BookMetadata.objects.update_or_create(
+                book=book,
+                defaults={
+                    "source": request.POST.get("source", "manual"),
+                    "title": title,
+                    "authors": [author] if author else [],
+                    "description": description,
+                    "thumbnail_url": cover_url,
+                    "pages": pages
+                }
+            )
+
+        book.save()
+        return redirect("book_club:book_detail", book.id)
+
+    # Prefill logic (GET request)
+    prefill_data = request.session.pop("prefill_book_data", {})  # use and clear session
+
+    if book and not prefill_data:
+        # Inline logic from prefill_book_form()
+        metadata = BookMetadata.objects.filter(book=book).first()
+        prefill_data = {
+            "edit_book_id": str(book.id),
+            "title": book.title,
+            "author": ", ".join(metadata.authors) if metadata else "",
+            "description": metadata.description if metadata else "",
+            "cover_url": metadata.thumbnail_url if metadata else "",
+            "pages": metadata.pages if metadata and metadata.pages else book.pages,
+            "source": metadata.source if metadata else "manual",
+            "book_category": str(book.book_category.id) if book.book_category else "",
+            "series_name": str(book.series.id) if book.series else "",
+            "new_category_name": "",
+            "new_series_name": "",
+        }
+
+        # Estimate words if needed
+        prefill_data["words"] = estimate_word_count_from_pages(prefill_data["pages"])
+
+    return render(request, "book_club/add_new_book.html", {
+        "edit_mode": edit_mode,
+        "book_id": book.id if book else "",
+        "prefill": prefill_data,
+        "categories": BookCategory.objects.all(),
+        "series": BookSeries.objects.all(),
+    })
+
+def process_book_associations(request):
+    # Category
+    selected_cat_id = request.POST.get("book_category")
+    new_category_name = request.POST.get("new_category_name", "").strip()
+    book_category = None
+
+    if selected_cat_id == "new" and new_category_name:
+        book_category, _ = BookCategory.objects.get_or_create(name=new_category_name)
+    elif selected_cat_id:
+        book_category = BookCategory.objects.filter(id=selected_cat_id).first()
+
+    # Series
+    selected_series_id = request.POST.get("series_name")
+    new_series_name = request.POST.get("new_series_name", "").strip()
+    book_series = None
+
+    if selected_series_id == "new" and new_series_name:
+        book_series, _ = BookSeries.objects.get_or_create(series_name=new_series_name)
+    elif selected_series_id:
+        book_series = BookSeries.objects.filter(id=selected_series_id).first()
+
+    # Cover
+    cover_url = request.POST.get("cover_url", "")
+    cover_file = request.FILES.get("cover_upload")
+    if cover_file:
+        filename = default_storage.save(f"book_covers/{cover_file.name}", cover_file)
+        cover_url = default_storage.url(filename)
+
+    return book_category, book_series, cover_url
+
+def render_book_form(request, prefill=None):
+    categories = BookCategory.objects.all().order_by("name")
+    series = BookSeries.objects.all().order_by("series_name")
+
+    if prefill:
+        pages = prefill.get("pages")
+        if pages and not prefill.get("words"):
+            prefill["words"] = estimate_word_count_from_pages(pages)
+
+    return render(request, "book_club/add_new_book.html", {
+        "categories": categories,
+        "series": series,
+        "prefill": prefill or {},
     })
 
 
@@ -57,13 +243,16 @@ def book_detail(request, book_id):
     """Show a single book and all its entries, with external metadata."""
     book = get_object_or_404(Book, id=book_id)
     book_entries = book.bookentry_set.order_by('-date_added')
-    metadata = fetch_and_cache_metadata(book)
+    metadata = BookMetadata.objects.get(book=book)
     tracker = BookProgressTracker.objects.filter(user=request.user, book_name=book).first()
     has_progress = tracker and tracker.words_completed and tracker.words_completed > 0
     want_to_read = tracker.want_to_read if tracker else False
     series = book.series
-    category_id = book.book_category_id
-    category = get_object_or_404(BookCategory, id=category_id)
+
+    # Fix: Handle books without categories
+    category = None
+    if book.book_category_id:
+        category = get_object_or_404(BookCategory, id=book.book_category_id)
 
     finished_books = BooksRead.objects.filter(user=request.user)
     print("DEBUG = finished_books = ", finished_books)
@@ -77,7 +266,7 @@ def book_detail(request, book_id):
         'want_to_read': want_to_read,
         "finished_books": finished_books,
         "series": series,
-        "category": category,
+        "category": category,  # This can now be None
     }
     return render(request, 'book_club/book.html', context)
 
@@ -229,73 +418,6 @@ def book_backlog(request):
         'finished_books': finished_books,
     })
 
-@user_passes_test(is_privileged)
-def add_new_book(request):
-    if request.method == "POST":
-        # ✅ FIRST get the form values
-        title = request.POST.get("title")
-        author = request.POST.get("author")
-        description = request.POST.get("description", "")
-        cover_url = request.POST.get("cover_url", "")
-        word_count = int(request.POST.get("words") or 0)
-        pages = request.POST.get("pageCount")
-
-        # ✅ THEN check for duplicates
-        if Book.objects.filter(title__iexact=title).exists():
-            categories = BookCategory.objects.all().order_by("name")
-            return render(request, "book_club/add_new_book.html", {
-                "categories": categories,
-                "error": f'A book titled "{title}" already exists.',
-                "prefill": request.POST,
-            })
-
-        # ✅ Handle category logic
-        selected_cat_id = request.POST.get("book_category")
-        new_category_name = request.POST.get("new_category_name", "").strip()
-        book_category = None
-        print("DEBUG = selected_cat_id = ", selected_cat_id)
-
-        if selected_cat_id == "new" and new_category_name:
-            book_category, _ = BookCategory.objects.get_or_create(name=new_category_name)
-        elif selected_cat_id:
-            book_category = BookCategory.objects.filter(id=selected_cat_id).first()
-
-        # ✅ Handle series logic
-        selected_series_id = request.POST.get("series_name")
-        new_series_name = request.POST.get("new_series_name", "").strip()
-        book_series = None
-        print("DEBUG = selected_series_id = ", selected_series_id)
-        print("DEBUG = new_series_name = ", new_series_name)
-
-        if selected_series_id == "new" and new_series_name:
-            book_series, _ = BookSeries.objects.get_or_create(series_name=new_series_name)
-        elif selected_series_id:
-            book_series = BookSeries.objects.filter(id=selected_series_id).first()
-
-        # ✅ Create and save the book
-        book = Book.objects.create(
-            title=title,
-            words=word_count,
-            book_category=book_category,
-            pages = pages,
-            series=book_series,
-        )
-
-        # ✅ Attach external metadata
-        fetch_and_cache_metadata(book)
-
-        return redirect("book_club:book_detail", book_id=book.id)
-
-    # GET request: show empty form
-    categories = BookCategory.objects.all().order_by("name")
-    series = BookSeries.objects.all().order_by("series_name")
-    print(categories)
-    print(series)
-    return render(request, "book_club/add_new_book.html", {
-        "categories": categories,
-        "series": series,
-    })
-
 @login_required
 def toggle_want_to_read(request, book_id):
     book = get_object_or_404(Book, id=book_id)
@@ -304,3 +426,38 @@ def toggle_want_to_read(request, book_id):
     tracker.save()
 
     return redirect('book_club:book_detail', book_id=book.id)
+
+@require_POST
+def store_and_redirect(request):
+    """Store book data in session and redirect to either add or update a book."""
+
+    # Clean all text fields
+    title = clean_unicode_escapes(request.POST.get('title', ''))
+    description = clean_unicode_escapes(request.POST.get('description', ''))
+    cover_url = clean_unicode_escapes(request.POST.get('cover_url', ''))
+
+    # Additional cleaning for description
+    if description:
+        description = strip_tags(description)
+        description = re.sub(r'\s+', ' ', description).strip()
+
+    edit_book_id = request.POST.get('edit_book_id', '')
+
+    # Store all the book data in session
+    request.session['prefill_book_data'] = {
+        'title': title,
+        'author': request.POST.get('author', ''),
+        'authors': request.POST.get('author', '').split(', '),
+        'description': description,
+        'cover_url': cover_url,
+        'pages': request.POST.get('pages', ''),
+        'source': request.POST.get('source', ''),
+        'edit_book_id': edit_book_id,
+    }
+    print("Debug: edit_book_id", edit_book_id)
+
+    # 🧠 Redirect based on intent
+    if edit_book_id:
+        return redirect('book_club:finalize_edit_metadata', book_id=edit_book_id)
+    else:
+        return redirect('book_club:add_new_book')

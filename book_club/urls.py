@@ -1,6 +1,8 @@
 from django.urls import path, include
 from . import views
 
+from .api.api_googlebooks import fetch_google_volume_detail
+
 app_name = 'book_club'
 
 urlpatterns = [
@@ -18,8 +20,16 @@ urlpatterns = [
     path('book/update/<int:pk>/', views.book_tracker_entry, name='update_book_tracker_entry'),
     path('toggle_want_to_read/<int:book_id>/', views.toggle_want_to_read, name='toggle_want_to_read'),
 
+    # Book metadata search + APIs
+    path("books/search/", views.book_title_search, name="book_search"),
+    path("books/search/<int:book_id>/", views.book_title_search, name="book_search_with_id"),
+    path("books/metadata/options/", views.select_metadata_option, name="select_metadata"),
+    path('api/fetch_google_volume/<str:volume_id>/', fetch_google_volume_detail, name='fetch_google_volume_detail'),
 
-    # Add new book (Privileged users only)
-    path('add_new_book/', views.add_new_book, name='add_new_book'),
-    path('api/fetch_book_data/', views.fetch_book_data_api, name='fetch_book_data_api'),
+    # Book CRUD
+    path("render_book_form/<int:book_id>/", views.render_book_form, name="render_book_form"),
+    path("books/add/", views.add_new_book, name="book_create"),
+    path("books/edit/<int:book_id>/", views.add_new_book, name="book_edit"),
+
+
 ]

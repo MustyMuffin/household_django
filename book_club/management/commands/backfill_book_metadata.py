@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from book_club.models import Book
-from book_club.api_combined import fetch_and_cache_metadata
+from book_club.api.api_combined import fetch_and_cache_metadata
 
 class Command(BaseCommand):
     help = "Backfills missing BookMetadata for all books"
