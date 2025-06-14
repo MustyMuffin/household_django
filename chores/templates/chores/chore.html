@@ -1,26 +1,445 @@
 {% extends 'household_main/base.html' %}
+{% load humanize %}
 
 {% block page_header %}
-  <h1>{{ chore.text }}</h1>
+  <h1>{{ chore.name }}</h1>
 {% endblock page_header %}
 
 {% block content %}
+    <div class="container mt-4">
+    <div class="row">
+    <div class="col-md-8">
+    <p><div><a class="btn btn-success" href="{% url 'chores:new_chore_entry' chore.id %}">
+            ➕ Add New Entry</a></div></p>
+    {% if is_privileged %}
+        <p><div><a class="btn btn-warning" href="{% url 'chores:select_entry_to_edit' chore.id %}"
+            >✐ Edit All Entries</a></div></p>
+    {% endif %}
 
-  <p>
-    <a href="{% url 'chores:new_chore_entry' chore.id %}">Add new entry</a>
-  </p>
-
-  {% for chore_entry in chore_entries %}
-    <div class="card mb-3">
-      <!-- Card header with timestamp and edit link -->
-      <h4 class="card-header">
-        {{ chore_entry.date_added|date:'M d, Y H:i' }}
-      </h4>
-      <!-- Card body with entry text -->
-      <div class="card-body">{{ chore_entry.user|linebreaks }}</div>
+      <!-- Calendar Section -->
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">📅 {{ chore.name }} Calendar</h5>
+          <div class="btn-group btn-group-sm">
+            <button id="prev-month" class="btn btn-outline-secondary">&laquo; Prev</button>
+            <button id="today-btn" class="btn btn-outline-primary">Today</button>
+            <button id="next-month" class="btn btn-outline-secondary">Next &raquo;</button>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div id="calendar-container">
+            <!-- Calendar will be generated here -->
+          </div>
+        </div>
+      </div>
+        <div class="small text-muted">
+        <p class="mb-1">{{ chore_description }}</p></div>
     </div>
-  {% empty %}
-    <p>You've never done this chore before. Ask a grown-up to teach you how to do it!</p>
-  {% endfor %}
 
+    <!-- Sidebar -->
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">📊 Quick Stats</h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6">
+              <div class="border-end">
+                <h5 class="mb-0">{{ chore_entries|length }}</h5>
+                <small class="text-muted">This Month</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <h5 class="mb-0">
+                {% if chore_entries %}
+                  {{ chore_entries.0.date_added|timesince }}
+                {% else %}
+                  Never
+                {% endif %}
+              </h5>
+              <small class="text-muted">Last Done</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mt-3">
+        <div class="card-header">
+          <h6 class="mb-0">🎯 Legend</h6>
+        </div>
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="calendar-dot completed"></div>
+            <small>Completed</small>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="calendar-dot today"></div>
+            <small>Today</small>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <div class="calendar-dot selected"></div>
+            <small>Selected Date</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Entries Section -->
+      <div class="card mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">📋 Recent Completions</h6>
+          <span class="badge bg-info" id="selected-date-badge">All Entries</span>
+        </div>
+        <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+          <div id="entries-container">
+            {% if chore_entries %}
+              {% for chore_entry in chore_entries %}
+                <div class="entry-item border-bottom p-2" data-date="{{ chore_entry.date_added|date:'Y-m-d' }}">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                      <div class="d-flex align-items-center gap-1 mb-1">
+                        <span class="badge bg-success" style="font-size: 0.6rem;">✓</span>
+                        <strong class="text-primary" style="font-size: 0.85rem;">{{ chore_entry.date_added|date:'M d' }}</strong>
+                        <small class="text-muted" style="font-size: 0.75rem;">{{ chore_entry.date_added|date:'g:i A' }}</small>
+                      </div>
+
+                      {% if chore_entry.user %}
+                        <div class="mb-1">
+                          <small class="text-muted" style="font-size: 0.75rem;">👤 {{ chore_entry.user.get_full_name|default:chore_entry.user.username|truncatechars:15 }}</small>
+                        </div>
+                      {% endif %}
+
+                      {% if chore_entry.notes %}
+                        <div class="mb-1">
+                          <small class="text-muted" style="font-size: 0.75rem;">💬 {{ chore_entry.notes|truncatewords:8 }}</small>
+                        </div>
+                      {% endif %}
+
+                      {% if chore_entry.payout %}
+                        <div class="mb-1">
+                          <small class="text-success" style="font-size: 0.75rem;">💰 ${{ chore_entry.payout }}</small>
+                        </div>
+                      {% endif %}
+                    </div>
+
+                    {% if is_privileged %}
+                      <div class="ms-1">
+                        <a href="{% url 'chores:edit_specific_chore_entry' chore.id chore_entry.id %}"
+                           class="btn btn-outline-primary btn-sm" style="font-size: 0.7rem; padding: 0.1rem 0.3rem;">
+                          ✏️
+                        </a>
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-center py-4">
+                <div class="text-muted">
+                  <i class="fs-4">📝</i>
+                  <p class="mt-2 small">You've never done this chore before.<br>Ask a grown-up to teach you how to do it!</p>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock content %}
+
+{% block extra_scripts %}
+<script>
+// Debug: Check if script is loading
+console.log('Calendar script loading...');
+
+// Calendar data from Django template
+const choreEntries = [
+  {% for entry in chore_entries %}
+    {
+      date: '{{ entry.date_added|date:"Y-m-d" }}',
+      time: '{{ entry.date_added|date:"g:i A" }}',
+      user: '{{ entry.user.get_full_name|default:entry.user.username|default:"Unknown" }}',
+      id: {{ entry.id }}
+    }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+];
+
+console.log('Chore entries:', choreEntries);
+
+let currentDate = new Date();
+let selectedDate = null;
+
+function generateCalendar(year, month) {
+  console.log('Generating calendar for:', year, month);
+
+  const calendarContainer = document.getElementById('calendar-container');
+  if (!calendarContainer) {
+    console.error('Calendar container not found!');
+    return;
+  }
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDate = new Date(firstDay);
+  startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let html = `
+    <table class="table table-borderless mb-0">
+      <thead>
+        <tr class="text-center">
+          <th colspan="7" class="py-3">
+            <h5 class="mb-0">${firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h5>
+          </th>
+        </tr>
+        <tr class="text-center text-muted">
+          <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  for (let week = 0; week < 6; week++) {
+    html += '<tr class="text-center">';
+    for (let day = 0; day < 7; day++) {
+      const currentCalendarDate = new Date(startDate);
+      currentCalendarDate.setDate(startDate.getDate() + (week * 7) + day);
+
+      const dateStr = currentCalendarDate.toISOString().split('T')[0];
+      const isCurrentMonth = currentCalendarDate.getMonth() === month;
+      const isToday = currentCalendarDate.getTime() === today.getTime();
+      const hasEntry = choreEntries.some(entry => entry.date === dateStr);
+      const isSelected = selectedDate === dateStr;
+
+      let classes = 'calendar-day p-2 position-relative';
+      if (!isCurrentMonth) classes += ' text-muted';
+      if (isToday) classes += ' today';
+      if (hasEntry) classes += ' has-entry';
+      if (isSelected) classes += ' selected';
+
+      html += `
+        <td class="${classes}" data-date="${dateStr}" style="cursor: pointer; height: 50px;">
+          <div class="d-flex flex-column align-items-center">
+            <span>${currentCalendarDate.getDate()}</span>
+            ${hasEntry ? '<div class="calendar-dot completed"></div>' : ''}
+          </div>
+        </td>
+      `;
+    }
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+
+  console.log('Setting calendar HTML...');
+  calendarContainer.innerHTML = html;
+
+  // Add click handlers to calendar days
+  document.querySelectorAll('.calendar-day').forEach(cell => {
+    cell.addEventListener('click', function() {
+      const clickedDate = this.dataset.date;
+      selectDate(clickedDate);
+    });
+  });
+
+  console.log('Calendar generated successfully');
+}
+
+function selectDate(dateStr) {
+  selectedDate = dateStr;
+
+  // Update calendar styling
+  document.querySelectorAll('.calendar-day').forEach(cell => {
+    cell.classList.remove('selected');
+  });
+  const selectedCell = document.querySelector(`[data-date="${dateStr}"]`);
+  if (selectedCell) {
+    selectedCell.classList.add('selected');
+  }
+
+  // Filter entries
+  filterEntriesByDate(dateStr);
+
+  // Update badge
+  const badgeElement = document.getElementById('selected-date-badge');
+  if (badgeElement) {
+    const date = new Date(dateStr);
+    badgeElement.textContent =
+      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+}
+
+function filterEntriesByDate(dateStr) {
+  const entries = document.querySelectorAll('.entry-item');
+  let visibleCount = 0;
+
+  if (!dateStr) {
+    // Show all entries
+    entries.forEach(entry => {
+      entry.style.display = 'block';
+      visibleCount++;
+    });
+    const badgeElement = document.getElementById('selected-date-badge');
+    if (badgeElement) {
+      badgeElement.textContent = 'All Entries';
+    }
+  } else {
+    // Show only entries for selected date
+    entries.forEach(entry => {
+      if (entry.dataset.date === dateStr) {
+        entry.style.display = 'block';
+        visibleCount++;
+      } else {
+        entry.style.display = 'none';
+      }
+    });
+  }
+
+  // Show message if no entries for selected date
+  const container = document.getElementById('entries-container');
+  let noEntriesMsg = container.querySelector('.no-entries-message');
+
+  if (visibleCount === 0 && dateStr) {
+    if (!noEntriesMsg) {
+      noEntriesMsg = document.createElement('div');
+      noEntriesMsg.className = 'no-entries-message text-center py-4 text-muted';
+      noEntriesMsg.innerHTML = '<i class="fs-3">📅</i><p class="mt-2">No completions on this date</p>';
+      container.appendChild(noEntriesMsg);
+    }
+  } else if (noEntriesMsg) {
+    noEntriesMsg.remove();
+  }
+}
+
+// Navigation functions
+function navigateMonth(direction) {
+  currentDate.setMonth(currentDate.getMonth() + direction);
+  generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+}
+
+function goToToday() {
+  currentDate = new Date();
+  generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+  selectDate(new Date().toISOString().split('T')[0]);
+}
+
+// Initialize - with more robust error checking
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM loaded, initializing calendar...');
+
+  // Check if required elements exist
+  const calendarContainer = document.getElementById('calendar-container');
+  const entriesContainer = document.getElementById('entries-container');
+
+  if (!calendarContainer) {
+    console.error('Calendar container (#calendar-container) not found!');
+    return;
+  }
+
+  if (!entriesContainer) {
+    console.error('Entries container (#entries-container) not found!');
+    return;
+  }
+
+  // Generate initial calendar
+  generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+
+  // Add event listeners with error checking
+  const prevBtn = document.getElementById('prev-month');
+  const nextBtn = document.getElementById('next-month');
+  const todayBtn = document.getElementById('today-btn');
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => navigateMonth(-1));
+  } else {
+    console.error('Previous month button not found!');
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => navigateMonth(1));
+  } else {
+    console.error('Next month button not found!');
+  }
+
+  if (todayBtn) {
+    todayBtn.addEventListener('click', goToToday);
+  } else {
+    console.error('Today button not found!');
+  }
+
+  // Show all entries initially
+  filterEntriesByDate(null);
+
+  console.log('Calendar initialization complete');
+});
+
+// Also try initializing on window load as backup
+window.addEventListener('load', function() {
+  console.log('Window loaded - backup initialization...');
+  if (!document.querySelector('#calendar-container table')) {
+    console.log('Calendar not found, trying to regenerate...');
+    generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+  }
+});
+</script>
+
+<style>
+.calendar-day {
+  border: 1px solid #344150;
+  transition: all 0.2s ease;
+}
+
+.calendar-day:hover {
+  background-color: #123457 !important;
+}
+
+.calendar-day.today {
+  background-color: #213925;
+  font-weight: bold;
+}
+
+.calendar-day.has-entry {
+  background-color: #06360e;
+}
+
+.calendar-day.selected {
+  background-color: #007bff;
+  color: grey;
+}
+
+.calendar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-top: 2px;
+}
+
+.calendar-dot.completed {
+  background-color: #28a745;
+}
+
+.calendar-dot.today {
+  background-color: #007bff;
+}
+
+.calendar-dot.selected {
+  background-color: #ffc107;
+}
+
+.entry-item {
+  transition: all 0.3s ease;
+}
+
+.entry-item:last-child {
+  border-bottom: none !important;
+}
+
+.entry-item:hover {
+  background-color: #283b4d;
+}
+</style>
+{% endblock %}

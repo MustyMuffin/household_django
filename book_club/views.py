@@ -38,7 +38,7 @@ def book_title_search(request, book_id=None):
     query = request.GET.get("query", "").strip()
     edit_book = get_object_or_404(Book, id=book_id) if book_id else None
 
-    print("Debug: edit_book_id", book_id)
+    # print("Debug: edit_book_id", book_id)
 
     context = {
         "query": query,
@@ -88,7 +88,7 @@ def select_metadata_option(request):
     # GET request: show metadata options
     query = request.GET.get('query', '')
     edit_book_id = request.GET.get('edit_book_id')
-    print("DEBUG edit_book_id in select_metadata_option", edit_book_id)
+    # print("DEBUG edit_book_id in select_metadata_option", edit_book_id)
 
     sources = {}
     if query:
@@ -255,7 +255,7 @@ def book_detail(request, book_id):
         category = get_object_or_404(BookCategory, id=book.book_category_id)
 
     finished_books = BooksRead.objects.filter(user=request.user)
-    print("DEBUG = finished_books = ", finished_books)
+    # print("DEBUG = finished_books = ", finished_books)
 
     context = {
         'book': book,
@@ -409,7 +409,7 @@ def book_backlog(request):
             reading_times[entry.book_name.id] = result
 
     finished_books = BooksRead.objects.filter(user=request.user)
-    print("DEBUG = finished_books = ", finished_books)
+    # print("DEBUG = finished_books = ", finished_books)
 
     return render(request, 'book_club/book_backlog.html', {
         'in_progress_books': in_progress_books,
@@ -454,7 +454,7 @@ def store_and_redirect(request):
         'source': request.POST.get('source', ''),
         'edit_book_id': edit_book_id,
     }
-    print("Debug: edit_book_id", edit_book_id)
+    # print("Debug: edit_book_id", edit_book_id)
 
     # 🧠 Redirect based on intent
     if edit_book_id:

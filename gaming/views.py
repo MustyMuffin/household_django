@@ -46,7 +46,7 @@ def fetch_game_data_api(request):
         if not q or not source:
             return JsonResponse({"error": "Missing query or source"}, status=400)
 
-        print(f"🔍 Fetching game: {q}, source: {source}")
+        # print(f"🔍 Fetching game: {q}, source: {source}")
         data = fetch_game_data(q, source)
 
         if not data or not data.get("results"):
@@ -56,7 +56,7 @@ def fetch_game_data_api(request):
 
 
     except Exception as e:
-        print("❌ fetch_game_data_api error:", e)
+        # print("❌ fetch_game_data_api error:", e)
         return JsonResponse({"error": "Internal server error", "details": str(e)}, status=500)
 
 def fetch_user_progress(request, game_id):
@@ -106,7 +106,7 @@ def games(request):
 
 @login_required
 def log_game_progress(request, game_id):
-    print("✅ Entered log_game_progress view")
+    # print("✅ Entered log_game_progress view")
 
     game = get_object_or_404(Game, id=game_id)
 
@@ -117,11 +117,11 @@ def log_game_progress(request, game_id):
     already_beaten = progress_entry.beaten if progress_entry else False
     already_mastered = progress_entry.mastered if progress_entry else False
 
-    print("DEBUG: Already beaten:", already_beaten)
-    print("DEBUG: Already mastered:", already_mastered)
+    # print("DEBUG: Already beaten:", already_beaten)
+    # print("DEBUG: Already mastered:", already_mastered)
 
     if request.method == 'POST':
-        print("📝 POST data:", request.POST.dict())
+        # print("📝 POST data:", request.POST.dict())
 
         old_hours = progress_entry.hours_played if progress_entry else 0
         previously_beaten = already_beaten
@@ -136,8 +136,8 @@ def log_game_progress(request, game_id):
             note = form.cleaned_data.get('note', '')
 
             delta = new_hours - old_hours
-            print(f"📊 Old hours: {old_hours}, New hours: {new_hours}, Delta: {delta}")
-            print("DEBUG beaten:", beaten)
+            # print(f"📊 Old hours: {old_hours}, New hours: {new_hours}, Delta: {delta}")
+            # print("DEBUG beaten:", beaten)
 
             # Ensure we have a GameProgress instance
             if progress_entry:
@@ -169,7 +169,7 @@ def log_game_progress(request, game_id):
                     source_type="finished_game",
                     request=request,
                 )
-                print("🎁 Bonus result:", bonus_result)
+                # print("🎁 Bonus result:", bonus_result)
                 if bonus_result.get("xp_awarded"):
                     messages.success(request, f"✅ Bonus XP: {bonus_result['xp_awarded']} for finishing the game!")
 
@@ -218,7 +218,7 @@ def log_game_progress(request, game_id):
 
             return redirect("gaming:games_by_category")
         else:
-            print("❌ Form errors:", form.errors)
+            # print("❌ Form errors:", form.errors)
             messages.error(request, "❌ Invalid input. Please check your form.")
     else:
         form = GameProgressTrackerForm(instance=progress_entry)
@@ -229,7 +229,7 @@ def log_game_progress(request, game_id):
         for c in UserCollectibleProgress.objects.filter(user=request.user, collectible_type__game=game)
     }
 
-    print("DEBUG: already_mastered:", already_mastered)
+    # print("DEBUG: already_mastered:", already_mastered)
 
     return render(request, "gaming/log_game_progress.html", {
         "form": form,
@@ -242,14 +242,14 @@ def log_game_progress(request, game_id):
 
 
 def log_hours(user, hours_played, game, request=None):
-    print(f"🔧 log_hours called with {hours_played} for '{game}'")
+    # print(f"🔧 log_hours called with {hours_played} for '{game}'")
 
     userstats, _ = UserStats.objects.get_or_create(user=user)
     userstats.hours_played += hours_played
     userstats.save(update_fields=["hours_played"])
 
     # 👇 Add this print
-    print("🎯 Calling award_xp...")
+    # print("🎯 Calling award_xp...")
     result = award_xp(
         user=user,
         source_object=hours_played,
@@ -295,11 +295,11 @@ def add_new_game(request):
         new_category_name = request.POST.get("new_category_name", "").strip()
         image = request.POST.get("image_url", "").strip()
         selected_sources = request.POST.getlist("sources")
-        print("Debug: selected_sources:", selected_sources)
+        # print("Debug: selected_sources:", selected_sources)
 
         # ✅ Auto-toggle use_retro based on source selection
         use_retro = "retroachievements" in selected_sources
-        print("Debug: use_retro:", use_retro)
+        # print("Debug: use_retro:", use_retro)
 
         # ✅ Determine category
         if new_category_name:
@@ -410,7 +410,7 @@ def unpair_retro_game(request, game_id):
 def generate_game_links(request, game_id):
     game = get_object_or_404(Game, id=game_id)
     selected_sources = request.session.get("selected_sources", [])
-    print("DEBUG (generate_game_links): selected_sources =", selected_sources)
+    # print("DEBUG (generate_game_links): selected_sources =", selected_sources)
 
     if not selected_sources:
         messages.warning(request, "⚠️ No sources selected for link generation.")
@@ -426,7 +426,7 @@ def generate_game_links(request, game_id):
                 platform=source,
                 defaults={"url": links[source]}
             )
-            print("DEBUG (generate_game_links): Created or updated link for", source)
+            # print("DEBUG (generate_game_links): Created or updated link for", source)
             if created or link_obj.url != links[source]:
                 created_or_updated += 1
 
@@ -502,7 +502,7 @@ def auto_fill_game_hours(game: Game):
         game.hours_main_extra = data["hours_main_extra"]
         game.hours_completionist = data["hours_completionist"]
         game.save()
-        print(f"📊 Updated hours for {game.name}")
+        # print(f"📊 Updated hours for {game.name}")
 
 def find_retro_matches(title, limit=5):
     all_titles = list(RetroGameEntry.objects.values_list('title', flat=True))

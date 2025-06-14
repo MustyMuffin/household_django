@@ -21,11 +21,11 @@ def get_game_links(title, retro_id=None):
         "playstation": f"https://psnprofiles.com/search/games?q={query}",
     }
 
-    print("DEBUG: Retro_ID =", retro_id)
+    # print("DEBUG: Retro_ID =", retro_id)
 
     if retro_id and str(retro_id).isdigit():
         links["retroachievements"] = f"https://retroachievements.org/game/{retro_id}"
-        print("DEBUG: With RetroID triggered:", links)
+        # print("DEBUG: With RetroID triggered:", links)
     else:
         links["retroachievements"] = f"https://retroachievements.org/search/games/{query}"
 

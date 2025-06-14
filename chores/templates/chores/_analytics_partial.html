@@ -1,0 +1,35 @@
+
+<p class="text-muted">From {{ range_start|date:"M j" }} to {{ range_end|date:"M j, Y" }}</p>
+
+<h3>Top Users</h3>
+<ul>
+  {% for user in top_users %}
+    <li>{{ user.user__username }} — {{ user.total_done }} entries, ${{ user.total_wage }}</li>
+  {% empty %}
+    <li>No data</li>
+  {% endfor %}
+</ul>
+
+<h3>Times Completed</h3>
+<ul>
+  {% for chore in top_chores %}
+    <li>{{ chore.chore__name }} — {{ chore.times_done }} times</li>
+  {% endfor %}
+</ul>
+
+<h3>Breakdown by User and Chore</h3>
+<table class="table table-sm table-bordered">
+  <thead>
+    <tr><th>User</th><th>Chore</th><th>Times Done</th><th>Total Wage</th></tr>
+  </thead>
+  <tbody>
+    {% for entry in user_chore_breakdown %}
+      <tr>
+        <td>{{ entry.user__username }}</td>
+        <td>{{ entry.chore__name }}</td>
+        <td>{{ entry.times_done }}</td>
+        <td>${{ entry.total_wage }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

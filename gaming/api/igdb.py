@@ -56,7 +56,7 @@ def fetch_game_data_igdb(title):
     response = requests.post(IGDB_BASE, headers=headers, data=query)
 
     if response.status_code != 200:
-        print("❌ IGDB API error:", response.text)
+        # print("❌ IGDB API error:", response.text)
         return None
 
     results = []

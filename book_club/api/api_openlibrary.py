@@ -59,6 +59,6 @@ def fetch_openlibrary_results(query):
             "external_url": f"https://openlibrary.org{item.get('key')}",
             "pageCount": page_count,
         })
-        print(f"Page count: {page_count}, Description length: {len(description)}")
+        # print(f"Page count: {page_count}, Description length: {len(description)}")
 
     return results

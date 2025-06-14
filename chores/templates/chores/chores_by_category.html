@@ -19,7 +19,7 @@
             <ul class="list-group list-group-flush">
               {% for chore in chores %}
                 <li class="list-group-item">
-                  <a href="{% url 'chores:chore' chore.id %}">{{ chore.text }}</a>
+                  <a href="{% url 'chores:chore' chore.id %}">{{ chore.name }}</a>
                   <span class="text-muted float-end">${{ chore.wage|floatformat:2 }}</span>
                 </li>
               {% endfor %}
@@ -34,6 +34,7 @@
 
 
     <div class="mt-4 d-flex gap-2">
+    <a class="btn btn-success" href="{% url 'chores:chore_analytics' %}">📊 Chore Analytics</a>
         {% if user|is_privileged %}
     <a class="btn btn-success" href="{% url 'chores:add_new_chore' %}">➕ Add New Chore</a>
         {% endif %}

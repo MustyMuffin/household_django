@@ -1,0 +1,52 @@
+{% extends 'household_main/base.html' %}
+
+{% block content %}
+<h2>📊 Chore Analytics</h2>
+
+<select id="chore-selector" class="form-select mb-3">
+  <option value="" selected>All Chores</option>
+  {% for chore in all_chores %}
+    <option value="{{ chore.id }}">{{ chore.name }}</option>
+  {% endfor %}
+</select>
+
+<select id="days-selector" class="form-select mb-3">
+  <option value="1">Today</option>
+  <option value="7" selected>Past 7 Days</option>
+  <option value="30">Past 30 Days</option>
+</select>
+
+<p class="text-muted">{{ stats_week_label }}</p>
+
+<div id="analytics-container">
+  <!-- Analytics will be loaded via JavaScript -->
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function loadAnalytics() {
+  const choreId = document.getElementById('chore-selector').value;
+  const days = document.getElementById('days-selector').value;
+  const url = `/chores/analytics/json/?chore_id=${choreId}&days=${days}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    document.getElementById('analytics-container').innerHTML = data.html;
+  } catch (err) {
+    console.error("Failed to load analytics:", err);
+    document.getElementById('analytics-container').innerHTML = '<p class="text-danger">Failed to load analytics data.</p>';
+  }
+}
+
+// Load analytics when page first loads
+document.addEventListener('DOMContentLoaded', loadAnalytics);
+
+// Load analytics when chore selection changes
+document.getElementById('chore-selector').addEventListener('change', loadAnalytics);
+
+// Load analytics when days selection changes
+document.getElementById('days-selector').addEventListener('change', loadAnalytics);
+</script>
+{% endblock %}

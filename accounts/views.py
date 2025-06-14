@@ -225,7 +225,7 @@ class MilestoneTypeOptionsView(LoginRequiredMixin, View):
 def get_milestone_options(request):
     app = request.GET.get("app")
     initial = request.GET.get("initial")
-    print(f"[DEBUG] app={app}, initial={initial}")
+    # print(f"[DEBUG] app={app}, initial={initial}")
 
     if app == "chores":
         chores = Chore.objects.all()

@@ -56,7 +56,7 @@ def fetch_google_books_volume(volume_id):
 def fetch_google_volume_detail(request, volume_id):
     api_key = settings.GOOGLE_BOOKS_API_KEY
     url = f"https://www.googleapis.com/books/v1/volumes/{volume_id}?key={api_key}"
-    print("DEBUG url", url)
+    # print("DEBUG url", url)
 
     response = requests.get(url)
     if response.status_code != 200:

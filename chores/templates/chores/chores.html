@@ -18,7 +18,7 @@
             <ul class="list-group list-group-flush">
               {% for chore in chores %}
                 <li class="list-group-item">
-                  <a href="{% url 'chores:chore' chore.id %}">{{ chore.text }}</a>
+                  <a href="{% url 'chores:chore' chore.id %}">{{ chore.name }}</a>
                   <span class="text-muted float-end">${{ chore.wage|floatformat:2 }}</span>
                 </li>
               {% endfor %}

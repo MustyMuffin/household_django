@@ -23,7 +23,7 @@ def fetch_game_data_retro(title, console_id=1, progress_user=None):
 
     titles = [g.title for g in filtered_games]
     close_titles = difflib.get_close_matches(title, titles, n=5, cutoff=0.65)
-    print("🎯 Close matches:", close_titles)
+    # print("🎯 Close matches:", close_titles)
 
     # Step 2: Try each match
     for t in close_titles:
@@ -35,7 +35,7 @@ def fetch_game_data_retro(title, console_id=1, progress_user=None):
 
         # Skip if already cached
         if RetroGameCache.objects.filter(retro_id=game_id).exists():
-            print(f"✅ Already cached: {match.title}")
+            # print(f"✅ Already cached: {match.title}")
             return RetroGameCache.objects.get(retro_id=game_id)
 
         # Fetch game + achievements from RA API
@@ -47,7 +47,7 @@ def fetch_game_data_retro(title, console_id=1, progress_user=None):
             }).json()
 
             if not isinstance(info, dict) or not info.get("Title"):
-                print(f"⚠ Invalid data for match '{t}':", info)
+                # print(f"⚠ Invalid data for match '{t}':", info)
                 continue
 
             formatted = _format_game(info)
@@ -68,7 +68,7 @@ def fetch_game_data_retro(title, console_id=1, progress_user=None):
         except Exception as e:
             print(f"❌ Error retrieving RA info for '{t}':", e)
 
-    print(f"🔍 No valid match found for '{title}' in local cache.")
+    # print(f"🔍 No valid match found for '{title}' in local cache.")
     return None
 
 
@@ -102,18 +102,18 @@ def fetch_achievements_for_game(retro_id):
     try:
         user_url = f"{API_BASE}/API_GetGameInfoAndUser.php"
         params = {"y": api_key, "u": username, "g": int(retro_id)}
-        print(f"📤 Request URL: {user_url}?{params}")
+        # print(f"📤 Request URL: {user_url}?{params}")
         response = requests.get(user_url, params=params)
-        print(f"📥 Status Code: {response.status_code}")
-        print("📦 Raw Response:", response.text)
+        # print(f"📥 Status Code: {response.status_code}")
+        # print("📦 Raw Response:", response.text)
 
         # Retry with non-user endpoint if 404
         if response.status_code == 404:
-            print("🔁 Falling back to non-user API endpoint")
+            # print("🔁 Falling back to non-user API endpoint")
             fallback_url = f"{API_BASE}/API_GetGame.php"
             response = requests.get(fallback_url, params={"y": api_key, "g": int(retro_id)})
-            print(f"📥 Status Code: {response.status_code}")
-            print("📦 Raw Response:", response.text)
+            # print(f"📥 Status Code: {response.status_code}")
+            # print("📦 Raw Response:", response.text)
 
         data = response.json()
 

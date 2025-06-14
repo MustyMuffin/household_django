@@ -1,15 +1,133 @@
 {% extends "household_main/base.html" %}
 
 {% block content %}
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{% url 'chores:chore' chore.id %}">{{ chore.name }}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Edit Entry</li>
+    </ol>
+  </nav>
 
-  <p><a href="{% url 'chores:chore' chore.id %}">{{ chore }}</a></p>
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="mb-0">✏️ Edit Chore Entry</h4>
+        </div>
+        <div class="card-body">
+          {% if entry %}
+            <div class="alert alert-info">
+              <strong>Current completion time:</strong>
+              {{ entry.date_added|date:"M d, Y \a\t g:i A" }}
+              {% if entry.user %}
+                <br><strong>Completed by:</strong> {{ entry.user.get_full_name|default:entry.user.username }}
+              {% endif %}
+            </div>
+          {% endif %}
 
-  <p>Edit entry:</p>
+          <form method="post" novalidate>
+            {% csrf_token %}
 
-  <form action="{% url 'chores:edit_chore_entry' chore.id %}" method='post'>
-    {% csrf_token %}
-    {{ form.as_div }}
-    <button name="submit">Save changes</button>
-  </form>
+            <div class="mb-3">
+              <label for="{{ form.date_added.id_for_label }}" class="form-label">
+                {{ form.date_added.label }}
+                {% if form.date_added.field.required %}
+                  <span class="text-danger">*</span>
+                {% endif %}
+              </label>
+              {{ form.date_added }}
+              {% if form.date_added.help_text %}
+                <div class="form-text">{{ form.date_added.help_text }}</div>
+              {% endif %}
+              {% if form.date_added.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.date_added.errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
 
+            {% if form.notes %}
+            <div class="mb-3">
+              <label for="{{ form.notes.id_for_label }}" class="form-label">
+                {{ form.notes.label }}
+              </label>
+              {{ form.notes }}
+              {% if form.notes.help_text %}
+                <div class="form-text">{{ form.notes.help_text }}</div>
+              {% endif %}
+              {% if form.notes.errors %}
+                <div class="invalid-feedback d-block">
+                  {% for error in form.notes.errors %}
+                    {{ error }}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary">
+                💾 Save Changes
+              </button>
+              <a href="{% url 'chores:chore' chore.id %}" class="btn btn-secondary">
+                ↩️ Cancel
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">⚠️ Editing Guidelines</h6>
+        </div>
+        <div class="card-body">
+          <ul class="small mb-0">
+            <li>Only privileged users can edit chore entries</li>
+            <li>Changes are logged for accountability</li>
+            <li>Time is automatically adjusted for your timezone</li>
+            <li>Be careful when changing completion times</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock content %}
+
+{% block extra_scripts %}
+<script>
+// Add some client-side validation and UX improvements
+document.addEventListener('DOMContentLoaded', function() {
+    const datetimeInput = document.querySelector('input[type="datetime-local"]');
+
+    if (datetimeInput) {
+        // Highlight the current value
+        datetimeInput.addEventListener('focus', function() {
+            this.select();
+        });
+
+        // Warn if setting future date
+        datetimeInput.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const now = new Date();
+
+            if (selectedDate > now) {
+                if (!confirm('You selected a future date/time. Are you sure this is correct?')) {
+                    // Reset to current time if user cancels
+                    const nowLocal = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+                    this.value = nowLocal.toISOString().slice(0, 16);
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
