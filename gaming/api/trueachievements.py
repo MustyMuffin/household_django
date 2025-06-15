@@ -18,7 +18,7 @@ def fetch_game_data_trueachievements(title):
 
     run_id = run.get("data", {}).get("id")
     if not run_id:
-        print("❌ Could not start Apify actor.")
+        # print("❌ Could not start Apify actor.")
         return None
 
     # 2. Poll for completion

@@ -1,0 +1,301 @@
+{% extends "household_main/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item">
+        <a href="{% url 'chores:chore' chore.id %}">{{ chore.name }}</a>
+      </li>
+      <li class="breadcrumb-item active" aria-current="page">Select Entry to Edit</li>
+    </ol>
+  </nav>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h4 class="mb-0">📝 Select Entry to Edit</h4>
+          <span class="badge bg-info">{{ chore.name }}</span>
+        </div>
+        <div class="card-body">
+          <!-- Date Filter -->
+          <div class="mb-3">
+            <label for="days-filter" class="form-label">📅 Filter by date range:</label>
+            <select id="days-filter" class="form-select" onchange="applyFilter()">
+              {% for option in filter_options %}
+                <option value="{{ option.value }}"
+                        {% if current_days_filter|stringformat:"s" == option.value %}selected{% endif %}>
+                  {{ option.label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          {% if entries %}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <p class="text-muted mb-0">
+                {% if current_days_filter >= 999999 %}
+                  Showing {{ entries|length }} of {{ total_entries_all_time }} total entries
+                {% else %}
+                  Showing {{ entries|length }} of {{ total_entries_filtered }} entries from the past {{ current_days_filter }} days
+                  {% if total_entries_filtered < total_entries_all_time %}
+                    ({{ total_entries_all_time }} total all-time)
+                  {% endif %}
+                {% endif %}
+              </p>
+
+              {% if is_paginated %}
+                <small class="text-muted">
+                  Page {{ entries.number }} of {{ entries.paginator.num_pages }}
+                </small>
+              {% endif %}
+            </div>
+
+            <div class="list-group">
+              {% for entry in entries %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                  <div class="flex-grow-1">
+                    <div class="d-flex w-100 justify-content-between">
+                      <h6 class="mb-1">
+                        📅 {{ entry.date_added|date:"M d, Y \a\t g:i A" }}
+                      </h6>
+                      <small class="text-muted">
+                        {{ entry.date_added|timesince }} ago
+                      </small>
+                    </div>
+
+                    {% if entry.user %}
+                      <p class="mb-1">
+                        <small class="text-muted">
+                          👤 Completed by: <strong>{{ entry.user.get_full_name|default:entry.user.username }}</strong>
+                        </small>
+                      </p>
+                    {% endif %}
+
+                    {% if entry.notes %}
+                      <p class="mb-1">
+                        <small class="text-muted">
+                          💬 Notes: {{ entry.notes|truncatewords:10 }}
+                        </small>
+                      </p>
+                    {% endif %}
+
+                    {% if entry.payout %}
+                      <p class="mb-1">
+                        <small class="text-success">
+                          💰 Payout: ${{ entry.payout }}
+                        </small>
+                      </p>
+                    {% endif %}
+                  </div>
+
+                  <div class="ms-3">
+                    <a href="{% url 'chores:edit_specific_chore_entry' chore.id entry.id %}"
+                       class="btn btn-outline-primary btn-sm">
+                      ✏️ Edit
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+              <nav aria-label="Entry pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                  {% if entries.has_previous %}
+                    <li class="page-item">
+                      <a class="page-link" href="?page=1{% if current_days_filter %}&days={{ current_days_filter }}{% endif %}" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                      </a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="?page={{ entries.previous_page_number }}{% if current_days_filter %}&days={{ current_days_filter }}{% endif %}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                      </a>
+                    </li>
+                  {% endif %}
+
+                  {% for num in entries.paginator.page_range %}
+                    {% if num == entries.number %}
+                      <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                      </li>
+                    {% elif num > entries.number|add:'-3' and num < entries.number|add:'3' %}
+                      <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if current_days_filter %}&days={{ current_days_filter }}{% endif %}">{{ num }}</a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+
+                  {% if entries.has_next %}
+                    <li class="page-item">
+                      <a class="page-link" href="?page={{ entries.next_page_number }}{% if current_days_filter %}&days={{ current_days_filter }}{% endif %}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                      </a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="?page={{ entries.paginator.num_pages }}{% if current_days_filter %}&days={{ current_days_filter }}{% endif %}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                      </a>
+                    </li>
+                  {% endif %}
+                </ul>
+              </nav>
+            {% endif %}
+
+            {% if total_entries_filtered == 0 and current_days_filter < 999999 %}
+              <div class="alert alert-info mt-3">
+                <h6 class="alert-heading">No entries in selected time range</h6>
+                <p class="mb-0">
+                  No entries found in the past {{ current_days_filter }} days.
+                  Try selecting a longer time range or "All time" to see older entries.
+                </p>
+              </div>
+            {% endif %}
+
+          {% else %}
+            <div class="alert alert-warning">
+              <h6 class="alert-heading">No Entries Found</h6>
+              <p class="mb-0">
+                This chore hasn't been completed yet, so there are no entries to edit.
+              </p>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="card-footer">
+          <div class="d-flex gap-2">
+            <a href="{% url 'chores:chore' chore.id %}" class="btn btn-secondary">
+              ↩️ Back to Chore
+            </a>
+            {% if entries %}
+              <a href="{% url 'chores:edit_chore_entry' chore.id %}" class="btn btn-primary">
+                ⚡ Edit Latest Entry
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">ℹ️ About Editing Entries</h6>
+        </div>
+        <div class="card-body">
+          <ul class="small mb-0">
+            <li><strong>Recent entries</strong> are shown first</li>
+            <li><strong>Timestamps</strong> can be adjusted for accuracy</li>
+            <li><strong>Only privileged users</strong> can edit entries</li>
+          </ul>
+        </div>
+      </div>
+
+      {% if chore.description %}
+        <div class="card mt-3">
+          <div class="card-header">
+            <h6 class="mb-0">📋 Chore Details</h6>
+          </div>
+          <div class="card-body">
+            <p class="small mb-2"><strong>Description:</strong></p>
+            <p class="small text-muted">{{ chore.description }}</p>
+
+            {% if chore.base_payout %}
+              <p class="small mb-0">
+                <strong>Base Payout:</strong>
+                <span class="text-success">${{ chore.base_payout }}</span>
+              </p>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="card mt-3">
+        <div class="card-header">
+          <h6 class="mb-0">📊 Quick Stats</h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6">
+              <div class="border-end">
+                <h5 class="mb-0">{{ chore.choreentry_set.count }}</h5>
+                <small class="text-muted">Total<br>Completions</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <h5 class="mb-0">
+                {% if chore.choreentry_set.exists %}
+                  {{ chore.choreentry_set.first.date_added|timesince }}
+                {% else %}
+                  Never
+                {% endif %}
+              </h5>
+              <small class="text-muted">Last<br>Completed</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block extra_scripts %}
+<script>
+function applyFilter() {
+    const daysSelect = document.getElementById('days-filter');
+    const selectedDays = daysSelect.value;
+
+    // Get current URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // Update or add the days parameter
+    if (selectedDays) {
+        urlParams.set('days', selectedDays);
+    } else {
+        urlParams.delete('days');
+    }
+
+    // Remove page parameter when filtering (start from page 1)
+    urlParams.delete('page');
+
+    // Redirect with new parameters
+    const newUrl = window.location.pathname + '?' + urlParams.toString();
+    window.location.href = newUrl;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to list items
+    const listItems = document.querySelectorAll('.list-group-item');
+    
+    listItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.backgroundColor = '#f8f9fa';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            this.style.backgroundColor = '';
+        });
+    });
+    
+    // Confirm edit action for very recent entries
+    const editButtons = document.querySelectorAll('a[href*="edit"]');
+    
+    editButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const listItem = this.closest('.list-group-item');
+            const timeElement = listItem.querySelector('small.text-muted');
+            
+            if (timeElement && timeElement.textContent.includes('minute')) {
+                if (!confirm('This entry was completed very recently. Are you sure you want to edit it?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

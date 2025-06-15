@@ -22,10 +22,10 @@ class BookCategory(models.Model):
 class Book(models.Model):
     """A book the user is logging."""
     title = models.CharField(max_length=100)
-    words = models.IntegerField(default=0)
+    words = models.IntegerField(null=True, blank=True, default=0)
     date_added = models.DateTimeField(auto_now_add=True)
     book_category = models.ForeignKey(BookCategory, on_delete=models.SET_NULL, null=True, blank=True)
-    pages = models.IntegerField(null=True, blank=True)
+    pages = models.IntegerField(null=True, blank=True, default=0)
     series = models.ForeignKey(BookSeries, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -65,10 +65,10 @@ class BookMetadata(models.Model):
     title = models.CharField(max_length=255, blank=True)
     authors = models.JSONField(blank=True, default=list)
     description = models.TextField(blank=True)
-    thumbnail_url = models.URLField(blank=True)
-    external_url = models.URLField(blank=True)
+    thumbnail_url = models.URLField(max_length=1000, null=True, blank=True)
+    external_url = models.URLField(null=True, blank=True)
     last_updated = models.DateTimeField(auto_now=True)
-    pages = models.IntegerField(null=True, blank=True)
+    pages = models.IntegerField(null=True, blank=True, default=0)
 
     def __str__(self):
         return f"Metadata for {self.book.title} from {self.source}"

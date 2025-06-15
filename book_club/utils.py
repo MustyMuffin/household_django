@@ -3,6 +3,14 @@ from accounts.models import UserStats
 from .models import BooksRead, BookProgressTracker, Book
 from math import ceil
 
+def estimate_word_count_from_pages(pages):
+    """Estimate word count given a page count (average 250 words/page)."""
+    try:
+        pages_int = int(pages)
+        return pages_int * 250
+    except (ValueError, TypeError):
+        return 0
+
 def update_badges_for_books(user, book, words_increment, request=None):
     # Only count as "read" if full progress is met
     tracker = BookProgressTracker.objects.filter(user=user, book_name=book).first()

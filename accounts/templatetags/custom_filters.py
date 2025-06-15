@@ -16,7 +16,7 @@ def milestone_label(value):
 
     try:
         chore = Chore.objects.get(pk=value)
-        return chore.text
+        return chore.name
     except (Chore.DoesNotExist, ValueError, TypeError):
         pass
 

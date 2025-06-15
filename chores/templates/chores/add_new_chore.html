@@ -9,7 +9,7 @@
 <form method="post">
   {% csrf_token %}
   <div class="mb-3">
-    {{ form.text.label_tag }} {{ form.text }}
+    {{ form.name.label_tag }} {{ form.name }}
   </div>
   <div class="mb-3">
     {{ form.wage.label_tag }} {{ form.wage }}
@@ -20,6 +20,9 @@
   <div class="mb-3">
     {{ form.new_category_name.label_tag }} {{ form.new_category_name }}
     <small class="form-text text-muted">{{ form.new_category_name.help_text }}</small>
+  </div>
+      <div class="mb-3">
+    {{ form.description.label_tag }} {{ form.description }}
   </div>
   <button type="submit" class="btn btn-primary">Add Chore</button>
 </form>

@@ -20,7 +20,7 @@
 #     # Get all badges for the "chores" app that match this specific chore milestone
 #     badges = Badge.objects.filter(
 #         app_label="chores",
-#         milestone_type=str(chore.text)
+#         milestone_type=str(chore.name)
 #     )
 #
 #     for badge in badges:

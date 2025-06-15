@@ -21,11 +21,11 @@ def get_game_links(title, retro_id=None):
         "playstation": f"https://psnprofiles.com/search/games?q={query}",
     }
 
-    print("DEBUG: Retro_ID =", retro_id)
+    # print("DEBUG: Retro_ID =", retro_id)
 
     if retro_id and str(retro_id).isdigit():
         links["retroachievements"] = f"https://retroachievements.org/game/{retro_id}"
-        print("DEBUG: With RetroID triggered:", links)
+        # print("DEBUG: With RetroID triggered:", links)
     else:
         links["retroachievements"] = f"https://retroachievements.org/search/games/{query}"
 
@@ -39,9 +39,6 @@ def update_badges_for_games(user, game, hours_increment, request=None):
     # ✅ Only proceed with beaten logic if user explicitly marked it as beaten
     if not tracker or not tracker.beaten:
         return
-
-    # Log game as beaten
-    GamesBeaten.objects.get_or_create(user=user, game_name=game.name)
 
     # Badge checks
     games_beaten_total = GamesBeaten.objects.filter(user=user).count()

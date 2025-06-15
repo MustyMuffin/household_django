@@ -48,7 +48,7 @@ class BadgeMilestoneForm(forms.ModelForm):
             app = self.instance.app_label
 
         if app == 'chores':
-            chore_choices = [(str(chore.id), chore.text) for chore in Chore.objects.all()]
+            chore_choices = [(str(chore.id), chore.name) for chore in Chore.objects.all()]
             wage_option = [('earned_wage', 'Total Wage Earned')]
             combined_choices = wage_option + chore_choices
 

@@ -1,6 +1,10 @@
+import difflib
 from collections import defaultdict
 from difflib import get_close_matches
 from difflib import get_close_matches
+
+import requests
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import user_passes_test
@@ -14,7 +18,7 @@ from accounts.badge_helpers import check_and_award_badges
 from accounts.models import UserStats
 from accounts.xp_helpers import award_xp
 from gaming.api.howlongtobeat_fetcher import fetch_hltb_data
-from gaming.api.retroachievements import fetch_game_data_retro, fetch_achievements_for_game
+from gaming.api.retroachievements import fetch_game_data_retro, fetch_achievements_for_game, API_BASE
 from gaming.api_combined import fetch_game_data
 from gaming.utils import update_badges_for_games, get_game_links
 from .forms import GameEntryForm, GameForm, GameProgressTrackerForm, CollectibleTypeForm
@@ -29,9 +33,9 @@ from .models import (Game, GamesBeaten, GameCategory,
 def is_privileged(user):
     return user.groups.filter(name='Privileged').exists()
 
-def achievements_view(request):
-    data = get_trueachievements_data()
-    return render(request, "gaming/achievements.html", {"achievements": data})
+# def achievements_view(request):
+#     data = get_trueachievements_data()
+#     return render(request, "gaming/achievements.html", {"achievements": data})
 
 
 def fetch_game_data_api(request):
@@ -42,7 +46,7 @@ def fetch_game_data_api(request):
         if not q or not source:
             return JsonResponse({"error": "Missing query or source"}, status=400)
 
-        print(f"🔍 Fetching game: {q}, source: {source}")
+        # print(f"🔍 Fetching game: {q}, source: {source}")
         data = fetch_game_data(q, source)
 
         if not data or not data.get("results"):
@@ -52,7 +56,7 @@ def fetch_game_data_api(request):
 
 
     except Exception as e:
-        print("❌ fetch_game_data_api error:", e)
+        # print("❌ fetch_game_data_api error:", e)
         return JsonResponse({"error": "Internal server error", "details": str(e)}, status=500)
 
 def fetch_user_progress(request, game_id):
@@ -95,61 +99,69 @@ def games_by_category(request):
 
 def games(request):
     """Show all games."""
-    games = game.objects.order_by('text')
+    games = Game.objects.order_by('text')
     context = {'games': games}
     return render(request, 'gaming/games.html', context)
 
 
 @login_required
 def log_game_progress(request, game_id):
-    print("✅ Entered log_game_progress view")
+    # print("✅ Entered log_game_progress view")
 
     game = get_object_or_404(Game, id=game_id)
-    progress_entry = GameProgress.objects.filter(user=request.user, game=game).first()
-    already_beaten = GamesBeaten.objects.filter(user=request.user, game_name=game.name).exists()
+
+    # Try to fetch existing progress entry
+    progress_entry = GameProgress.objects.filter(user=request.user, game_id=game_id).first()
+
+    # Determine status flags from existing entry or fall back to False
+    already_beaten = progress_entry.beaten if progress_entry else False
+    already_mastered = progress_entry.mastered if progress_entry else False
+
+    # print("DEBUG: Already beaten:", already_beaten)
+    # print("DEBUG: Already mastered:", already_mastered)
 
     if request.method == 'POST':
-        print("📝 POST data:", request.POST.dict())
+        # print("📝 POST data:", request.POST.dict())
 
         old_hours = progress_entry.hours_played if progress_entry else 0
-        previously_beaten = progress_entry.beaten if progress_entry else False
+        previously_beaten = already_beaten
+        previously_mastered = already_mastered
 
         form = GameProgressTrackerForm(request.POST, instance=progress_entry)
 
         if form.is_valid():
             new_hours = form.cleaned_data['hours_played']
-            beaten = form.cleaned_data.get('beaten', False)
+            beaten = 'beaten' in request.POST  # safer checkbox handling
+            mastered = form.cleaned_data.get('mastered', False)
             note = form.cleaned_data.get('note', '')
 
             delta = new_hours - old_hours
-            print(f"📊 Old hours: {old_hours}, New hours: {new_hours}, Delta: {delta}")
-            print("DEBUG beaten:", beaten)
+            # print(f"📊 Old hours: {old_hours}, New hours: {new_hours}, Delta: {delta}")
+            # print("DEBUG beaten:", beaten)
 
-            was_new_entry = not progress_entry  # Track if this is a new GameProgress
-
+            # Ensure we have a GameProgress instance
             if progress_entry:
-                progress_entry.hours_played = new_hours
-                progress_entry.beaten = beaten
-                progress_entry.note = note
+                was_new_entry = False
             else:
                 progress_entry = form.save(commit=False)
                 progress_entry.user = request.user
                 progress_entry.game = game
-                progress_entry.beaten = beaten
-                progress_entry.note = note
+                was_new_entry = True
+
+            # Assign shared fields
+            progress_entry.hours_played = new_hours
+            progress_entry.beaten = beaten
+            progress_entry.mastered = mastered
+            progress_entry.note = note
 
             progress_entry.save()
-
-            # # ✅ New logic — populate achievements for new tracking
-            # if was_new_entry and game.retro_game:
-            #     populate_user_achievements(request.user, progress_entry)
-            #     print("🎯 User achievements populated for new progress entry.")
 
             if delta > 0:
                 log_hours(request.user, delta, game, request)
                 messages.success(request, f"💾 Logged {delta} new hours for '{game.name}'")
 
             if beaten and not previously_beaten:
+                # Avoid awarding XP multiple times for the same milestone
                 bonus_result = award_xp(
                     user=request.user,
                     source_object=game,
@@ -157,24 +169,38 @@ def log_game_progress(request, game_id):
                     source_type="finished_game",
                     request=request,
                 )
-                print("🎁 Bonus result:", bonus_result)
+                # print("🎁 Bonus result:", bonus_result)
                 if bonus_result.get("xp_awarded"):
                     messages.success(request, f"✅ Bonus XP: {bonus_result['xp_awarded']} for finishing the game!")
+
+            # Prefetch all collectibles in one go for efficiency
+            user_collectible_progress_qs = UserCollectibleProgress.objects.filter(
+                user=request.user,
+                collectible_type__game=game
+            )
+            user_collectible_map = {
+                progress.collectible_type.id: progress for progress in user_collectible_progress_qs
+            }
 
             for collectible_type in game.collectible_types.all():
                 field_name = f"collectible_{collectible_type.id}"
                 if field_name in request.POST:
                     try:
                         collected = int(request.POST.get(field_name))
-                        progress, _ = UserCollectibleProgress.objects.get_or_create(
-                            user=request.user,
-                            collectible_type=collectible_type
-                        )
-                        progress.collected = collected
+                        progress = user_collectible_map.get(collectible_type.id)
+                        if progress:
+                            progress.collected = collected
+                        else:
+                            progress = UserCollectibleProgress(
+                                user=request.user,
+                                collectible_type=collectible_type,
+                                collected=collected
+                            )
                         progress.save()
                     except (ValueError, TypeError):
-                        continue
+                        continue  # skip malformed input
 
+            # Badge and XP logic
             check_and_award_badges(
                 user=request.user,
                 app_label="gaming",
@@ -183,24 +209,27 @@ def log_game_progress(request, game_id):
                 request=request,
             )
 
-            update_badges_for_games(user=request.user, game=game, hours_increment=delta, request=request)
+            update_badges_for_games(
+                user=request.user,
+                game=game,
+                hours_increment=delta,
+                request=request,
+            )
 
             return redirect("gaming:games_by_category")
         else:
-            print("❌ Form errors:", form.errors)
+            # print("❌ Form errors:", form.errors)
             messages.error(request, "❌ Invalid input. Please check your form.")
     else:
         form = GameProgressTrackerForm(instance=progress_entry)
 
+    # Optimization: avoid looping and querying per collectible in the template
     user_collectibles = {
-        c.collectible_type.id: c.collected for c in
-        UserCollectibleProgress.objects.filter(user=request.user, collectible_type__game=game)
+        c.collectible_type.id: c.collected
+        for c in UserCollectibleProgress.objects.filter(user=request.user, collectible_type__game=game)
     }
 
-    already_mastered = GameProgress.objects.filter(
-        user=request.user, game=game, mastered=True
-    ).exists()
-    print ("debug: already_mastered:", already_mastered)
+    # print("DEBUG: already_mastered:", already_mastered)
 
     return render(request, "gaming/log_game_progress.html", {
         "form": form,
@@ -213,14 +242,14 @@ def log_game_progress(request, game_id):
 
 
 def log_hours(user, hours_played, game, request=None):
-    print(f"🔧 log_hours called with {hours_played} for '{game}'")
+    # print(f"🔧 log_hours called with {hours_played} for '{game}'")
 
     userstats, _ = UserStats.objects.get_or_create(user=user)
     userstats.hours_played += hours_played
     userstats.save(update_fields=["hours_played"])
 
     # 👇 Add this print
-    print("🎯 Calling award_xp...")
+    # print("🎯 Calling award_xp...")
     result = award_xp(
         user=user,
         source_object=hours_played,
@@ -266,11 +295,11 @@ def add_new_game(request):
         new_category_name = request.POST.get("new_category_name", "").strip()
         image = request.POST.get("image_url", "").strip()
         selected_sources = request.POST.getlist("sources")
-        print("Debug: selected_sources:", selected_sources)
+        # print("Debug: selected_sources:", selected_sources)
 
         # ✅ Auto-toggle use_retro based on source selection
         use_retro = "retroachievements" in selected_sources
-        print("Debug: use_retro:", use_retro)
+        # print("Debug: use_retro:", use_retro)
 
         # ✅ Determine category
         if new_category_name:
@@ -381,7 +410,7 @@ def unpair_retro_game(request, game_id):
 def generate_game_links(request, game_id):
     game = get_object_or_404(Game, id=game_id)
     selected_sources = request.session.get("selected_sources", [])
-    print("DEBUG (generate_game_links): selected_sources =", selected_sources)
+    # print("DEBUG (generate_game_links): selected_sources =", selected_sources)
 
     if not selected_sources:
         messages.warning(request, "⚠️ No sources selected for link generation.")
@@ -397,7 +426,7 @@ def generate_game_links(request, game_id):
                 platform=source,
                 defaults={"url": links[source]}
             )
-            print("DEBUG (generate_game_links): Created or updated link for", source)
+            # print("DEBUG (generate_game_links): Created or updated link for", source)
             if created or link_obj.url != links[source]:
                 created_or_updated += 1
 
@@ -473,7 +502,7 @@ def auto_fill_game_hours(game: Game):
         game.hours_main_extra = data["hours_main_extra"]
         game.hours_completionist = data["hours_completionist"]
         game.save()
-        print(f"📊 Updated hours for {game.name}")
+        # print(f"📊 Updated hours for {game.name}")
 
 def find_retro_matches(title, limit=5):
     all_titles = list(RetroGameEntry.objects.values_list('title', flat=True))

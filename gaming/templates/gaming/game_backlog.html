@@ -23,7 +23,7 @@
                 </div>
               </div>
               <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-outline-primary">
-                💾 Update Progress
+                💾 Log Progress
               </a>
             </li>
 
@@ -55,7 +55,7 @@
                 </div>
               </div>
               <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-outline-secondary">
-                📝 Write Review / Log More Progress
+                📝 Log/Review
               </a>
             </li>
         {% endfor %}
@@ -84,7 +84,7 @@
             </div>
           </div>
           <a href="{% url 'gaming:log_game_progress' entry.game.id %}" class="btn btn-sm btn-outline-success">
-            🧠 Review
+            🧠 Log/Review
           </a>
         </li>
       {% endfor %}
