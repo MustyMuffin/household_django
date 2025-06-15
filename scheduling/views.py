@@ -173,7 +173,7 @@ def schedule_chore_view(request):
             if notification_recipient:
                 Notification.objects.create(
                     user=notification_recipient,
-                    message=f"You’ve been assigned a task: {chore.text} on {item_time.strftime('%A %b %d @ %I:%M %p')}",
+                    message=f"You’ve been assigned a task: {chore.name} on {item_time.strftime('%A %b %d @ %I:%M %p')}",
                     url=calendar_url,
                 )
             else:
@@ -183,7 +183,7 @@ def schedule_chore_view(request):
                 for user in all_recipients:
                     Notification.objects.create(
                         user=user,
-                        message=f"📝 '{chore.text}' on {item_time.strftime('%A %b %d @ %I:%M %p')} is available to claim.",
+                        message=f"📝 '{chore.name}' on {item_time.strftime('%A %b %d @ %I:%M %p')} is available to claim.",
                         url=calendar_url,
                     )
 

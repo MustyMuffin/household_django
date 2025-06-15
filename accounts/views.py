@@ -230,7 +230,7 @@ def get_milestone_options(request):
     if app == "chores":
         chores = Chore.objects.all()
         options = [{"id": "earned_wage", "name": "Total Wage Earned"}] + [
-            {"id": str(chore.id), "name": chore.text} for chore in chores
+            {"id": str(chore.id), "name": chore.name} for chore in chores
         ]
         return JsonResponse({"options": options, "initial": initial})
 
@@ -289,7 +289,7 @@ def activity_feed(request):
     ]
 
     chore_entries = [
-        {'type': 'chore', 'user': entry.user, 'timestamp': entry.date_added, 'info': f"Completed chore: {entry.chore.text}", 'xp': 0}
+        {'type': 'chore', 'user': entry.user, 'timestamp': entry.date_added, 'info': f"Completed chore: {entry.chore.name}", 'xp': 0}
         for entry in chore_entries
     ]
 

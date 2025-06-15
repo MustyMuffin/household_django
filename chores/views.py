@@ -31,6 +31,12 @@ def is_privileged(view_func):
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
+def user_is_privileged(user):
+    """
+    Simple function to check if a user has privilege.
+    """
+    return user.is_authenticated and user.groups.filter(name='Privileged').exists()
+
 @is_privileged
 @login_required
 def add_new_chore(request):
@@ -324,6 +330,9 @@ def payout_summary(request):
         'logs': logs,
     }
     return render(request, 'chores/payout_summary.html', context)
+
+
+@login_required
 def payout(request):
     # Current user info
 
@@ -340,7 +349,7 @@ def payout(request):
         'wage_earned': wage_earned,
         'all_earners': all_earners,
         'logs': logs,
-        'can_payout': is_privileged(request.user),
+        'can_payout': user_is_privileged(request.user),
     }
     return render(request, 'chores/payout.html', context)
 

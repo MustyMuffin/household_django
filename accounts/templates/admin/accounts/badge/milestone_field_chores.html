@@ -4,7 +4,7 @@
     <select name="milestone_type" class="vSelect" required id="id_milestone_type">
       {% for chore in chores %}
         <option value="{{ chore.id }}" {% if chore.id|stringformat:"s" == initial %}selected{% endif %}>
-          {{ chore.text }}
+          {{ chore.name }}
         </option>
       {% endfor %}
     </select>
