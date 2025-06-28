@@ -12,7 +12,6 @@ def estimate_word_count_from_pages(pages):
         return 0
 
 def update_badges_for_books(user, book, words_increment, request=None):
-    # Only count as "read" if full progress is met
     tracker = BookProgressTracker.objects.filter(user=user, book_name=book).first()
     if tracker and tracker.words_completed < book.words:
         return
@@ -21,7 +20,12 @@ def update_badges_for_books(user, book, words_increment, request=None):
 
     books_read_total = BooksRead.objects.filter(user=user).count()
 
-    words_total = UserStats.objects.filter(user=user).first().words_read
+    userstats, _ = UserStats.objects.get_or_create(user=user)
+    userstats.words_read += words_increment
+    userstats.save(update_fields=["words_read"])
+
+    # NOW fetch the updated words_total
+    words_total = userstats.words_read
 
     check_and_award_badges(
         user=user,
@@ -37,10 +41,6 @@ def update_badges_for_books(user, book, words_increment, request=None):
         current_value=words_total,
         request=request
     )
-
-    userstats, _ = UserStats.objects.get_or_create(user=user)
-    userstats.words_read += words_increment
-    userstats.save(update_fields=["words_read"])
 
 
 def calculate_reading_times(user, book, words_completed=0):

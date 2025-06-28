@@ -78,14 +78,26 @@
               <div class="card card-body bg-light text-dark text-start">
                 <h6 class="mb-3">Games You've Beaten</h6>
 
-                {% if games_beaten_list %}
+                {% if games_beaten %}
                   <ul class="list-unstyled">
-                    {% for game in games_beaten_list %}
-                      <li>{{ game.game_name }} — {{ game.date_added|date:"M d, Y" }}</li>
+                    {% for item in games_beaten %}
+                      <li>{{ item.game.name }} — {{ item.logged_at|date:"M d, Y" }}</li>
                     {% endfor %}
                   </ul>
                 {% else %}
                   <p>No games beaten yet.</p>
+                {% endif %}
+
+              <h6 class="mb-3">Games You've Mastered</h6>
+
+                  {% if games_mastered %}
+                  <ul class="list-unstyled">
+                    {% for item in games_mastered %}
+                      <li>{{ item.game.name }} — {{ item.logged_at|date:"M d, Y" }}</li>
+                    {% endfor %}
+                  </ul>
+                {% else %}
+                  <p>No games mastered yet.</p>
                 {% endif %}
 
                   <p class="mt-3"><strong>Total Hours Played:</strong> {{ total_hours_played|default:"0"|intcomma }}</p>
