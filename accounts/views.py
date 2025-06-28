@@ -230,7 +230,7 @@ def get_milestone_options(request):
     if app == "chores":
         chores = Chore.objects.all()
         options = [{"id": "earned_wage", "name": "Total Wage Earned"}] + [
-            {"id": str(chore.id), "name": chore.name} for chore in chores
+            {"id": chore.name, "name": chore.name} for chore in chores
         ]
         return JsonResponse({"options": options, "initial": initial})
 
