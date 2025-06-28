@@ -9,7 +9,7 @@ from django.shortcuts import render
 
 from .forms import NoteForm, EntryForm
 from .models import Note, Entry
-from gaming.models import GamesBeaten
+from gaming.models import GamesBeaten, GameProgress, Game
 
 
 @login_required
@@ -21,9 +21,25 @@ def index(request):
     words_read_entry = UserStats.objects.filter(user=user).first()
     total_words_read = words_read_entry.words_read if words_read_entry else 0
 
-    games_beaten_list = GamesBeaten.objects.filter(user=user).order_by('-date_added')
+    games_beaten_list = GameProgress.objects.filter(user=user, beaten=1)
     hours_played_entry = UserStats.objects.filter(user=user).first()
     total_hours_played = hours_played_entry.hours_played if hours_played_entry else 0
+
+    print("DEBUG: games beaten list: ", games_beaten_list)
+    games_beaten = (
+        GameProgress.objects
+        .filter(user=user, beaten=True, mastered=False)
+        .select_related("game")
+        .order_by("-logged_at")
+    )
+
+    games_mastered = (
+        GameProgress.objects
+        .filter(user=user, mastered=True)
+        .select_related("game")
+        .order_by("-logged_at")
+    )
+    print("DEBUG: game name: ", games_beaten)
 
     books_leaderboard = UserStats.objects.select_related('user').order_by('-words_read')
     earnings_leaderboard = EarnedWage.objects.select_related('user').order_by('-earnedLifetime')
@@ -57,7 +73,8 @@ def index(request):
     context = {
         'books_read_list': books_read_list,
         'total_words_read': total_words_read,
-        'games_beaten_list': games_beaten_list,
+        'games_beaten': games_beaten,
+        'games_mastered': games_mastered,
         'total_hours_played': total_hours_played,
         'wage_earned': wage_earned,
         'lifetime_earned': lifetime_earned,
@@ -70,7 +87,6 @@ def index(request):
         **{f"reading_{k}": v for k, v in reading.items()},
         **{f"gaming_{k}": v for k, v in gaming.items()},
 
-        # Optional: for looping
         'xp_sections': [
             {"label": "Overall Level", "color": "info", **overall},
             {"label": "Chore Level", "color": "warning", **chore},
