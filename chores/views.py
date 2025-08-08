@@ -1,4 +1,5 @@
 import time
+from django import forms
 from collections import defaultdict
 from django.core.paginator import Paginator
 from decimal import Decimal
@@ -128,27 +129,52 @@ def chore(request, chore_id):
 
 @login_required
 def new_chore_entry(request, chore_id):
-    """Add a new entry for a chore."""
+    """Add a new entry for a chore, or (for Privileged users) for someone else."""
     chore = get_object_or_404(Chore, id=chore_id)
 
+    # 1️⃣ Are they in "Privileged"?
+    is_privileged = request.user.groups.filter(name='Privileged').exists()
+
     if request.method != 'POST':
+        # 2️⃣ On GET, build the base form...
         form = ChoreEntryForm()
+        if is_privileged:
+            # …and add a user‐picker
+            form.fields['user'] = forms.ModelChoiceField(
+                queryset=User.objects.all(),
+                required=False,
+                label="Complete chore for"
+            )
     else:
+        # 3️⃣ On POST, bind the data (including our dynamic field if present)
         form = ChoreEntryForm(data=request.POST)
+        if is_privileged:
+            # grab the override (if any), else default back to themselves
+            target_user_pk = request.POST.get('user')
+            if target_user_pk:
+                target_user = get_object_or_404(User, pk=target_user_pk)
+            else:
+                target_user = request.user
+        else:
+            target_user = request.user
+
         entry, result, redirect_url, success = process_chore_completion(
-            user=request.user, chore=chore, request=request, form=form
+            user=target_user,
+            chore=chore,
+            request=request,
+            form=form
         )
 
         if success:
+            payload = {
+                "success": True,
+                "xp_awarded": str(result["xp_awarded"]),
+                "message": f"{target_user.username!r} earned {result['xp_awarded']} XP!",
+                "redirect_url": redirect_url
+            }
             if request.headers.get("x-requested-with", "").lower() == "xmlhttprequest":
-                return JsonResponse({
-                    "success": True,
-                    "xp_awarded": str(result["xp_awarded"]),
-                    "message": f"You earned {result['xp_awarded']} XP for completing a chore!",
-                    "redirect_url": redirect_url
-                })
-
-            messages.success(request, f"✅ You earned {result['xp_awarded']} XP for completing a chore!")
+                return JsonResponse(payload)
+            messages.success(request, payload["message"])
             return redirect(redirect_url)
 
         else:
@@ -158,11 +184,11 @@ def new_chore_entry(request, chore_id):
                     "error": "Form validation failed. Please check your input."
                 }, status=400)
 
-    context = {
+    return render(request, 'chores/new_chore_entry.html', {
         'chore': chore,
         'form': form,
-    }
-    return render(request, 'chores/new_chore_entry.html', context)
+        'is_privileged': is_privileged,
+    })
 
 @is_privileged
 @login_required

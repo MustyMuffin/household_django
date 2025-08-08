@@ -1,14 +1,15 @@
 import json
 import re
 from collections import defaultdict
+from django import forms
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.files.storage import default_storage
 from django.db.models import F
-from django.shortcuts import get_object_or_404, render
-from django.shortcuts import redirect
-from django.urls import reverse
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import strip_tags
 from django.views.decorators.http import require_POST
 
@@ -311,32 +312,86 @@ def log_words(user, words, book, request):
 @login_required
 def new_book_entry(request, book_id):
     book = get_object_or_404(Book, id=book_id)
-    form = BookEntryForm(request.POST or None)
 
-    if request.method == 'POST' and form.is_valid():
-        tracker = BookProgressTracker.objects.filter(user=request.user, book_name=book).first()
+    # 1️⃣ Are they privileged?
+    is_privileged = request.user.groups.filter(name='Privileged').exists()
 
-        if tracker:
-            remaining_words = max(book.words - tracker.words_completed, 0)
-            tracker.delete()
-            log_words(request.user, remaining_words, book, request)
+    # 2️⃣ Inject 'user' picker into the form if needed
+    if request.method == 'GET':
+        form = BookEntryForm()
+        if is_privileged:
+            form.fields['user'] = forms.ModelChoiceField(
+                queryset=User.objects.all(),
+                required=False,
+                label="Log book for"
+            )
+    else:
+        form = BookEntryForm(request.POST)
+        if is_privileged:
+            # pick target_user from form or default
+            user_pk = request.POST.get('user')
+            if user_pk:
+                try:
+                    target_user = User.objects.get(pk=user_pk)
+                except User.DoesNotExist:
+                    raise Http404("User not found")
+            else:
+                target_user = request.user
         else:
-            award_xp(request.user, source_object=book, reason=f"Logged book: {book.title}", source_type="book", request=request)
+            target_user = request.user
 
-        form.instance.book = book
-        form.instance.user = request.user
-        form.save()
+        if form.is_valid():
+            # 3️⃣ Mirror your existing logic but with `target_user`
+            tracker = BookProgressTracker.objects.filter(
+                user=target_user,
+                book_name=book
+            ).first()
 
-        bonus_result = award_xp(request.user, source_object=book, reason="📚 Completed book bonus", source_type="finished_book", request=request)
 
-        if bonus_result.get('xp_awarded'):
-            messages.success(request, f"✅ Bonus XP: {bonus_result['xp_awarded']} for finishing a book!")
+            if tracker:
+                remaining = max(book.words - tracker.words_completed, 0)
+                tracker.delete()
+                log_words(target_user, remaining, book, request)
+            else:
+                award_xp(
+                    user=target_user,
+                    source_object=book,
+                    reason=f"Logged book: {book.title}",
+                    source_type="book",
+                    request=request
+                )
 
-        update_badges_for_books(user=request.user, book=book, words_increment=book.words, request=request)
+            form.instance.book = book
+            form.instance.user = target_user
+            form.save()
 
-        return redirect('book_club:books_by_category')
+            bonus = award_xp(
+                user=target_user,
+                source_object=book,
+                reason="📚 Completed book bonus",
+                source_type="finished_book",
+                request=request
+            )
+            if bonus.get('xp_awarded'):
+                messages.success(
+                    request,
+                    f"✅ {target_user.username!r} bonus XP: {bonus['xp_awarded']}!"
+                )
 
-    return render(request, 'book_club/new_book_entry.html', {'book': book, 'form': form})
+            update_badges_for_books(
+                user=target_user,
+                book=book,
+                words_increment=book.words,
+                request=request
+            )
+
+            return redirect('book_club:books_by_category')
+
+    return render(request, 'book_club/new_book_entry.html', {
+        'book': book,
+        'form': form,
+        'is_privileged': is_privileged,
+    })
 
 
 @login_required

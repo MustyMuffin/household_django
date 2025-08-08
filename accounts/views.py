@@ -271,14 +271,16 @@ def activity_feed(request):
     if show_all_users:
         book_entries = BookEntry.objects.select_related('user').all()
         chore_entries = ChoreEntry.objects.select_related('user').all()
+        game_entries = GameEntry.objects.select_related('user').all()
         xp_logs = XPLog.objects.select_related('user').all()
     else:
         book_entries = BookEntry.objects.filter(user=request.user)
         chore_entries = ChoreEntry.objects.filter(user=request.user)
+        game_entries = GameEntry.objects.select_related('user').all()
         xp_logs = XPLog.objects.filter(user=request.user)
 
     book_entries = [
-        {'type': 'book', 'user': entry.user, 'timestamp': entry.date_added, 'info': f"Read book: {entry.book.text}", 'xp': 0}
+        {'type': 'book', 'user': entry.user, 'timestamp': entry.date_added, 'info': f"Read book: {entry.book.title}", 'xp': 0}
         for entry in book_entries
     ]
 

@@ -69,32 +69,32 @@ def award_xp(user, source_object=None, reason="", source_type="chore", override_
         from django.contrib import messages
 
         if new_level > old_level:
-            messages.success(request, f"🎉 You leveled up to Level {new_level}!")
+            messages.success(request, f"🎉 {user} leveled up to Level {new_level}!")
             Notification.objects.create(
                 user=user,
-                message=f"🎉 Level up! You’ve reached level {new_level}.",
+                message=f"🎉 Level up! {user} reached level {new_level}.",
                 url=reverse('accounts:user_profile', args=[user.username])
             )
         if new_level_chores > old_level_chores:
-            messages.success(request, f"🧹 You reached Chore Level {new_level_chores}!")
+            messages.success(request, f"🧹 {user} reached Chore Level {new_level_chores}!")
             Notification.objects.create(
                 user=user,
                 message=f"🎉 Level up! 🧹 You reached Chore Level {new_level_chores}.",
                 url=reverse('accounts:user_profile', args=[user.username])
             )
         if new_level_reading > old_level_reading:
-            messages.success(request, f"📚 You reached Reading Level {new_level_reading}!")
+            messages.success(request, f"📚 {user} reached Reading Level {new_level_reading}!")
             Notification.objects.create(
                 user=user,
-                message=f"🎉 Level up! 📚 You reached Reading Level {new_level_reading}.",
+                message=f"🎉 Level up! 📚 {user}reached Reading Level {new_level_reading}.",
                 url=reverse('accounts:user_profile', args=[user.username])
             )
 
         if new_level_gaming > old_level_gaming:
-            messages.success(request, f"🎮 You reached Gaming Level {new_level_gaming}!")
+            messages.success(request, f"🎮 {user} reached Gaming Level {new_level_gaming}!")
             Notification.objects.create(
                 user=user,
-                message=f"🎉 Level up! 🎮 You reached Gaming Level {new_level_gaming}.",
+                message=f"🎉 Level up! 🎮 {user} reached Gaming Level {new_level_gaming}.",
                 url=reverse('accounts:user_profile', args=[user.username])
             )
 

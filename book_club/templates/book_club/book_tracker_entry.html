@@ -21,19 +21,41 @@
           <label for="{{ form.notes.id_for_label }}" class="form-label">Notes</label>
           {{ form.text|add_class:"form-control" }}
         </div>
-        <input
-          type="range"
-          class="form-range"
-          id="wordSlider"
-          min="0"
-          max="{{ book.words }}"
-          value="{{ words_value }}"
-          step="1"
-        />
 
-        <small class="text-muted">Words: <span id="sliderValue">{{ words_value }}</span></small>
+        {# — the slider: #}
+        <div class="mb-3">
+          <input
+            type="range"
+            class="form-range"
+            id="wordSlider"
+            min="0"
+            max="{{ book.words }}"
+            value="{{ words_value }}"
+            step="1"
+          />
+          <small class="text-muted">
+            Words: <span id="sliderValue">{{ words_value }}</span>
+          </small>
           {{ form.words_completed|add_class:"d-none"|attr:"id:id_words_completed" }}
         </div>
+
+        {# — new: percentage input: #}
+        <div class="mb-3">
+          <label for="percentInput" class="form-label">Percent Complete (%)</label>
+          <div class="input-group">
+            <input
+              type="number"
+              class="form-control"
+              id="percentInput"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="0–100"
+            />
+            <span class="input-group-text">%</span>
+          </div>
+        </div>
+
         <button type="submit" class="btn btn-success w-100 mt-3">
           {% if mode == 'update' %}🕮 Update{% else %}📖 Submit Progress 📖{% endif %}
         </button>
@@ -44,28 +66,52 @@
 
 {% if mode == 'update' %}
 <div class="container mt-3">
-  <form action="{% url 'book_club:new_book_entry' book.id %}" method='post'>
+  <form action="{% url 'book_club:new_book_entry' book.id %}" method="post">
     {% csrf_token %}
-    <button name='submit' class="btn btn-sm btn-block btn-outline-primary">Completed?</button>
+    <button name="submit" class="btn btn-sm btn-block btn-outline-primary">
+      Completed?
+    </button>
   </form>
 </div>
 {% endif %}
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const slider = document.getElementById("wordSlider");
-    const hiddenInput = document.getElementById("id_words_completed");
-    const sliderValue = document.getElementById("sliderValue");
+document.addEventListener("DOMContentLoaded", function () {
+  const slider       = document.getElementById("wordSlider");
+  const hiddenInput  = document.getElementById("id_words_completed");
+  const sliderValue  = document.getElementById("sliderValue");
+  const percentInput = document.getElementById("percentInput");
+  const maxWords     = Number(slider.max);
 
-    if (slider && hiddenInput && sliderValue) {
-      hiddenInput.value = slider.value;
-      sliderValue.textContent = slider.value;
+  if (!slider || !hiddenInput || !sliderValue || !percentInput) return;
 
-      slider.addEventListener("input", function () {
-        hiddenInput.value = this.value;
-        sliderValue.textContent = this.value;
-      });
-    }
+  // Initialize hidden & display values
+  hiddenInput.value = slider.value;
+  sliderValue.textContent = slider.value;
+  percentInput.value = ((slider.value / maxWords) * 100).toFixed(1);
+
+  // When the slider moves → update words & percent
+  slider.addEventListener("input", function () {
+    const words = Number(this.value);
+    const pct   = (words / maxWords) * 100;
+
+    hiddenInput.value   = words;
+    sliderValue.textContent = words;
+    percentInput.value  = pct.toFixed(1);
   });
+
+  // When someone types a percent → clamp, then update slider & words
+  percentInput.addEventListener("input", function () {
+    let pct = parseFloat(this.value) || 0;
+    if (pct < 0)   pct = 0;
+    if (pct > 100) pct = 100;
+    const words = Math.round((pct / 100) * maxWords);
+
+    slider.value       = words;
+    hiddenInput.value  = words;
+    sliderValue.textContent = words;
+    this.value         = pct.toFixed(1);
+  });
+});
 </script>
 {% endblock %}
